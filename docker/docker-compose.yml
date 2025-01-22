@@ -1,8 +1,11 @@
-version: "3.7"
-
+#
+# WARNING: Make sure to use the current docker-compose.yml and versions:
+#
+# https://github.com/fosrl/pangolin/tree/main/docker/docker-compose.yml
+#
 services:
   pangolin:
-    image: fosrl/pangolin:latest
+    image: fosrl/pangolin: ${PANGOLIN_VERSION:-latest}
     container_name: pangolin
     restart: unless-stopped
     volumes:
@@ -14,7 +17,7 @@ services:
       retries: 5
 
   gerbil:
-    image: fosrl/gerbil:latest
+    image: fosrl/gerbil: ${GERBIL_VERSION:-latest}
     container_name: gerbil
     restart: unless-stopped
     depends_on:
@@ -37,7 +40,7 @@ services:
       - 80:80 # Port for traefik because of the network_mode
 
   traefik:
-    image: traefik:v3.1
+    image: traefik: ${TRAEFIK_VERSION:-v3.1}
     container_name: traefik
     restart: unless-stopped
     network_mode: service:gerbil # Ports appear on the gerbil service
@@ -47,5 +50,5 @@ services:
     command:
       - --configFile=/etc/traefik/traefik_config.yml
     volumes:
-      - ./traefik:/etc/traefik:ro # Volume to store the Traefik configuration
-      - ./letsencrypt:/letsencrypt # Volume to store the Let's Encrypt certificates
+      - ./config/traefik:/etc/traefik:ro # Volume to store the Traefik configuration
+      - ./config/letsencrypt:/letsencrypt # Volume to store the Let's Encrypt certificates
