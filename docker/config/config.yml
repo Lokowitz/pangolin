@@ -1,5 +1,5 @@
 app:
-    dashboard_url: https://example.com # REPLACE THIS WITH YOUR DOMAIN
+    dashboard_url: https://proxy.example.com # REPLACE THIS WITH YOUR DOMAIN
     base_domain: example.com # REPLACE THIS WITH YOUR DOMAIN
     log_level: info
     save_logs: false
@@ -13,6 +13,11 @@ server:
     session_cookie_name: p_session
     resource_session_cookie_name: p_resource_session
     resource_access_token_param: p_token
+    cors:
+        origins: ["https://proxy.example.space"]
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+        headers: ["X-CSRF-Token", "Content-Type"]
+        credentials: false
 
 traefik:
     cert_resolver: letsencrypt
@@ -22,7 +27,7 @@ traefik:
 
 gerbil:
     start_port: 51820
-    base_endpoint: example.com # REPLACE THIS WITH YOUR DOMAIN
+    base_endpoint: proxy.example.com # REPLACE THIS WITH YOUR DOMAIN
     use_subdomain: false
     block_size: 24
     site_block_size: 30
