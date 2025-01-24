@@ -22,18 +22,11 @@ log:
 certificatesResolvers:
   letsencrypt:
     acme:
-      # use for HTTP-Challenge
-      httpChallenge:
-        entryPoint: web
+      dnsChallenge:
+        provider: "ionos" # REPLACE THIS WITH YOUR DNS CHALLENGE PROVIDER. SEE https://doc.traefik.io/traefik/https/acme/
       email: "admin@example.com" # REPLACE THIS WITH YOUR EMAIL
       storage: "/letsencrypt/acme.json"
       caServer: "https://acme-v02.api.letsencrypt.org/directory"
-      # use for DNS-Challenge
-      #dnsChallenge:
-      #  provider: "ionos" # REPLACE THIS WITH YOUR DNS CHALLENGE PROVIDER. SEE https://doc.traefik.io/traefik/https/acme/
-      #email: "admin@example.com" # REPLACE THIS WITH YOUR EMAIL
-      #storage: "/letsencrypt/acme.json"
-      #caServer: "https://acme-v02.api.letsencrypt.org/directory"
 
 entryPoints:
   web:

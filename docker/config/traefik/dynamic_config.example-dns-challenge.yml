@@ -23,11 +23,10 @@ http:
         - websecure
       tls:
         certResolver: letsencrypt
-        # uncomment when using DNS-CHALLENGE
-        #domains:
-        #  - main: "example.com" # REPLACE THIS WITH YOUR DOMAIN
-        #    sans:
-        #      - "*.example.com" # REPLACE THIS WITH YOUR DOMAIN
+        domains:
+          - main: "example.com" # REPLACE THIS WITH YOUR DOMAIN
+            sans:
+              - "*.example.com" # REPLACE THIS WITH YOUR DOMAIN
 
     # API router (handles /api/v1 paths)
     api-router:
