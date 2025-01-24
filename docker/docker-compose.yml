@@ -15,6 +15,8 @@ services:
       - APP_BASEDOMAIN=${BASEDOMAIN}
       - USERS_SERVERADMIN_EMAIL=${SERVERADMIN_EMAIL}
       - USERS_SERVERADMIN_PASSWORD="${SERVERADMIN_PASSWORD}"
+      - GERBIL_STARTPORT=${WIREGUARD_PORT:-51820}
+      - GENERATE_TRAEFIK_CONFIG=true
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/"]
       interval: "3s"
@@ -39,7 +41,7 @@ services:
       - NET_ADMIN
       - SYS_MODULE
     ports:
-      - 51820:51820/udp
+      - ${WIREGUARD_PORT:-51820}:51820/udp
       - 8080:8080 # Port for traefik because of the network_mode
       - 443:443 # Port for traefik because of the network_mode
       - 80:80 # Port for traefik because of the network_mode
