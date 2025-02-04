@@ -1,9 +1,4 @@
-    # Next.js router (handles everything except API and WebSocket paths)
     next-router:
-      rule: "Host(`proxy.example.com`) && !PathPrefix(`/api/v1`)" # REPLACE THIS WITH YOUR DOMAIN
-      service: next-service
-      entryPoints:
-        - websecure
       tls:
         certResolver: letsencrypt
         domains:
