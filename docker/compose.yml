@@ -1,15 +1,16 @@
 #
 # WARNING: Make sure to use the current docker-compose.yml and versions:
 #
-# https://github.com/fosrl/pangolin/tree/main/docker/docker-compose.yml
+# https://github.com/fosrl/pangolin/tree/main/docker/compose.yml
 #
 services:
   pangolin:
-    image: fosrl/pangolin:${PANGOLIN_VERSION:-latest}
+    image: docker.io/fosrl/pangolin:${PANGOLIN_VERSION:-latest}
     container_name: pangolin
     restart: unless-stopped
     volumes:
       - ./config:/app/config
+      - /etc/localtime:/etc/localtime:ro
     environment:
       - APP_DASHBOARDURL=https://${DASHBOARDURL}
       - APP_BASEDOMAIN=${BASEDOMAIN}
@@ -24,9 +25,11 @@ services:
       retries: 5
 
   gerbil:
-    image: fosrl/gerbil:${GERBIL_VERSION:-latest}
+    image: docker.io/fosrl/gerbil:${GERBIL_VERSION:-latest}
     container_name: gerbil
     restart: unless-stopped
+    networks:
+      - backend
     depends_on:
       pangolin:
         condition: service_healthy
@@ -41,16 +44,17 @@ services:
       - NET_ADMIN
       - SYS_MODULE
     ports:
-      - ${WIREGUARD_PORT:-51820}:51820/udp
+      - ${WIREGUARD_PORT:-51820}:${WIREGUARD_PORT:-51820}/udp
       - 8080:8080 # Port for traefik because of the network_mode
       - 443:443 # Port for traefik because of the network_mode
       - 80:80 # Port for traefik because of the network_mode
 
   traefik:
-    image: traefik:${TRAEFIK_VERSION:-v3.1}
+    image: docker.io/library/traefik:${TRAEFIK_VERSION:-v3.3.3}
     container_name: traefik
     restart: unless-stopped
-    network_mode: service:gerbil # Ports appear on the gerbil service
+    networks:
+      - backend
     depends_on:
       pangolin:
         condition: service_healthy
@@ -59,3 +63,8 @@ services:
     volumes:
       - ./config/traefik:/etc/traefik:ro # Volume to store the Traefik configuration
       - ./config/letsencrypt:/letsencrypt # Volume to store the Let's Encrypt certificates
+      - /etc/localtime:/etc/localtime:ro
+
+networks:
+  backend:
+    driver: bridge
