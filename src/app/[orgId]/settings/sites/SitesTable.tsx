@@ -92,14 +92,14 @@ export default function SitesTable({ sites, orgId }: SitesTableProps) {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                                <Link
-                                    className="block w-full"
-                                    href={`/${siteRow.orgId}/settings/sites/${siteRow.nice}`}
-                                >
+                            <Link
+                                className="block w-full"
+                                href={`/${siteRow.orgId}/settings/sites/${siteRow.nice}`}
+                            >
+                                <DropdownMenuItem>
                                     View settings
-                                </Link>
-                            </DropdownMenuItem>
+                                </DropdownMenuItem>
+                            </Link>
                             <DropdownMenuItem
                                 onClick={() => {
                                     setSelectedSite(siteRow);

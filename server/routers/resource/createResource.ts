@@ -16,8 +16,8 @@ import createHttpError from "http-errors";
 import { eq, and } from "drizzle-orm";
 import stoi from "@server/lib/stoi";
 import { fromError } from "zod-validation-error";
-import { subdomainSchema } from "@server/schemas/subdomainSchema";
 import logger from "@server/logger";
+import { subdomainSchema } from "@server/schemas/subdomainSchema";
 
 const createResourceParamsSchema = z
     .object({
@@ -28,10 +28,42 @@ const createResourceParamsSchema = z
 
 const createResourceSchema = z
     .object({
+        subdomain: z.string().optional(),
         name: z.string().min(1).max(255),
-        subdomain: subdomainSchema
+        siteId: z.number(),
+        http: z.boolean(),
+        protocol: z.string(),
+        proxyPort: z.number().optional()
     })
-    .strict();
+    .refine(
+        (data) => {
+            if (!data.http) {
+                return z
+                    .number()
+                    .int()
+                    .min(1)
+                    .max(65535)
+                    .safeParse(data.proxyPort).success;
+            }
+            return true;
+        },
+        {
+            message: "Invalid port number",
+            path: ["proxyPort"]
+        }
+    )
+    .refine(
+        (data) => {
+            if (data.http) {
+                return subdomainSchema.safeParse(data.subdomain).success;
+            }
+            return true;
+        },
+        {
+            message: "Invalid subdomain",
+            path: ["subdomain"]
+        }
+    );
 
 export type CreateResourceResponse = Resource;
 
@@ -51,7 +83,7 @@ export async function createResource(
             );
         }
 
-        let { name, subdomain } = parsedBody.data;
+        let { name, subdomain, protocol, proxyPort, http } = parsedBody.data;
 
         // Validate request params
         const parsedParams = createResourceParamsSchema.safeParse(req.params);
@@ -89,15 +121,64 @@ export async function createResource(
         }
 
         const fullDomain = `${subdomain}.${org[0].domain}`;
+        // if http is false check to see if there is already a resource with the same port and protocol
+        if (!http) {
+            const existingResource = await db
+                .select()
+                .from(resources)
+                .where(
+                    and(
+                        eq(resources.protocol, protocol),
+                        eq(resources.proxyPort, proxyPort!)
+                    )
+                );
+
+            if (existingResource.length > 0) {
+                return next(
+                    createHttpError(
+                        HttpCode.CONFLICT,
+                        "Resource with that protocol and port already exists"
+                    )
+                );
+            }
+        } else {
+            if (proxyPort === 443 || proxyPort === 80) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        "Port 80 and 443 are reserved for https resources"
+                    )
+                );
+            }
+
+            // make sure the full domain is unique
+            const existingResource = await db
+                .select()
+                .from(resources)
+                .where(eq(resources.fullDomain, fullDomain));
+
+            if (existingResource.length > 0) {
+                return next(
+                    createHttpError(
+                        HttpCode.CONFLICT,
+                        "Resource with that domain already exists"
+                    )
+                );
+            }
+        }
+
         await db.transaction(async (trx) => {
             const newResource = await trx
                 .insert(resources)
                 .values({
                     siteId,
-                    fullDomain,
+                    fullDomain: http ? fullDomain : null,
                     orgId,
                     name,
                     subdomain,
+                    http,
+                    protocol,
+                    proxyPort,
                     ssl: true
                 })
                 .returning();
@@ -135,18 +216,6 @@ export async function createResource(
             });
         });
     } catch (error) {
-        if (
-            error instanceof SqliteError &&
-            error.code === "SQLITE_CONSTRAINT_UNIQUE"
-        ) {
-            return next(
-                createHttpError(
-                    HttpCode.CONFLICT,
-                    "Resource with that subdomain already exists"
-                )
-            );
-        }
-
         logger.error(error);
         return next(
             createHttpError(HttpCode.INTERNAL_SERVER_ERROR, "An error occurred")

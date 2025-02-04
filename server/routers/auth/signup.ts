@@ -23,7 +23,10 @@ import { checkValidInvite } from "@server/auth/checkValidInvite";
 import { passwordSchema } from "@server/auth/passwordSchema";
 
 export const signupBodySchema = z.object({
-    email: z.string().email(),
+    email: z
+        .string()
+        .email()
+        .transform((v) => v.toLowerCase()),
     password: passwordSchema,
     inviteToken: z.string().optional(),
     inviteId: z.string().optional()
@@ -60,6 +63,11 @@ export async function signup(
 
     if (config.getRawConfig().flags?.disable_signup_without_invite) {
         if (!inviteToken || !inviteId) {
+            if (config.getRawConfig().app.log_failed_attempts) {
+                logger.info(
+                    `Signup blocked without invite. Email: ${email}. IP: ${req.ip}.`
+                );
+            }
             return next(
                 createHttpError(
                     HttpCode.BAD_REQUEST,
@@ -84,6 +92,11 @@ export async function signup(
         }
 
         if (existingInvite.email !== email) {
+            if (config.getRawConfig().app.log_failed_attempts) {
+                logger.info(
+                    `User attempted to use an invite for another user. Email: ${email}. IP: ${req.ip}.`
+                );
+            }
             return next(
                 createHttpError(
                     HttpCode.BAD_REQUEST,
@@ -185,6 +198,11 @@ export async function signup(
         });
     } catch (e) {
         if (e instanceof SqliteError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
+            if (config.getRawConfig().app.log_failed_attempts) {
+                logger.info(
+                    `Account already exists with that email. Email: ${email}. IP: ${req.ip}.`
+                );
+            }
             return next(
                 createHttpError(
                     HttpCode.BAD_REQUEST,

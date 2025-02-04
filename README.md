@@ -32,6 +32,7 @@ _Sites page of Pangolin dashboard (dark mode) showing multiple tunnels connected
 -   Secure and easy to configure site-to-site connectivity via a custom **user space WireGuard client**, [Newt](https://github.com/fosrl/newt).
 -   Built-in support for any WireGuard client.
 -   Automated **SSL certificates** (https) via [LetsEncrypt](https://letsencrypt.org/).
+-   Support for HTTP/HTTPS and **raw TCP/UDP services**.
 
 ### Identity & Access Management
 

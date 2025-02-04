@@ -9,13 +9,10 @@ import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
-import {
-    createResourceSession,
-    serializeResourceSessionCookie
-} from "@server/auth/sessions/resource";
-import config from "@server/lib/config";
+import { createResourceSession } from "@server/auth/sessions/resource";
 import logger from "@server/logger";
 import { verifyPassword } from "@server/auth/password";
+import config from "@server/lib/config";
 
 export const authWithPasswordBodySchema = z
     .object({
@@ -84,7 +81,7 @@ export async function authWithPassword(
 
         if (!org) {
             return next(
-                createHttpError(HttpCode.BAD_REQUEST, "Resource does not exist")
+                createHttpError(HttpCode.BAD_REQUEST, "Org does not exist")
             );
         }
 
@@ -111,6 +108,11 @@ export async function authWithPassword(
             definedPassword.passwordHash
         );
         if (!validPassword) {
+            if (config.getRawConfig().app.log_failed_attempts) {
+                logger.info(
+                    `Resource password incorrect. Resource ID: ${resource.resourceId}. IP: ${req.ip}.`
+                );
+            }
             return next(
                 createHttpError(HttpCode.UNAUTHORIZED, "Incorrect password")
             );
@@ -120,11 +122,12 @@ export async function authWithPassword(
         await createResourceSession({
             resourceId,
             token,
-            passwordId: definedPassword.passwordId
+            passwordId: definedPassword.passwordId,
+            isRequestToken: true,
+            expiresAt: Date.now() + 1000 * 30, // 30 seconds
+            sessionLength: 1000 * 30,
+            doNotExtend: true
         });
-        const cookieName = `${config.getRawConfig().server.resource_session_cookie_name}_${resource.resourceId}`;
-        const cookie = serializeResourceSessionCookie(cookieName, token);
-        res.appendHeader("Set-Cookie", cookie);
 
         return response<AuthWithPasswordResponse>(res, {
             data: {

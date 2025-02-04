@@ -3,7 +3,6 @@ import db from "@server/db";
 import {
     orgs,
     resourceOtp,
-    resourcePassword,
     resources,
     resourceWhitelist
 } from "@server/db/schema";
@@ -14,17 +13,17 @@ import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
-import {
-    createResourceSession,
-    serializeResourceSessionCookie
-} from "@server/auth/sessions/resource";
-import config from "@server/lib/config";
+import { createResourceSession } from "@server/auth/sessions/resource";
 import { isValidOtp, sendResourceOtpEmail } from "@server/auth/resourceOtp";
 import logger from "@server/logger";
+import config from "@server/lib/config";
 
 const authWithWhitelistBodySchema = z
     .object({
-        email: z.string().email(),
+        email: z
+            .string()
+            .email()
+            .transform((v) => v.toLowerCase()),
         otp: z.string().optional()
     })
     .strict();
@@ -90,20 +89,53 @@ export async function authWithWhitelist(
             .leftJoin(orgs, eq(orgs.orgId, resources.orgId))
             .limit(1);
 
-        const resource = result?.resources;
-        const org = result?.orgs;
-        const whitelistedEmail = result?.resourceWhitelist;
+        let resource = result?.resources;
+        let org = result?.orgs;
+        let whitelistedEmail = result?.resourceWhitelist;
 
         if (!whitelistedEmail) {
-            return next(
-                createHttpError(
-                    HttpCode.UNAUTHORIZED,
-                    createHttpError(
-                        HttpCode.BAD_REQUEST,
-                        "Email is not whitelisted"
+            // if email is not found, check for wildcard email
+            const wildcard = "*@" + email.split("@")[1];
+
+            logger.debug("Checking for wildcard email: " + wildcard);
+
+            const [result] = await db
+                .select()
+                .from(resourceWhitelist)
+                .where(
+                    and(
+                        eq(resourceWhitelist.resourceId, resourceId),
+                        eq(resourceWhitelist.email, wildcard)
                     )
                 )
-            );
+                .leftJoin(
+                    resources,
+                    eq(resources.resourceId, resourceWhitelist.resourceId)
+                )
+                .leftJoin(orgs, eq(orgs.orgId, resources.orgId))
+                .limit(1);
+
+            resource = result?.resources;
+            org = result?.orgs;
+            whitelistedEmail = result?.resourceWhitelist;
+
+            // if wildcard is still not found, return unauthorized
+            if (!whitelistedEmail) {
+                if (config.getRawConfig().app.log_failed_attempts) {
+                    logger.info(
+                        `Email is not whitelisted. Email: ${email}. IP: ${req.ip}.`
+                    );
+                }
+                return next(
+                    createHttpError(
+                        HttpCode.UNAUTHORIZED,
+                        createHttpError(
+                            HttpCode.BAD_REQUEST,
+                            "Email is not whitelisted"
+                        )
+                    )
+                );
+            }
         }
 
         if (!org) {
@@ -125,6 +157,11 @@ export async function authWithWhitelist(
                 otp
             );
             if (!isValidCode) {
+                if (config.getRawConfig().app.log_failed_attempts) {
+                    logger.info(
+                        `Resource email otp incorrect. Resource ID: ${resource.resourceId}. Email: ${email}. IP: ${req.ip}.`
+                    );
+                }
                 return next(
                     createHttpError(HttpCode.UNAUTHORIZED, "Incorrect OTP")
                 );
@@ -175,11 +212,12 @@ export async function authWithWhitelist(
         await createResourceSession({
             resourceId,
             token,
-            whitelistId: whitelistedEmail.whitelistId
+            whitelistId: whitelistedEmail.whitelistId,
+            isRequestToken: true,
+            expiresAt: Date.now() + 1000 * 30, // 30 seconds
+            sessionLength: 1000 * 30,
+            doNotExtend: true
         });
-        const cookieName = `${config.getRawConfig().server.resource_session_cookie_name}_${resource.resourceId}`;
-        const cookie = serializeResourceSessionCookie(cookieName, token);
-        res.appendHeader("Set-Cookie", cookie);
 
         return response<AuthWithWhitelistResponse>(res, {
             data: {

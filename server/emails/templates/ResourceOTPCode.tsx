@@ -44,7 +44,7 @@ export const ResourceOTPCode = ({
                         <EmailLetterHead />
 
                         <EmailHeading>
-                            Your One-Time Password for {resourceName}
+                            Your One-Time Code for {resourceName}
                         </EmailHeading>
 
                         <EmailGreeting>Hi {email || "there"},</EmailGreeting>

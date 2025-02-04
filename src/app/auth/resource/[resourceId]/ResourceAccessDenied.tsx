@@ -19,7 +19,7 @@ export default function ResourceAccessDenied() {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                You're not alowed to access this resource. If this is a mistake,
+                You're not allowed to access this resource. If this is a mistake,
                 please contact the administrator.
                 <div className="text-center mt-4">
                     <Button>

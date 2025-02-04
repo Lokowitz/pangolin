@@ -1,6 +1,4 @@
-import {
-    generateSessionToken,
-} from "@server/auth/sessions/app";
+import { generateSessionToken } from "@server/auth/sessions/app";
 import db from "@server/db";
 import { newts } from "@server/db/schema";
 import HttpCode from "@server/types/HttpCode";
@@ -10,8 +8,13 @@ import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
-import { createNewtSession, validateNewtSessionToken } from "@server/auth/sessions/newt";
+import {
+    createNewtSession,
+    validateNewtSessionToken
+} from "@server/auth/sessions/newt";
 import { verifyPassword } from "@server/auth/password";
+import logger from "@server/logger";
+import config from "@server/lib/config";
 
 export const newtGetTokenBodySchema = z.object({
     newtId: z.string(),
@@ -43,6 +46,11 @@ export async function getToken(
         if (token) {
             const { session, newt } = await validateNewtSessionToken(token);
             if (session) {
+                if (config.getRawConfig().app.log_failed_attempts) {
+                    logger.info(
+                        `Newt session already valid. Newt ID: ${newtId}. IP: ${req.ip}.`
+                    );
+                }
                 return response<null>(res, {
                     data: null,
                     success: true,
@@ -73,6 +81,11 @@ export async function getToken(
             existingNewt.secretHash
         );
         if (!validSecret) {
+            if (config.getRawConfig().app.log_failed_attempts) {
+                logger.info(
+                    `Newt id or secret is incorrect. Newt: ID ${newtId}. IP: ${req.ip}.`
+                );
+            }
             return next(
                 createHttpError(HttpCode.BAD_REQUEST, "Secret is incorrect")
             );

@@ -17,9 +17,11 @@ import (
 	"golang.org/x/term"
 )
 
+// DO NOT EDIT THIS FUNCTION; IT MATCHED BY REGEX IN CICD
 func loadVersions(config *Config) {
-	config.PangolinVersion = "1.0.0-beta.8"
-	config.GerbilVersion = "1.0.0-beta.3"
+	config.PangolinVersion = "replaceme"
+	config.GerbilVersion = "replaceme"
+	config.BadgerVersion = "replaceme"
 }
 
 //go:embed fs/*
@@ -28,6 +30,7 @@ var configFiles embed.FS
 type Config struct {
 	PangolinVersion            string
 	GerbilVersion              string
+	BadgerVersion              string
 	BaseDomain                 string
 	DashboardDomain            string
 	LetsEncryptEmail           string
@@ -271,6 +274,11 @@ func createConfigFiles(config Config) error {
 		// Get the relative path by removing the "fs/" prefix
 		relPath := strings.TrimPrefix(path, "fs/")
 
+        // skip .DS_Store
+        if strings.Contains(relPath, ".DS_Store") {
+            return nil
+        }
+
 		// Create the full output path under "config/"
 		outPath := filepath.Join("config", relPath)
 
@@ -374,7 +382,7 @@ func installDocker() error {
 	switch {
 	case strings.Contains(osRelease, "ID=ubuntu"):
 		installCmd = exec.Command("bash", "-c", fmt.Sprintf(`
-			apt-get update && 
+			apt-get update &&
 			apt-get install -y apt-transport-https ca-certificates curl software-properties-common &&
 			curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg &&
 			echo "deb [arch=%s signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list &&
@@ -383,7 +391,7 @@ func installDocker() error {
 		`, dockerArch))
 	case strings.Contains(osRelease, "ID=debian"):
 		installCmd = exec.Command("bash", "-c", fmt.Sprintf(`
-			apt-get update && 
+			apt-get update &&
 			apt-get install -y apt-transport-https ca-certificates curl software-properties-common &&
 			curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg &&
 			echo "deb [arch=%s signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list &&
@@ -432,29 +440,53 @@ func isDockerInstalled() bool {
 	return true
 }
 
+func getCommandString(useNewStyle bool) string {
+	if useNewStyle {
+		return "'docker compose'"
+	}
+	return "'docker-compose'"
+}
+
 func pullAndStartContainers() error {
 	fmt.Println("Starting containers...")
 
-	// First try docker compose (new style)
-	cmd := exec.Command("docker", "compose", "-f", "docker-compose.yml", "pull")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-
-	if err != nil {
-		fmt.Println("Failed to start containers using docker compose, falling back to docker-compose command")
-		os.Exit(1)
+	// Check which docker compose command is available
+	var useNewStyle bool
+	checkCmd := exec.Command("docker", "compose", "version")
+	if err := checkCmd.Run(); err == nil {
+		useNewStyle = true
+	} else {
+		// Check if docker-compose (old style) is available
+		checkCmd = exec.Command("docker-compose", "version")
+		if err := checkCmd.Run(); err != nil {
+			return fmt.Errorf("neither 'docker compose' nor 'docker-compose' command is available: %v", err)
+		}
 	}
 
-	cmd = exec.Command("docker", "compose", "-f", "docker-compose.yml", "up", "-d")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-
-	if err != nil {
-		fmt.Println("Failed to start containers using docker-compose command")
-		os.Exit(1)
+	// Helper function to execute docker compose commands
+	executeCommand := func(args ...string) error {
+		var cmd *exec.Cmd
+		if useNewStyle {
+			cmd = exec.Command("docker", append([]string{"compose"}, args...)...)
+		} else {
+			cmd = exec.Command("docker-compose", args...)
+		}
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		return cmd.Run()
 	}
 
-	return err
+	// Pull containers
+	fmt.Printf("Using %s command to pull containers...\n", getCommandString(useNewStyle))
+	if err := executeCommand("-f", "docker-compose.yml", "pull"); err != nil {
+		return fmt.Errorf("failed to pull containers: %v", err)
+	}
+
+	// Start containers
+	fmt.Printf("Using %s command to start containers...\n", getCommandString(useNewStyle))
+	if err := executeCommand("-f", "docker-compose.yml", "up", "-d"); err != nil {
+		return fmt.Errorf("failed to start containers: %v", err)
+	}
+
+	return nil
 }

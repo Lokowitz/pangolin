@@ -75,6 +75,11 @@ export async function verifyEmail(
                     .where(eq(users.userId, user.userId));
             });
         } else {
+            if (config.getRawConfig().app.log_failed_attempts) {
+                logger.info(
+                    `Email verification code incorrect. Email: ${user.email}. IP: ${req.ip}.`
+                );
+            }
             return next(
                 createHttpError(
                     HttpCode.BAD_REQUEST,

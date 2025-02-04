@@ -17,7 +17,7 @@ import { useOrgContext } from "@app/hooks/useOrgContext";
 import { useToast } from "@app/hooks/useToast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatAxiosError } from "@app/lib/api";;
+import { formatAxiosError } from "@app/lib/api";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useUserContext } from "@app/hooks/useUserContext";
@@ -75,14 +75,14 @@ export default function UsersTable({ users: u }: UsersTableProps) {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem>
-                                                <Link
-                                                    href={`/${org?.org.orgId}/settings/access/users/${userRow.id}`}
-                                                    className="block w-full"
-                                                >
+                                            <Link
+                                                href={`/${org?.org.orgId}/settings/access/users/${userRow.id}`}
+                                                className="block w-full"
+                                            >
+                                                <DropdownMenuItem>
                                                     Manage User
-                                                </Link>
-                                            </DropdownMenuItem>
+                                                </DropdownMenuItem>
+                                            </Link>
                                             {userRow.email !== user?.email && (
                                                 <DropdownMenuItem
                                                     onClick={() => {

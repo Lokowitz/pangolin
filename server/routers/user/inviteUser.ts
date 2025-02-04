@@ -23,7 +23,10 @@ const inviteUserParamsSchema = z
 
 const inviteUserBodySchema = z
     .object({
-        email: z.string().email(),
+        email: z
+            .string()
+            .email()
+            .transform((v) => v.toLowerCase()),
         roleId: z.number(),
         validHours: z.number().gt(0).lte(168),
         sendEmail: z.boolean().optional()
@@ -165,7 +168,7 @@ export async function inviteUser(
                 }),
                 {
                     to: email,
-                    from: config.getRawConfig().email?.no_reply,
+                    from: config.getNoReplyEmail(),
                     subject: "You're invited to join a Fossorial organization"
                 }
             );

@@ -13,7 +13,7 @@ experimental:
   plugins:
     badger:
       moduleName: "github.com/fosrl/badger"
-      version: "v1.0.0-beta.2"
+      version: "{{.BadgerVersion}}"
 
 log:
   level: "INFO"
@@ -33,6 +33,9 @@ entryPoints:
     address: ":80"
   websecure:
     address: ":443"
+    transport:
+      respondingTimeouts:
+        readTimeout: "30m"
     http:
       tls:
         certResolver: "letsencrypt"

@@ -21,7 +21,7 @@ export async function sendEmailVerificationCode(
         }),
         {
             to: email,
-            from: config.getRawConfig().email?.no_reply,
+            from: config.getNoReplyEmail(),
             subject: "Verify your email address"
         }
     );

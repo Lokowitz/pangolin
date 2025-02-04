@@ -63,6 +63,7 @@ import {
 } from "@app/components/Settings";
 import { SwitchInput } from "@app/components/SwitchInput";
 import { useSiteContext } from "@app/hooks/useSiteContext";
+import { InfoPopup } from "@app/components/ui/info-popup";
 
 // Regular expressions for validation
 const DOMAIN_REGEX =
@@ -94,7 +95,7 @@ const domainSchema = z
 
 const addTargetSchema = z.object({
     ip: domainSchema,
-    method: z.string(),
+    method: z.string().nullable(),
     port: z.coerce.number().int().positive()
     // protocol: z.string(),
 });
@@ -130,8 +131,8 @@ export default function ReverseProxyTargets(props: {
         resolver: zodResolver(addTargetSchema),
         defaultValues: {
             ip: "",
-            method: "http",
-            port: 80
+            method: resource.http ? "http" : null,
+            port: resource.http ? 80 : resource.proxyPort || 1234
             // protocol: "TCP",
         }
     });
@@ -321,7 +322,7 @@ export default function ReverseProxyTargets(props: {
         });
 
         setSslEnabled(val);
-        updateResource({ ssl: sslEnabled });
+        updateResource({ ssl: val });
 
         toast({
             title: "SSL Configuration",
@@ -330,26 +331,6 @@ export default function ReverseProxyTargets(props: {
     }
 
     const columns: ColumnDef<LocalTarget>[] = [
-        {
-            accessorKey: "method",
-            header: "Method",
-            cell: ({ row }) => (
-                <Select
-                    defaultValue={row.original.method}
-                    onValueChange={(value) =>
-                        updateTarget(row.original.targetId, { method: value })
-                    }
-                >
-                    <SelectTrigger className="min-w-[100px]">
-                        {row.original.method}
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="http">http</SelectItem>
-                        <SelectItem value="https">https</SelectItem>
-                    </SelectContent>
-                </Select>
-            )
-        },
         {
             accessorKey: "ip",
             header: "IP / Hostname",
@@ -436,6 +417,32 @@ export default function ReverseProxyTargets(props: {
         }
     ];
 
+    if (resource.http) {
+        const methodCol: ColumnDef<LocalTarget> = {
+            accessorKey: "method",
+            header: "Method",
+            cell: ({ row }) => (
+                <Select
+                    defaultValue={row.original.method ?? ""}
+                    onValueChange={(value) =>
+                        updateTarget(row.original.targetId, { method: value })
+                    }
+                >
+                    <SelectTrigger className="min-w-[100px]">
+                        {row.original.method}
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="http">http</SelectItem>
+                        <SelectItem value="https">https</SelectItem>
+                    </SelectContent>
+                </Select>
+            )
+        };
+
+        // add this to the first column
+        columns.unshift(methodCol);
+    }
+
     const table = useReactTable({
         data: targets,
         columns,
@@ -451,29 +458,29 @@ export default function ReverseProxyTargets(props: {
 
     return (
         <SettingsContainer>
-            {/* SSL Section */}
-            <SettingsSection>
-                <SettingsSectionHeader>
-                    <SettingsSectionTitle>
-                        SSL Configuration
-                    </SettingsSectionTitle>
-                    <SettingsSectionDescription>
-                        Setup SSL to secure your connections with LetsEncrypt
-                        certificates
-                    </SettingsSectionDescription>
-                </SettingsSectionHeader>
-                <SettingsSectionBody>
-                    <SwitchInput
-                        id="ssl-toggle"
-                        label="Enable SSL (https)"
-                        defaultChecked={resource.ssl}
-                        onCheckedChange={async (val) => {
-                            await saveSsl(val);
-                        }}
-                    />
-                </SettingsSectionBody>
-            </SettingsSection>
-
+            {resource.http && (
+                <SettingsSection>
+                    <SettingsSectionHeader>
+                        <SettingsSectionTitle>
+                            SSL Configuration
+                        </SettingsSectionTitle>
+                        <SettingsSectionDescription>
+                            Setup SSL to secure your connections with
+                            LetsEncrypt certificates
+                        </SettingsSectionDescription>
+                    </SettingsSectionHeader>
+                    <SettingsSectionBody>
+                        <SwitchInput
+                            id="ssl-toggle"
+                            label="Enable SSL (https)"
+                            defaultChecked={resource.ssl}
+                            onCheckedChange={async (val) => {
+                                await saveSsl(val);
+                            }}
+                        />
+                    </SettingsSectionBody>
+                </SettingsSection>
+            )}
             {/* Targets Section */}
             <SettingsSection>
                 <SettingsSectionHeader>
@@ -491,39 +498,47 @@ export default function ReverseProxyTargets(props: {
                             className="space-y-4"
                         >
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                <FormField
-                                    control={addTargetForm.control}
-                                    name="method"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Method</FormLabel>
-                                            <FormControl>
-                                                <Select
-                                                    {...field}
-                                                    onValueChange={(value) => {
-                                                        addTargetForm.setValue(
-                                                            "method",
+                                {resource.http && (
+                                    <FormField
+                                        control={addTargetForm.control}
+                                        name="method"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Method</FormLabel>
+                                                <FormControl>
+                                                    <Select
+                                                        value={
+                                                            field.value ||
+                                                            undefined
+                                                        }
+                                                        onValueChange={(
                                                             value
-                                                        );
-                                                    }}
-                                                >
-                                                    <SelectTrigger id="method">
-                                                        <SelectValue placeholder="Select method" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="http">
-                                                            http
-                                                        </SelectItem>
-                                                        <SelectItem value="https">
-                                                            https
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                                                        ) => {
+                                                            addTargetForm.setValue(
+                                                                "method",
+                                                                value
+                                                            );
+                                                        }}
+                                                    >
+                                                        <SelectTrigger id="method">
+                                                            <SelectValue placeholder="Select method" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="http">
+                                                                http
+                                                            </SelectItem>
+                                                            <SelectItem value="https">
+                                                                https
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
+
                                 <FormField
                                     control={addTargetForm.control}
                                     name="ip"
@@ -637,6 +652,9 @@ export default function ReverseProxyTargets(props: {
                             </TableBody>
                         </Table>
                     </TableContainer>
+                    <p className="text-sm text-muted-foreground">
+                        Adding more than one target above will enable load balancing.
+                    </p>
                 </SettingsSectionBody>
                 <SettingsSectionFooter>
                     <Button

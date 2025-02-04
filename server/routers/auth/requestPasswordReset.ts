@@ -20,7 +20,10 @@ import { hashPassword } from "@server/auth/password";
 
 export const requestPasswordResetBody = z
     .object({
-        email: z.string().email()
+        email: z
+            .string()
+            .email()
+            .transform((v) => v.toLowerCase())
     })
     .strict();
 
@@ -63,10 +66,7 @@ export async function requestPasswordReset(
             );
         }
 
-        const token = generateRandomString(
-            8,
-            alphabet("0-9", "A-Z", "a-z")
-        );
+        const token = generateRandomString(8, alphabet("0-9", "A-Z", "a-z"));
         await db.transaction(async (trx) => {
             await trx
                 .delete(passwordResetTokens)
@@ -84,6 +84,10 @@ export async function requestPasswordReset(
 
         const url = `${config.getRawConfig().app.dashboard_url}/auth/reset-password?email=${email}&token=${token}`;
 
+        if (!config.getRawConfig().email) {
+            logger.info(`Password reset requested for ${email}. Token: ${token}.`);
+        }
+
         await sendEmail(
             ResetPasswordCode({
                 email,
@@ -91,7 +95,7 @@ export async function requestPasswordReset(
                 link: url
             }),
             {
-                from: config.getRawConfig().email?.no_reply,
+                from: config.getNoReplyEmail(),
                 to: email,
                 subject: "Reset your password"
             }

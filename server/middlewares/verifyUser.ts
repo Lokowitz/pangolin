@@ -8,6 +8,7 @@ import HttpCode from "@server/types/HttpCode";
 import config from "@server/lib/config";
 import { verifySession } from "@server/auth/sessions/verifySession";
 import { unauthorized } from "@server/auth/unauthorizedResponse";
+import logger from "@server/logger";
 
 export const verifySessionUserMiddleware = async (
     req: any,
@@ -16,6 +17,9 @@ export const verifySessionUserMiddleware = async (
 ) => {
     const { session, user } = await verifySession(req);
     if (!session || !user) {
+        if (config.getRawConfig().app.log_failed_attempts) {
+            logger.info(`User session not found. IP: ${req.ip}.`);
+        }
         return next(unauthorized());
     }
 
@@ -25,6 +29,9 @@ export const verifySessionUserMiddleware = async (
         .where(eq(users.userId, user.userId));
 
     if (!existingUser || !existingUser[0]) {
+        if (config.getRawConfig().app.log_failed_attempts) {
+            logger.info(`User session not found. IP: ${req.ip}.`);
+        }
         return next(
             createHttpError(HttpCode.BAD_REQUEST, "User does not exist")
         );

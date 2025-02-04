@@ -49,7 +49,7 @@ const updateTargetParamsSchema = z
 const updateTargetBodySchema = z
     .object({
         ip: domainSchema.optional(),
-        method: z.string().min(1).max(10).optional(),
+        method: z.string().min(1).max(10).optional().nullable(),
         port: z.number().int().min(1).max(65535).optional(),
         enabled: z.boolean().optional()
     })
@@ -103,9 +103,7 @@ export async function updateTarget(
 
         // get the resource
         const [resource] = await db
-            .select({
-                siteId: resources.siteId
-            })
+            .select()
             .from(resources)
             .where(eq(resources.resourceId, target.resourceId!));
 
@@ -167,7 +165,7 @@ export async function updateTarget(
                     .where(eq(newts.siteId, site.siteId))
                     .limit(1);
 
-                addTargets(newt.newtId, [updatedTarget]);
+                addTargets(newt.newtId, [updatedTarget], resource.protocol);
             }
         }
         return response(res, {

@@ -145,14 +145,12 @@ export default function ShareLinksTable({
             cell: ({ row }) => {
                 const r = row.original;
                 return (
-                    <Button variant="outline">
-                        <Link
-                            href={`/${orgId}/settings/resources/${r.resourceId}`}
-                        >
+                    <Link href={`/${orgId}/settings/resources/${r.resourceId}`}>
+                        <Button variant="outline">
                             {r.resourceName}
-                        </Link>
-                        <ArrowUpRight className="ml-2 h-4 w-4" />
-                    </Button>
+                            <ArrowUpRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Link>
                 );
             }
         },

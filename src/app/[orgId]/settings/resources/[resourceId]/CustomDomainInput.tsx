@@ -37,7 +37,7 @@ export default function CustomDomainInput({
                     className="rounded-r-none flex-grow"
                 />
                 <div className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-input bg-muted text-muted-foreground">
-                    <span className="text-sm">{domainSuffix}</span>
+                    <span className="text-sm">.{domainSuffix}</span>
                 </div>
             </div>
         </div>

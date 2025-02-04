@@ -26,8 +26,8 @@ const updateResourceBodySchema = z
         ssl: z.boolean().optional(),
         sso: z.boolean().optional(),
         blockAccess: z.boolean().optional(),
+        proxyPort: z.number().int().min(1).max(65535).optional(),
         emailWhitelistEnabled: z.boolean().optional()
-        // siteId: z.number(),
     })
     .strict()
     .refine((data) => Object.keys(data).length > 0, {
@@ -109,6 +109,10 @@ export async function updateResource(
                     `Resource with ID ${resourceId} not found`
                 )
             );
+        }
+
+        if (resource[0].resources.ssl !== updatedResource[0].ssl) {
+            // invalidate all sessions?
         }
 
         return response(res, {

@@ -37,9 +37,11 @@ const configSchema = z.object({
         base_domain: hostnameSchema
             .optional()
             .transform(getEnvOrYaml("APP_BASEDOMAIN"))
-            .pipe(hostnameSchema),
+            .pipe(hostnameSchema)
+            .transform((url) => url.toLowerCase()),
         log_level: z.enum(["debug", "info", "warn", "error"]),
-        save_logs: z.boolean()
+        save_logs: z.boolean(),
+        log_failed_attempts: z.boolean().optional()
     }),
     server: z.object({
         external_port: portSchema
@@ -58,10 +60,21 @@ const configSchema = z.object({
             .transform(stoi)
             .pipe(portSchema),
         internal_hostname: z.string().transform((url) => url.toLowerCase()),
-        secure_cookies: z.boolean(),
         session_cookie_name: z.string(),
-        resource_session_cookie_name: z.string(),
         resource_access_token_param: z.string(),
+        resource_session_request_param: z.string(),
+        dashboard_session_length_hours: z
+            .number()
+            .positive()
+            .gt(0)
+            .optional()
+            .default(720),
+        resource_session_length_hours: z
+            .number()
+            .positive()
+            .gt(0)
+            .optional()
+            .default(720),
         cors: z
             .object({
                 origins: z.array(z.string()).optional(),
@@ -76,7 +89,8 @@ const configSchema = z.object({
         http_entrypoint: z.string(),
         https_entrypoint: z.string().optional(),
         cert_resolver: z.string().optional(),
-        prefer_wildcard_cert: z.boolean().optional()
+        prefer_wildcard_cert: z.boolean().optional(),
+        additional_middlewares: z.array(z.string()).optional()
     }),
     gerbil: z.object({
         start_port: portSchema
@@ -109,11 +123,12 @@ const configSchema = z.object({
     }),
     email: z
         .object({
-            smtp_host: z.string(),
-            smtp_port: portSchema,
-            smtp_user: z.string(),
-            smtp_pass: z.string(),
-            no_reply: z.string().email()
+            smtp_host: z.string().optional(),
+            smtp_port: portSchema.optional(),
+            smtp_user: z.string().optional(),
+            smtp_pass: z.string().optional(),
+            smtp_secure: z.boolean().optional(),
+            no_reply: z.string().email().optional()
         })
         .optional(),
     users: z.object({
@@ -123,7 +138,8 @@ const configSchema = z.object({
                 .email()
                 .optional()
                 .transform(getEnvOrYaml("USERS_SERVERADMIN_EMAIL"))
-                .pipe(z.string().email()),
+                .pipe(z.string().email())
+                .transform((v) => v.toLowerCase()),
             password: passwordSchema
                 .optional()
                 .transform(getEnvOrYaml("USERS_SERVERADMIN_PASSWORD"))
@@ -134,7 +150,8 @@ const configSchema = z.object({
         .object({
             require_email_verification: z.boolean().optional(),
             disable_signup_without_invite: z.boolean().optional(),
-            disable_user_create_org: z.boolean().optional()
+            disable_user_create_org: z.boolean().optional(),
+            allow_raw_resources: z.boolean().optional()
         })
         .optional()
 });
@@ -237,10 +254,12 @@ export class Config {
             ?.require_email_verification
             ? "true"
             : "false";
+        process.env.FLAGS_ALLOW_RAW_RESOURCES = parsedConfig.data.flags
+        ?.allow_raw_resources
+        ? "true"
+        : "false";
         process.env.SESSION_COOKIE_NAME =
             parsedConfig.data.server.session_cookie_name;
-        process.env.RESOURCE_SESSION_COOKIE_NAME =
-            parsedConfig.data.server.resource_session_cookie_name;
         process.env.EMAIL_ENABLED = parsedConfig.data.email ? "true" : "false";
         process.env.DISABLE_SIGNUP_WITHOUT_INVITE = parsedConfig.data.flags
             ?.disable_signup_without_invite
@@ -252,6 +271,8 @@ export class Config {
             : "false";
         process.env.RESOURCE_ACCESS_TOKEN_PARAM =
             parsedConfig.data.server.resource_access_token_param;
+        process.env.RESOURCE_SESSION_REQUEST_PARAM =
+            parsedConfig.data.server.resource_session_request_param;
 
         this.rawConfig = parsedConfig.data;
     }
@@ -262,6 +283,12 @@ export class Config {
 
     public getBaseDomain(): string {
         return this.rawConfig.app.base_domain;
+    }
+
+    public getNoReplyEmail(): string | undefined {
+        return (
+            this.rawConfig.email?.no_reply || this.rawConfig.email?.smtp_user
+        );
     }
 
     private createTraefikConfig() {

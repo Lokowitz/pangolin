@@ -53,9 +53,8 @@ const createTargetParamsSchema = z
 const createTargetSchema = z
     .object({
         ip: domainSchema,
-        method: z.string().min(1).max(10),
+        method: z.string().optional().nullable(),
         port: z.number().int().min(1).max(65535),
-        protocol: z.string().optional(),
         enabled: z.boolean().default(true)
     })
     .strict();
@@ -94,9 +93,7 @@ export async function createTarget(
 
         // get the resource
         const [resource] = await db
-            .select({
-                siteId: resources.siteId
-            })
+            .select()
             .from(resources)
             .where(eq(resources.resourceId, resourceId));
 
@@ -130,7 +127,6 @@ export async function createTarget(
                 .insert(targets)
                 .values({
                     resourceId,
-                    protocol: "tcp", // hard code for now
                     ...targetData
                 })
                 .returning();
@@ -163,7 +159,6 @@ export async function createTarget(
                 .insert(targets)
                 .values({
                     resourceId,
-                    protocol: "tcp", // hard code for now
                     internalPort,
                     ...targetData
                 })
@@ -186,7 +181,7 @@ export async function createTarget(
                         .where(eq(newts.siteId, site.siteId))
                         .limit(1);
 
-                    addTargets(newt.newtId, newTarget);
+                    addTargets(newt.newtId, newTarget, resource.protocol);
                 }
             }
         }

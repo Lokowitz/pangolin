@@ -31,3 +31,5 @@ dist
 installer
 *.tar
 bin
+.secrets
+test_event.json

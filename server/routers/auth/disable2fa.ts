@@ -79,6 +79,11 @@ export async function disable2fa(
         );
 
         if (!validOTP) {
+            if (config.getRawConfig().app.log_failed_attempts) {
+                logger.info(
+                    `Two-factor authentication code is incorrect. Email: ${user.email}. IP: ${req.ip}.`
+                );
+            }
             return next(
                 createHttpError(
                     HttpCode.BAD_REQUEST,

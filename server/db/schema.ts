@@ -41,13 +41,16 @@ export const resources = sqliteTable("resources", {
         })
         .notNull(),
     name: text("name").notNull(),
-    subdomain: text("subdomain").notNull(),
-    fullDomain: text("fullDomain").notNull().unique(),
+    subdomain: text("subdomain"),
+    fullDomain: text("fullDomain"),
     ssl: integer("ssl", { mode: "boolean" }).notNull().default(false),
     blockAccess: integer("blockAccess", { mode: "boolean" })
         .notNull()
         .default(false),
     sso: integer("sso", { mode: "boolean" }).notNull().default(true),
+    http: integer("http", { mode: "boolean" }).notNull().default(true),
+    protocol: text("protocol").notNull(),
+    proxyPort: integer("proxyPort"),
     emailWhitelistEnabled: integer("emailWhitelistEnabled", { mode: "boolean" })
         .notNull()
         .default(false)
@@ -61,10 +64,9 @@ export const targets = sqliteTable("targets", {
         })
         .notNull(),
     ip: text("ip").notNull(),
-    method: text("method").notNull(),
+    method: text("method"),
     port: integer("port").notNull(),
     internalPort: integer("internalPort"),
-    protocol: text("protocol"),
     enabled: integer("enabled", { mode: "boolean" }).notNull().default(true)
 });
 
@@ -313,6 +315,10 @@ export const resourceSessions = sqliteTable("resourceSessions", {
     doNotExtend: integer("doNotExtend", { mode: "boolean" })
         .notNull()
         .default(false),
+    isRequestToken: integer("isRequestToken", { mode: "boolean" }),
+    userSessionId: text("userSessionId").references(() => sessions.sessionId, {
+        onDelete: "cascade"
+    }),
     passwordId: integer("passwordId").references(
         () => resourcePassword.passwordId,
         {

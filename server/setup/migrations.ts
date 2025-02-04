@@ -3,15 +3,16 @@ import db, { exists } from "@server/db";
 import path from "path";
 import semver from "semver";
 import { versionMigrations } from "@server/db/schema";
-import { desc } from "drizzle-orm";
-import { __DIRNAME, APP_PATH } from "@server/lib/consts";
+import { __DIRNAME } from "@server/lib/consts";
 import { loadAppVersion } from "@server/lib/loadAppVersion";
+import { SqliteError } from "better-sqlite3";
 import m1 from "./scripts/1.0.0-beta1";
 import m2 from "./scripts/1.0.0-beta2";
 import m3 from "./scripts/1.0.0-beta3";
 import m4 from "./scripts/1.0.0-beta5";
 import m5 from "./scripts/1.0.0-beta6";
-import { existsSync, mkdirSync } from "fs";
+import m6 from "./scripts/1.0.0-beta9";
+import m7 from "./scripts/1.0.0-beta10";
 
 // THIS CANNOT IMPORT ANYTHING FROM THE SERVER
 // EXCEPT FOR THE DATABASE AND THE SCHEMA
@@ -22,7 +23,9 @@ const migrations = [
     { version: "1.0.0-beta.2", run: m2 },
     { version: "1.0.0-beta.3", run: m3 },
     { version: "1.0.0-beta.5", run: m4 },
-    { version: "1.0.0-beta.6", run: m5 }
+    { version: "1.0.0-beta.6", run: m5 },
+    { version: "1.0.0-beta.9", run: m6 },
+    { version: "1.0.0-beta.10", run: m7 }
     // Add new migrations here as they are created
 ] as const;
 
@@ -30,53 +33,64 @@ const migrations = [
 await runMigrations();
 
 export async function runMigrations() {
-    const appVersion = loadAppVersion();
-    if (!appVersion) {
-        throw new Error("APP_VERSION is not set in the environment");
-    }
-
-    if (exists) {
-        await executeScripts();
-    } else {
-        console.log("Running migrations...");
-        try {
-            migrate(db, {
-                migrationsFolder: path.join(__DIRNAME, "init") // put here during the docker build
-            });
-            console.log("Migrations completed successfully.");
-        } catch (error) {
-            console.error("Error running migrations:", error);
+    try {
+        const appVersion = loadAppVersion();
+        if (!appVersion) {
+            throw new Error("APP_VERSION is not set in the environment");
         }
 
-        await db
-            .insert(versionMigrations)
-            .values({
-                version: appVersion,
-                executedAt: Date.now()
-            })
-            .execute();
+        if (exists) {
+            await executeScripts();
+        } else {
+            console.log("Running migrations...");
+            try {
+                migrate(db, {
+                    migrationsFolder: path.join(__DIRNAME, "init") // put here during the docker build
+                });
+                console.log("Migrations completed successfully.");
+            } catch (error) {
+                console.error("Error running migrations:", error);
+            }
+
+            await db
+                .insert(versionMigrations)
+                .values({
+                    version: appVersion,
+                    executedAt: Date.now()
+                })
+                .execute();
+        }
+    } catch (e) {
+        console.error("Error running migrations:", e);
+        await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * 60 * 60 * 24 * 1)
+        );
     }
 }
 
 async function executeScripts() {
     try {
         // Get the last executed version from the database
-        const lastExecuted = await db
-            .select()
-            .from(versionMigrations)
-            .orderBy(desc(versionMigrations.version))
-            .limit(1);
-
-        const startVersion = lastExecuted[0]?.version ?? "0.0.0";
-        console.log(`Starting migrations from version ${startVersion}`);
+        const lastExecuted = await db.select().from(versionMigrations);
 
         // Filter and sort migrations
-        const pendingMigrations = migrations
-            .filter((migration) => semver.gt(migration.version, startVersion))
-            .sort((a, b) => semver.compare(a.version, b.version));
+        const pendingMigrations = lastExecuted
+            .map((m) => m)
+            .sort((a, b) => semver.compare(b.version, a.version));
+        const startVersion = pendingMigrations[0]?.version ?? "0.0.0";
+        console.log(`Starting migrations from version ${startVersion}`);
+
+        const migrationsToRun = migrations.filter((migration) =>
+            semver.gt(migration.version, startVersion)
+        );
+
+        console.log(
+            "Migrations to run:",
+            migrationsToRun.map((m) => m.version).join(", ")
+        );
 
         // Run migrations in order
-        for (const migration of pendingMigrations) {
+        for (const migration of migrationsToRun) {
             console.log(`Running migration ${migration.version}`);
 
             try {
@@ -94,12 +108,16 @@ async function executeScripts() {
                 console.log(
                     `Successfully completed migration ${migration.version}`
                 );
-            } catch (error) {
+            } catch (e) {
+                if (e instanceof SqliteError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
+                    console.error("Migration has already run! Skipping...");
+                    continue;
+                }
                 console.error(
                     `Failed to run migration ${migration.version}:`,
-                    error
+                    e
                 );
-                throw error; // Re-throw to stop migration process
+                throw e; // Re-throw to stop migration process
             }
         }
 

@@ -25,7 +25,7 @@ import CreateResourceForm from "./CreateResourceForm";
 import { useState } from "react";
 import ConfirmDeleteDialog from "@app/components/ConfirmDeleteDialog";
 import { set } from "zod";
-import { formatAxiosError } from "@app/lib/api";;
+import { formatAxiosError } from "@app/lib/api";
 import { useToast } from "@app/hooks/useToast";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
@@ -39,6 +39,9 @@ export type ResourceRow = {
     site: string;
     siteId: string;
     hasAuth: boolean;
+    http: boolean;
+    protocol: string;
+    proxyPort: number | null;
 };
 
 type ResourcesTableProps = {
@@ -91,14 +94,14 @@ export default function SitesTable({ resources, orgId }: ResourcesTableProps) {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                                <Link
-                                    className="block w-full"
-                                    href={`/${resourceRow.orgId}/settings/resources/${resourceRow.id}`}
-                                >
+                            <Link
+                                className="block w-full"
+                                href={`/${resourceRow.orgId}/settings/resources/${resourceRow.id}`}
+                            >
+                                <DropdownMenuItem>
                                     View settings
-                                </Link>
-                            </DropdownMenuItem>
+                                </DropdownMenuItem>
+                            </Link>
                             <DropdownMenuItem
                                 onClick={() => {
                                     setSelectedResource(resourceRow);
@@ -146,24 +149,40 @@ export default function SitesTable({ resources, orgId }: ResourcesTableProps) {
             cell: ({ row }) => {
                 const resourceRow = row.original;
                 return (
-                    <Button variant="outline">
-                        <Link
-                            href={`/${resourceRow.orgId}/settings/sites/${resourceRow.siteId}`}
-                        >
+                    <Link
+                        href={`/${resourceRow.orgId}/settings/sites/${resourceRow.siteId}`}
+                    >
+                        <Button variant="outline">
                             {resourceRow.site}
-                        </Link>
-                        <ArrowUpRight className="ml-2 h-4 w-4" />
-                    </Button>
+                            <ArrowUpRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Link>
+                );
+            }
+        },
+        {
+            accessorKey: "protocol",
+            header: "Protocol",
+            cell: ({ row }) => {
+                const resourceRow = row.original;
+                return (
+                    <span>{resourceRow.protocol.toUpperCase()}</span>
                 );
             }
         },
         {
             accessorKey: "domain",
-            header: "Full URL",
+            header: "Access",
             cell: ({ row }) => {
                 const resourceRow = row.original;
                 return (
+                    <div>
+                    {!resourceRow.http ? (
+                                            <CopyToClipboard text={resourceRow.proxyPort!.toString()} isLink={false} />
+                    ) : (
                     <CopyToClipboard text={resourceRow.domain} isLink={true} />
+                    )}
+                    </div>
                 );
             }
         },
@@ -186,17 +205,23 @@ export default function SitesTable({ resources, orgId }: ResourcesTableProps) {
                 const resourceRow = row.original;
                 return (
                     <div>
-                        {resourceRow.hasAuth ? (
-                            <span className="text-green-500 flex items-center space-x-2">
-                                <ShieldCheck className="w-4 h-4" />
-                                <span>Protected</span>
-                            </span>
-                        ) : (
-                            <span className="text-yellow-500 flex items-center space-x-2">
-                                <ShieldOff className="w-4 h-4" />
-                                <span>Not Protected</span>
-                            </span>
-                        )}
+                        
+
+                        {!resourceRow.http ? (
+                            <span>--</span>
+                        ) : 
+                            resourceRow.hasAuth ? (
+                                <span className="text-green-500 flex items-center space-x-2">
+                                    <ShieldCheck className="w-4 h-4" />
+                                    <span>Protected</span>
+                                </span>
+                            ) : (
+                                <span className="text-yellow-500 flex items-center space-x-2">
+                                    <ShieldOff className="w-4 h-4" />
+                                    <span>Not Protected</span>
+                                </span>
+                            )
+                        }
                     </div>
                 );
             }
