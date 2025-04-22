@@ -1,7 +1,7 @@
 {
     "Org": {
         "Access": {
-            "unknownRole": "Unknown Role",
+            "unknownRole": "Unbekannte Rolle",
             "openInvitations": "Open Invitations",
             "manageInvitations": "Manage your invitations to other users",
             "openMenu": "Open menu",
