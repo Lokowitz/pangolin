@@ -1,0 +1,59 @@
+{
+    "Org": {
+        "Access": {
+            "unknownRole": "Unknown Role",
+            "openInvitations": "Open Invitations",
+            "manageInvitations": "Manage your invitations to other users",
+            "openMenu": "Open menu",
+            "regenerateInv": "Regenerate Invitation",
+            "removeInv": "Remove Invitation",
+            "removeFailed": "Failed to remove invitation",
+            "removeError": "An error occurred while removing the invitation.",
+            "removedInv": "Invitation removed",
+            "removedInvMessage": "The invitation for {selectedInvitation.email} has been removed.",
+            "removeInvAsk": "Are you sure you want to remove the invitation for",
+            "removeInvWarn": "Once removed, this invitation will no longer be valid. You can always re-invite the user later.",
+            "confirm": "To confirm, please type the email address of the invitation below.",
+            "OrgId": "Organization ID Missing",
+            "OrgIdMessage": "Unable to regenerate invitation without an organization ID.",
+            "regeneratedInv": "Invitation Regenerated",
+            "sentInv": "A new invitation has been sent to {invitation.email}.",
+            "generateInv": "A new invitation has been generated for {invitation.email}.",
+            "duplicateInv": "Duplicate Invite",
+            "duplicateInvMessage": "An invitation for this user already exists.",
+            "rateLimit": "Rate Limit Exceeded",
+            "rateLimitMessage": "You have exceeded the limit of 3 regenerations per hour. Please try again later.",
+            "regenerateInvFailed": "Failed to Regenerate Invitation",
+            "regenerateInvMessage": "An error occurred while regenerating the invitation.",
+            "revokeInv": "Revoke previous invitation and create a new one",
+            "revokeInvMessage": "Are you sure you want to regenerate the invitation for {email}? This will revoke the previous invitation.",
+            "sendMail": "Send email notification to the user",
+            "validityPeriod": "Validity Period",
+            "validityPeriodSelect": "Select validity period",
+            "regeneratedInvMessage": "The invitation has been regenerated. The user must access the link below to accept the invitation.",
+            "regenerate": "Regenerate",
+            "cancel": "Cancel",
+            "close": "Close"
+        },
+        "General": {},
+        "Resources": {},
+        "Share": {},
+        "Sites": {}
+    },
+    "Admin": {
+        "Users": {}
+    },
+    "Auth": {
+        "Login": {},
+        "Reset": {},
+        "Resource": {},
+        "Signup": {},
+        "Verify": {}
+    },
+    "Components": {},
+    "Invite": {},
+    "setup": {
+        "orgNameMessage": "Organization name is required",
+        "orgIdMessage": "Organization ID is required"
+    }
+}
