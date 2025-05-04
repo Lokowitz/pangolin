@@ -1,9 +1,4 @@
 {
-    "locales": {
-        "label": "Sprache",
-        "en-US": "Englisch",
-        "de-DE": "Deutsch"
-    },
     "setupCreate": "Erstelle deine Organisation, Seite und Ressourcen",
     "setupNewOrg": "Neue Organisation",
     "setupCreateOrg": "Organisation erstellen",
