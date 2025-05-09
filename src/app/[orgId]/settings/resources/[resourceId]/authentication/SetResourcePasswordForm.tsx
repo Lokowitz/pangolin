@@ -31,6 +31,7 @@ import { AxiosResponse } from "axios";
 import { Resource } from "@server/db/schemas";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
+import { useTranslations } from "next-intl";
 
 const setPasswordFormSchema = z.object({
     password: z.string().min(4).max(100)
@@ -64,6 +65,8 @@ export default function SetResourcePasswordForm({
         defaultValues
     });
 
+    const t = useTranslations();
+
     useEffect(() => {
         if (!open) {
             return;
@@ -81,18 +84,17 @@ export default function SetResourcePasswordForm({
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Error setting resource password",
+                    title: t('resourceErrorPasswordSetup'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while setting the resource password"
+                        t('resourceErrorPasswordSetupDescription')
                     )
                 });
             })
             .then(() => {
                 toast({
-                    title: "Resource password set",
-                    description:
-                        "The resource password has been set successfully"
+                    title: t('resourcePasswordSetup'),
+                    description: t('resourcePasswordSetupDescription')
                 });
 
                 if (onSetPassword) {
@@ -114,9 +116,9 @@ export default function SetResourcePasswordForm({
             >
                 <CredenzaContent>
                     <CredenzaHeader>
-                        <CredenzaTitle>Set Password</CredenzaTitle>
+                        <CredenzaTitle>{t('resourcePasswordSetupTitle')}</CredenzaTitle>
                         <CredenzaDescription>
-                            Set a password to protect this resource
+                            {t('resourcePasswordSetupTitleDescription')}
                         </CredenzaDescription>
                     </CredenzaHeader>
                     <CredenzaBody>
@@ -131,7 +133,7 @@ export default function SetResourcePasswordForm({
                                     name="password"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Password</FormLabel>
+                                            <FormLabel>{t('password')}</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     autoComplete="off"
@@ -148,7 +150,7 @@ export default function SetResourcePasswordForm({
                     </CredenzaBody>
                     <CredenzaFooter>
                         <CredenzaClose asChild>
-                            <Button variant="outline">Close</Button>
+                            <Button variant="outline">{t('close')}</Button>
                         </CredenzaClose>
                         <Button
                             type="submit"
@@ -156,7 +158,7 @@ export default function SetResourcePasswordForm({
                             loading={loading}
                             disabled={loading}
                         >
-                            Enable Password Protection
+                            {t('resourcePasswordSubmit')}
                         </Button>
                     </CredenzaFooter>
                 </CredenzaContent>

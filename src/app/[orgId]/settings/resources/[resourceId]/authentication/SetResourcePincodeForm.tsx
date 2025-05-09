@@ -36,6 +36,7 @@ import {
 } from "@app/components/ui/input-otp";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
+import { useTranslations } from "next-intl";
 
 const setPincodeFormSchema = z.object({
     pincode: z.string().length(6)
@@ -69,6 +70,8 @@ export default function SetResourcePincodeForm({
         defaultValues
     });
 
+    const t = useTranslations();
+
     useEffect(() => {
         if (!open) {
             return;
@@ -86,18 +89,17 @@ export default function SetResourcePincodeForm({
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Error setting resource PIN code",
+                    title: t('resourceErrorPincodeSetup'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while setting the resource PIN code"
+                        t('resourceErrorPincodeSetupDescription')
                     )
                 });
             })
             .then(() => {
                 toast({
-                    title: "Resource PIN code set",
-                    description:
-                        "The resource pincode has been set successfully"
+                    title: t('resourcePincodeSetup'),
+                    description: t('resourcePincodeSetupDescription')
                 });
 
                 if (onSetPincode) {
@@ -119,9 +121,9 @@ export default function SetResourcePincodeForm({
             >
                 <CredenzaContent>
                     <CredenzaHeader>
-                        <CredenzaTitle>Set Pincode</CredenzaTitle>
+                        <CredenzaTitle>{t('resourcePincodeSetupTitle')}</CredenzaTitle>
                         <CredenzaDescription>
-                            Set a pincode to protect this resource
+                            {t('resourcePincodeSetupTitleDescription')}
                         </CredenzaDescription>
                     </CredenzaHeader>
                     <CredenzaBody>
@@ -136,7 +138,7 @@ export default function SetResourcePincodeForm({
                                     name="pincode"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>PIN Code</FormLabel>
+                                            <FormLabel>{t('resourcePincode')}</FormLabel>
                                             <FormControl>
                                                 <div className="flex justify-center">
                                                     <InputOTP
@@ -182,7 +184,7 @@ export default function SetResourcePincodeForm({
                     </CredenzaBody>
                     <CredenzaFooter>
                         <CredenzaClose asChild>
-                            <Button variant="outline">Close</Button>
+                            <Button variant="outline">{t('close')}</Button>
                         </CredenzaClose>
                         <Button
                             type="submit"
@@ -190,7 +192,7 @@ export default function SetResourcePincodeForm({
                             loading={loading}
                             disabled={loading}
                         >
-                            Enable PIN Code Protection
+                            {t('resourcePincodeSubmit')}
                         </Button>
                     </CredenzaFooter>
                 </CredenzaContent>
