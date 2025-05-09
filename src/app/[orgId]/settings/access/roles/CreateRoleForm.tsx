@@ -31,6 +31,7 @@ import { CreateRoleBody, CreateRoleResponse } from "@server/routers/role";
 import { formatAxiosError } from "@app/lib/api";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
+import { useTranslations } from "next-intl";
 
 type CreateRoleFormProps = {
     open: boolean;
@@ -38,8 +39,10 @@ type CreateRoleFormProps = {
     afterCreate?: (res: CreateRoleResponse) => Promise<void>;
 };
 
+const t = useTranslations();
+
 const formSchema = z.object({
-    name: z.string({ message: "Name is required" }).max(32),
+    name: z.string({ message: t('accessRoleNameRequired') }).max(32),
     description: z.string().max(255).optional()
 });
 
@@ -76,10 +79,10 @@ export default function CreateRoleForm({
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Failed to create role",
+                    title: t('accessRoleErrorCreate'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while creating the role."
+                        t('accessRoleErrorCreateDescription')
                     )
                 });
             });
@@ -87,8 +90,8 @@ export default function CreateRoleForm({
         if (res && res.status === 201) {
             toast({
                 variant: "default",
-                title: "Role created",
-                description: "The role has been successfully created."
+                title: t('accessRoleCreated'),
+                description: t('accessRoleCreatedDescription')
             });
 
             if (open) {
@@ -115,10 +118,9 @@ export default function CreateRoleForm({
             >
                 <CredenzaContent>
                     <CredenzaHeader>
-                        <CredenzaTitle>Create Role</CredenzaTitle>
+                        <CredenzaTitle>{t('accessRoleCreate')}</CredenzaTitle>
                         <CredenzaDescription>
-                            Create a new role to group users and manage their
-                            permissions.
+                            {t('accessRoleCreateDescription')}
                         </CredenzaDescription>
                     </CredenzaHeader>
                     <CredenzaBody>
@@ -133,7 +135,7 @@ export default function CreateRoleForm({
                                     name="name"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Role Name</FormLabel>
+                                            <FormLabel>{t('accessRoleName')}</FormLabel>
                                             <FormControl>
                                                 <Input {...field} />
                                             </FormControl>
@@ -146,7 +148,7 @@ export default function CreateRoleForm({
                                     name="description"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Description</FormLabel>
+                                            <FormLabel>{t('description')}</FormLabel>
                                             <FormControl>
                                                 <Input {...field} />
                                             </FormControl>
@@ -159,7 +161,7 @@ export default function CreateRoleForm({
                     </CredenzaBody>
                     <CredenzaFooter>
                         <CredenzaClose asChild>
-                            <Button variant="outline">Close</Button>
+                            <Button variant="outline">{t('close')}</Button>
                         </CredenzaClose>
                         <Button
                             type="submit"
@@ -167,7 +169,7 @@ export default function CreateRoleForm({
                             loading={loading}
                             disabled={loading}
                         >
-                            Create Role
+                            {t('accessRoleCreateSubmit')}
                         </Button>
                     </CredenzaFooter>
                 </CredenzaContent>
