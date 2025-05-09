@@ -192,7 +192,7 @@ export default function SetResourcePincodeForm({
                             loading={loading}
                             disabled={loading}
                         >
-                            {t('resourcePincodeEnable')}
+                            {t('resourcePincodeSubmit')}
                         </Button>
                     </CredenzaFooter>
                 </CredenzaContent>

@@ -543,7 +543,7 @@ export default function ResourceAuthenticationPage() {
                             disabled={loadingSaveUsersRoles}
                             form="users-roles-form"
                         >
-                            {t('resourceUsersRolesSave')}
+                            {t('resourceUsersRolesSubmit')}
                         </Button>
                     </SettingsSectionFooter>
                 </SettingsSection>

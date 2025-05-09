@@ -158,7 +158,7 @@ export default function SetResourcePasswordForm({
                             loading={loading}
                             disabled={loading}
                         >
-                            {t('resourcePasswordEnable')}
+                            {t('resourcePasswordSubmit')}
                         </Button>
                     </CredenzaFooter>
                 </CredenzaContent>
