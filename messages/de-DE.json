@@ -653,7 +653,6 @@
     "resourceWhitelistSaveDescription": "Whitelist-Einstellungen wurden gespeichert",
     "ssoUse": "Plattform SSO verwenden",
     "ssoUseDescription": "Bestehende Benutzer müssen sich nur einmal für alle Ressourcen anmelden, bei denen dies aktiviert ist.",
-    "userRoleAdminName": "Administrator",
     "proxyErrorInvalidPort": "Ungültige Portnummer",
     "subdomainErrorInvalid": "Ungültige Subdomain",
     "domainErrorFetch": "Fehler beim Abrufen der Domains",
@@ -695,5 +694,7 @@
     "accessRoleRemoveSubmit": "Rolle entfernen",
     "accessRoleRemoved": "Rolle entfernt",
     "accessRoleRemovedDescription": "Die Rolle wurde erfolgreich entfernt.",
-    "accessRoleRequiredRemove": "Bevor Sie diese Rolle löschen, wählen Sie bitte eine neue Rolle aus, zu der die bestehenden Mitglieder übertragen werden sollen."
+    "accessRoleRequiredRemove": "Bevor Sie diese Rolle löschen, wählen Sie bitte eine neue Rolle aus, zu der die bestehenden Mitglieder übertragen werden sollen.",
+    "manage": "Verwalten",
+    "sitesNotFound": "Keine Sites gefunden."
 }

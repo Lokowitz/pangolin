@@ -649,7 +649,6 @@
     "resourceWhitelistSaveDescription": "Ustawienia białej listy zostały zapisane",
     "ssoUse": "Użyj platformy SSO",
     "ssoUseDescription": "Istniejący użytkownicy będą musieli zalogować się tylko raz dla wszystkich zasobów, które mają to włączone.",
-    "userRoleAdminName": "Administrator",
     "proxyErrorInvalidPort": "Nieprawidłowy numer portu",
     "subdomainErrorInvalid": "Nieprawidłowa poddomena",
     "domainErrorFetch": "Błąd podczas pobierania domen",
@@ -691,5 +690,7 @@
     "accessRoleRemoveSubmit": "Usuń rolę",
     "accessRoleRemoved": "Rola usunięta",
     "accessRoleRemovedDescription": "Rola została pomyślnie usunięta.",
-    "accessRoleRequiredRemove": "Przed usunięciem tej roli, wybierz nową rolę do której zostaną przeniesieni obecni członkowie."
+    "accessRoleRequiredRemove": "Przed usunięciem tej roli, wybierz nową rolę do której zostaną przeniesieni obecni członkowie.",
+    "manage": "Zarządzaj",
+    "sitesNotFound": "Nie znaleziono witryn."
 }

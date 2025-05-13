@@ -192,7 +192,7 @@ export default function UsersTable({ users: u }: UsersTableProps) {
                                     variant={"outlinePrimary"}
                                     className="ml-2"
                                 >
-                                    Manage
+                                    {t('manage')}
                                     <ArrowRight className="ml-2 w-4 h-4" />
                                 </Button>
                             </Link>

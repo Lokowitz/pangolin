@@ -649,7 +649,6 @@
     "resourceWhitelistSaveDescription": "As configurações da lista permitida foram salvas",
     "ssoUse": "Usar SSO da Plataforma",
     "ssoUseDescription": "Os usuários existentes só precisarão fazer login uma vez para todos os recursos que tiverem isso habilitado.",
-    "userRoleAdminName": "Administrador",
     "proxyErrorInvalidPort": "Número da porta inválido",
     "subdomainErrorInvalid": "Subdomínio inválido",
     "domainErrorFetch": "Erro ao buscar domínios",
@@ -691,5 +690,7 @@
     "accessRoleRemoveSubmit": "Remover Função",
     "accessRoleRemoved": "Função removida",
     "accessRoleRemovedDescription": "A função foi removida com sucesso.",
-    "accessRoleRequiredRemove": "Antes de excluir esta função, selecione uma nova função para transferir os membros existentes."
+    "accessRoleRequiredRemove": "Antes de excluir esta função, selecione uma nova função para transferir os membros existentes.",
+    "manage": "Gerir",
+    "sitesNotFound": "Nenhum site encontrado."
 }

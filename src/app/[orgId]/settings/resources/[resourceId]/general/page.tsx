@@ -663,7 +663,7 @@ export default function GeneralForm() {
                                                         <Command>
                                                             <CommandInput placeholder={t('searchSites')} />
                                                             <CommandEmpty>
-                                                                No sites found.
+                                                                {t('sitesNotFound')}
                                                             </CommandEmpty>
                                                             <CommandGroup>
                                                                 {sites.map(

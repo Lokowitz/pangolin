@@ -165,7 +165,7 @@ export default function ResourceAuthenticationPage() {
                             id: role.roleId.toString(),
                             text: role.name
                         }))
-                        .filter((role) => role.text !== t('userRoleAdminName'))
+                        .filter((role) => role.text !== "Admin")
                 );
 
                 usersRolesForm.setValue(
@@ -175,7 +175,7 @@ export default function ResourceAuthenticationPage() {
                             id: i.roleId.toString(),
                             text: i.name
                         }))
-                        .filter((role) => role.text !== t('userRoleAdminName'))
+                        .filter((role) => role.text !== "Admin")
                 );
 
                 setAllUsers(

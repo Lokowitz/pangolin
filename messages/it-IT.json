@@ -649,7 +649,6 @@
     "resourceWhitelistSaveDescription": "Le impostazioni della lista autorizzazioni sono state salvate",
     "ssoUse": "Usa SSO della Piattaforma",
     "ssoUseDescription": "Gli utenti esistenti dovranno accedere solo una volta per tutte le risorse che hanno questa opzione abilitata.",
-    "userRoleAdminName": "Amministratore",
     "proxyErrorInvalidPort": "Numero porta non valido",
     "subdomainErrorInvalid": "Sottodominio non valido",
     "domainErrorFetch": "Errore nel recupero dei domini",
@@ -691,5 +690,7 @@
     "accessRoleRemoveSubmit": "Rimuovi Ruolo",
     "accessRoleRemoved": "Ruolo rimosso",
     "accessRoleRemovedDescription": "Il ruolo è stato rimosso con successo.",
-    "accessRoleRequiredRemove": "Prima di eliminare questo ruolo, seleziona un nuovo ruolo a cui trasferire i membri esistenti."
+    "accessRoleRequiredRemove": "Prima di eliminare questo ruolo, seleziona un nuovo ruolo a cui trasferire i membri esistenti.",
+    "manage": "Gestisci",
+    "sitesNotFound": "Nessun sito trovato."
 }
