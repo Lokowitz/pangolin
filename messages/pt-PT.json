@@ -589,9 +589,8 @@
     "siteWgManualConfigurationRequired": "Configuração manual necessária",
     "userErrorNotAdminOrOwner": "Usuário não é administrador ou proprietário",
     "pangolinSettings": "Configurações - Pangolin",
-    "accessRoleYour": "Sua função:"
-    "licensePricingPage": "Para os preços e descontos mais atualizados, por favor, visite ",
-    "accessRoleSelect": "Selecionar uma função",
+    "accessRoleYour": "Sua função:",
+    "accessRoleSelect2": "Selecionar uma função",
     "accessUserSelect": "Selecionar um usuário",
     "otpEmailEnter": "Digite um e-mail",
     "otpEmailEnterDescription": "Pressione enter para adicionar um e-mail após digitá-lo no campo de entrada.",
@@ -648,9 +647,7 @@
     "resourceUsersRolesSubmit": "Salvar Usuários e Funções",
     "resourceWhitelistSave": "Salvo com sucesso",
     "resourceWhitelistSaveDescription": "As configurações da lista permitida foram salvas",
-    "roles": "Funções",
     "ssoUse": "Usar SSO da Plataforma",
     "ssoUseDescription": "Os usuários existentes só precisarão fazer login uma vez para todos os recursos que tiverem isso habilitado.",
-    "userRoleAdminName": "Administrador",
-    "users": "Usuários"
+    "userRoleAdminName": "Administrador"
 }

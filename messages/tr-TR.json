@@ -359,10 +359,10 @@
     "inviteRemoveErrorDescription": "An error occurred while removing the invitation.",
     "inviteRemoved": "Invitation removed",
     "inviteRemovedDescription": "The invitation for {email} has been removed.",
-    "inviteQuestionRemove": "Are you sure you want to remove the invitation{email, plural, ='' {}, other { for #}}?",
+    "inviteQuestionRemove": "Are you sure you want to remove the invitation {email}?",
     "inviteMessageRemove": "Once removed, this invitation will no longer be valid. You can always re-invite the user later.",
     "inviteMessageConfirm": "To confirm, please type the email address of the invitation below.",
-    "inviteQuestionRegenerate": "Are you sure you want to regenerate the invitation for{email, plural, ='' {}, other { for #}}? This will revoke the previous invitation.",
+    "inviteQuestionRegenerate": "Are you sure you want to regenerate the invitation for {email}? This will revoke the previous invitation.",
     "inviteRemoveConfirm": "Confirm Remove Invitation",
     "inviteRegenerated": "Invitation Regenerated",
     "inviteSent": "A new invitation has been sent to {email}.",
@@ -589,9 +589,8 @@
     "siteWgManualConfigurationRequired": "Manual configuration required",
     "userErrorNotAdminOrOwner": "User is not an admin or owner",
     "pangolinSettings": "Settings - Pangolin",
-    "accessRoleYour": "Your role:"
-    "licensePricingPage": "For the most up-to-date pricing and discounts, please visit the ",
-    "accessRoleSelect": "Select a role",
+    "accessRoleYour": "Your role:",
+    "accessRoleSelect2": "Select a role",
     "accessUserSelect": "Select a user",
     "otpEmailEnter": "Enter an email",
     "otpEmailEnterDescription": "Press enter to add an email after typing it in the input field.",
@@ -648,9 +647,7 @@
     "resourceUsersRolesSubmit": "Save Users & Roles",
     "resourceWhitelistSave": "Saved successfully",
     "resourceWhitelistSaveDescription": "Whitelist settings have been saved",
-    "roles": "Roles",
     "ssoUse": "Use Platform SSO",
     "ssoUseDescription": "Existing users will only have to log in once for all resources that have this enabled.",
-    "userRoleAdminName": "Admin",
-    "users": "Users"
+    "userRoleAdminName": "Admin"
 }

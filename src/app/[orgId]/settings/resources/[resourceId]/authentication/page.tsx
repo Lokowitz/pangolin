@@ -441,7 +441,7 @@ export default function ResourceAuthenticationPage() {
                                                             setActiveTagIndex={
                                                                 setActiveRolesTagIndex
                                                             }
-                                                            placeholder={t('accessRoleSelect')}
+                                                            placeholder={t('accessRoleSelect2')}
                                                             size="sm"
                                                             tags={
                                                                 usersRolesForm.getValues()

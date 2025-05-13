@@ -593,9 +593,8 @@
     "siteWgManualConfigurationRequired": "Manuelle Konfiguration erforderlich",
     "userErrorNotAdminOrOwner": "Benutzer ist kein Administrator oder Eigentümer",
     "pangolinSettings": "Einstellungen - Pangolin",
-    "accessRoleYour": "Ihre Rolle:"
-    "licensePricingPage": "Für die aktuellsten Preise und Rabatte, besuchen Sie bitte die ",
-    "accessRoleSelect": "Wähle eine Rolle",
+    "accessRoleYour": "Ihre Rolle:",
+    "accessRoleSelect2": "Wähle eine Rolle",
     "accessUserSelect": "Wähle einen Benutzer",
     "otpEmailEnter": "E-Mail-Adresse eingeben",
     "otpEmailEnterDescription": "Drücken Sie Enter, um eine E-Mail nach der Eingabe im Eingabefeld hinzuzufügen.",
@@ -652,9 +651,7 @@
     "resourceUsersRolesSubmit": "Benutzer & Rollen speichern",
     "resourceWhitelistSave": "Erfolgreich gespeichert",
     "resourceWhitelistSaveDescription": "Whitelist-Einstellungen wurden gespeichert",
-    "roles": "Rollen",
     "ssoUse": "Plattform SSO verwenden",
     "ssoUseDescription": "Bestehende Benutzer müssen sich nur einmal für alle Ressourcen anmelden, bei denen dies aktiviert ist.",
-    "userRoleAdminName": "Administrator",
-    "users": "Benutzer"
+    "userRoleAdminName": "Administrator"
 }
