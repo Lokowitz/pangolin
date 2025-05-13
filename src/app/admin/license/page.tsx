@@ -59,13 +59,15 @@ import Link from "next/link";
 import { Checkbox } from "@app/components/ui/checkbox";
 import { useTranslations } from 'next-intl';
 
+const t = useTranslations();
+
 const formSchema = z.object({
     licenseKey: z
         .string()
-        .nonempty({ message: "License key is required" })
+        .nonempty({ message: t('licenseKeyRequired') })
         .max(255),
     agreeToTerms: z.boolean().refine((val) => val === true, {
-        message: "You must agree to the license terms"
+        message: t('licenseTermsAgree')
     })
 });
 
@@ -78,7 +80,6 @@ function obfuscateLicenseKey(key: string): string {
 
 export default function LicensePage() {
     const api = createApiClient(useEnvContext());
-    const t = useTranslations();
     const [rows, setRows] = useState<LicenseKeyCache[]>([]);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -319,7 +320,7 @@ export default function LicensePage() {
                     }}
                     dialog={
                         <div className="space-y-4">
-                            <p> 
+                            <p>
                                 {t('licenseQuestionRemove', {selectedKey: obfuscateLicenseKey(selectedLicenseKey.licenseKey)})}
                             </p>
                             <p>
@@ -363,17 +364,17 @@ export default function LicensePage() {
                                             <Check />
                                             {licenseStatus?.tier ===
                                             "PROFESSIONAL"
-                                                ? "Professional License"
+                                                ? t('licenseTierProfessional')
                                                 : licenseStatus?.tier ===
                                                     "ENTERPRISE"
-                                                  ? "Enterprise License"
-                                                  : "Licensed"}
+                                                  ? t('licenseTierEnterprise')
+                                                  : t('licensed')}
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
                                         <div className="text-2xl">
-                                            {t('notLicensed')}
+                                            {t('licensedNot')}
                                         </div>
                                     </div>
                                 )}

@@ -19,6 +19,7 @@ import {
     DropdownMenuTrigger
 } from "@app/components/ui/dropdown-menu";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export type IdpRow = {
     idpId: number;
@@ -36,19 +37,20 @@ export default function IdpTable({ idps }: Props) {
     const [selectedIdp, setSelectedIdp] = useState<IdpRow | null>(null);
     const api = createApiClient(useEnvContext());
     const router = useRouter();
+    const t = useTranslations();
 
     const deleteIdp = async (idpId: number) => {
         try {
             await api.delete(`/idp/${idpId}`);
             toast({
-                title: "Success",
-                description: "Identity provider deleted successfully"
+                title: t('success'),
+                description: t('idpDeletedDescription')
             });
             setIsDeleteModalOpen(false);
             router.refresh();
         } catch (e) {
             toast({
-                title: "Error",
+                title: t('error'),
                 description: formatAxiosError(e),
                 variant: "destructive"
             });
@@ -58,7 +60,7 @@ export default function IdpTable({ idps }: Props) {
     const getTypeDisplay = (type: string) => {
         switch (type) {
             case "oidc":
-                return "OAuth2/OIDC";
+                return t('idpOidc');
             default:
                 return type;
         }
@@ -74,7 +76,7 @@ export default function IdpTable({ idps }: Props) {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
+                                <span className="sr-only">{t('openMenu')}</span>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -84,7 +86,7 @@ export default function IdpTable({ idps }: Props) {
                                 href={`/admin/idp/${r.idpId}/general`}
                             >
                                 <DropdownMenuItem>
-                                    View settings
+                                    {t('viewSettings')}
                                 </DropdownMenuItem>
                             </Link>
                             <DropdownMenuItem
@@ -93,7 +95,7 @@ export default function IdpTable({ idps }: Props) {
                                     setIsDeleteModalOpen(true);
                                 }}
                             >
-                                <span className="text-red-500">Delete</span>
+                                <span className="text-red-500">{t('delete')}</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -126,7 +128,7 @@ export default function IdpTable({ idps }: Props) {
                             column.toggleSorting(column.getIsSorted() === "asc")
                         }
                     >
-                        Name
+                        {t('name')}
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
@@ -142,7 +144,7 @@ export default function IdpTable({ idps }: Props) {
                             column.toggleSorting(column.getIsSorted() === "asc")
                         }
                     >
-                        Type
+                        {t('type')}
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
@@ -162,7 +164,7 @@ export default function IdpTable({ idps }: Props) {
                     <div className="flex items-center justify-end">
                         <Link href={`/admin/idp/${siteRow.idpId}/general`}>
                             <Button variant={"outlinePrimary"} className="ml-2">
-                                Edit
+                                {t('edit')}
                                 <ArrowRight className="ml-2 w-4 h-4" />
                             </Button>
                         </Link>
@@ -184,27 +186,22 @@ export default function IdpTable({ idps }: Props) {
                     dialog={
                         <div className="space-y-4">
                             <p>
-                                Are you sure you want to permanently delete the
-                                identity provider <b>{selectedIdp.name}</b>?
+                                {t('idpQuestionRemove', {name: selectedIdp.name})}
                             </p>
                             <p>
                                 <b>
-                                    This will remove the identity provider and
-                                    all associated configurations. Users who
-                                    authenticate through this provider will no
-                                    longer be able to log in.
+                                    {t('idpMessageRemove')}
                                 </b>
                             </p>
                             <p>
-                                To confirm, please type the name of the identity
-                                provider below.
+                                {t('idpMessageConfirm')}
                             </p>
                         </div>
                     }
-                    buttonText="Confirm Delete Identity Provider"
+                    buttonText={t('idpConfirmDelete')}
                     onConfirm={async () => deleteIdp(selectedIdp.idpId)}
                     string={selectedIdp.name}
-                    title="Delete Identity Provider"
+                    title={t('idpDelete')}
                 />
             )}
 

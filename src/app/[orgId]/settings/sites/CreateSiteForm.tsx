@@ -58,10 +58,10 @@ const createSiteFormSchema = z.object({
     name: z
         .string()
         .min(2, {
-            message: {t('siteNameMin')}
+            message: t('nameMin', {len: 2})
         })
         .max(30, {
-            message: {t('siteNameMax')}
+            message: t('nameMax', {len: 30})
         }),
     method: z.enum(["wireguard", "newt", "local"])
 });
@@ -172,8 +172,8 @@ export default function CreateSiteForm({
             if (!keypair || !siteDefaults) {
                 toast({
                     variant: "destructive",
-                    title: {t('siteErrorCreate')},
-                    description: {t('siteErrorCreateKeyPair')}
+                    title: t('siteErrorCreate'),
+                    description: t('siteErrorCreateKeyPair')
                 });
                 setLoading?.(false);
                 setIsLoading(false);
@@ -191,8 +191,8 @@ export default function CreateSiteForm({
             if (!siteDefaults) {
                 toast({
                     variant: "destructive",
-                    title: {t('siteErrorCreate')},
-                    description: {t('siteErrorCreateDefaults')}
+                    title: t('siteErrorCreate'),
+                    description: t('siteErrorCreateDefaults')
                 });
                 setLoading?.(false);
                 setIsLoading(false);
@@ -215,7 +215,7 @@ export default function CreateSiteForm({
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: {t('siteErrorCreate')},
+                    title: t('siteErrorCreate'),
                     description: formatAxiosError(e)
                 });
             });

@@ -88,7 +88,7 @@ export function SitePriceCalculator({
                                     size="icon"
                                     onClick={decrementSites}
                                     disabled={siteCount <= 1}
-                                    aria-label="Decrease site count"
+                                    aria-label={t('sitestCountDecrease')}
                                 >
                                     <MinusCircle className="h-5 w-5" />
                                 </Button>
@@ -99,7 +99,7 @@ export function SitePriceCalculator({
                                     variant="ghost"
                                     size="icon"
                                     onClick={incrementSites}
-                                    aria-label="Increase site count"
+                                    aria-label={t('sitestCountIncrease')}
                                 >
                                     <PlusCircle className="h-5 w-5" />
                                 </Button>

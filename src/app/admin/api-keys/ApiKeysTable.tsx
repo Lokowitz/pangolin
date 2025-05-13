@@ -79,7 +79,7 @@ export default function ApiKeysTable({ apiKeys }: ApiKeyTableProps) {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
+                                <span className="sr-only">{t('openMenu')}</span>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -122,7 +122,7 @@ export default function ApiKeysTable({ apiKeys }: ApiKeyTableProps) {
         },
         {
             accessorKey: "key",
-            header: "Key",
+            header: t('key'),
             cell: ({ row }) => {
                 const r = row.original;
                 return <span className="font-mono">{r.key}</span>;
@@ -130,7 +130,7 @@ export default function ApiKeysTable({ apiKeys }: ApiKeyTableProps) {
         },
         {
             accessorKey: "createdAt",
-            header: "Created At",
+            header: t('createdAt'),
             cell: ({ row }) => {
                 const r = row.original;
                 return <span>{moment(r.createdAt).format("lll")} </span>;

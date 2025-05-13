@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@app/components/ui/data-table";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
@@ -14,15 +15,16 @@ export function IdpDataTable<TData, TValue>({
     data
 }: DataTableProps<TData, TValue>) {
     const router = useRouter();
+    const t = useTranslations();
 
     return (
         <DataTable
             columns={columns}
             data={data}
-            title="Identity Providers"
-            searchPlaceholder="Search identity providers..."
+            title={t('idp')}
+            searchPlaceholder={t('idpSearch')}
             searchColumn="name"
-            addButtonText="Add Identity Provider"
+            addButtonText={t('idpAdd')}
             onAdd={() => {
                 router.push("/admin/idp/create");
             }}

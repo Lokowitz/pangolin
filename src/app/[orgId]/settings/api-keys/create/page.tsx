@@ -69,10 +69,10 @@ const createFormSchema = z.object({
     name: z
         .string()
         .min(2, {
-            message: t('apiKeysNameMin')
+            message: t('nameMin', {len: 2})
         })
         .max(255, {
-            message: t('apiKeysNameMax')
+            message: t('nameMax', {len: 255})
         })
 });
 
