@@ -673,8 +673,7 @@
     "resourceTransferDescription": "Transfer this resource to a different site",
     "resourceTransferSubmit": "Transfer Resource",
     "siteDestination": "Destination Site",
-    "searchSites": "Search sites"
-    "licensePricingPage": "For the most up-to-date pricing and discounts, please visit the ",
+    "searchSites": "Search sites",
     "accessRoleCreate": "Create Role",
     "accessRoleCreateDescription": "Create a new role to group users and manage their permissions.",
     "accessRoleCreateSubmit": "Create Role",
@@ -682,8 +681,6 @@
     "accessRoleCreatedDescription": "The role has been successfully created.",
     "accessRoleErrorCreate": "Failed to create role",
     "accessRoleErrorCreateDescription": "An error occurred while creating the role.",
-    "accessRoleErrorFetch": "Failed to fetch roles",
-    "accessRoleErrorFetchDescription": "An error occurred while fetching the roles",
     "accessRoleErrorNewRequired": "New role is required",
     "accessRoleErrorRemove": "Failed to remove role",
     "accessRoleErrorRemoveDescription": "An error occurred while removing the role.",
@@ -694,6 +691,5 @@
     "accessRoleRemoveSubmit": "Remove Role",
     "accessRoleRemoved": "Role removed",
     "accessRoleRemovedDescription": "The role has been successfully removed.",
-    "accessRoleRequiredRemove": "Before deleting this role, please select a new role to transfer existing members to.",
-    "accessRoleSelect": "Select role"
+    "accessRoleRequiredRemove": "Before deleting this role, please select a new role to transfer existing members to."
 }

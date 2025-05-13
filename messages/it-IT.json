@@ -673,8 +673,7 @@
     "resourceTransferDescription": "Trasferisci questa risorsa a un sito diverso",
     "resourceTransferSubmit": "Trasferisci Risorsa",
     "siteDestination": "Sito Di Destinazione",
-    "searchSites": "Cerca siti"
-    "licensePricingPage": "Per i prezzi e gli sconti più aggiornati, visita il ",
+    "searchSites": "Cerca siti",
     "accessRoleCreate": "Crea Ruolo",
     "accessRoleCreateDescription": "Crea un nuovo ruolo per raggruppare gli utenti e gestire i loro permessi.",
     "accessRoleCreateSubmit": "Crea Ruolo",
@@ -682,8 +681,6 @@
     "accessRoleCreatedDescription": "Il ruolo è stato creato con successo.",
     "accessRoleErrorCreate": "Impossibile creare il ruolo",
     "accessRoleErrorCreateDescription": "Si è verificato un errore durante la creazione del ruolo.",
-    "accessRoleErrorFetch": "Impossibile recuperare i ruoli",
-    "accessRoleErrorFetchDescription": "Si è verificato un errore durante il recupero dei ruoli",
     "accessRoleErrorNewRequired": "Nuovo ruolo richiesto",
     "accessRoleErrorRemove": "Impossibile rimuovere il ruolo",
     "accessRoleErrorRemoveDescription": "Si è verificato un errore durante la rimozione del ruolo.",
@@ -694,6 +691,5 @@
     "accessRoleRemoveSubmit": "Rimuovi Ruolo",
     "accessRoleRemoved": "Ruolo rimosso",
     "accessRoleRemovedDescription": "Il ruolo è stato rimosso con successo.",
-    "accessRoleRequiredRemove": "Prima di eliminare questo ruolo, seleziona un nuovo ruolo a cui trasferire i membri esistenti.",
-    "accessRoleSelect": "Seleziona ruolo"
+    "accessRoleRequiredRemove": "Prima di eliminare questo ruolo, seleziona un nuovo ruolo a cui trasferire i membri esistenti."
 }

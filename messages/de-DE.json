@@ -677,8 +677,7 @@
     "resourceTransferDescription": "Diese Ressource auf eine andere Site übertragen",
     "resourceTransferSubmit": "Ressource übertragen",
     "siteDestination": "Zielsite",
-    "searchSites": "Sites durchsuchen"
-    "licensePricingPage": "Für die aktuellsten Preise und Rabatte, besuchen Sie bitte die ",
+    "searchSites": "Sites durchsuchen",
     "accessRoleCreate": "Rolle erstellen",
     "accessRoleCreateDescription": "Erstellen Sie eine neue Rolle, um Benutzer zu gruppieren und ihre Berechtigungen zu verwalten.",
     "accessRoleCreateSubmit": "Rolle erstellen",
@@ -686,8 +685,6 @@
     "accessRoleCreatedDescription": "Die Rolle wurde erfolgreich erstellt.",
     "accessRoleErrorCreate": "Fehler beim Erstellen der Rolle",
     "accessRoleErrorCreateDescription": "Beim Erstellen der Rolle ist ein Fehler aufgetreten.",
-    "accessRoleErrorFetch": "Fehler beim Abrufen der Rollen",
-    "accessRoleErrorFetchDescription": "Beim Abrufen der Rollen ist ein Fehler aufgetreten",
     "accessRoleErrorNewRequired": "Neue Rolle ist erforderlich",
     "accessRoleErrorRemove": "Fehler beim Entfernen der Rolle",
     "accessRoleErrorRemoveDescription": "Beim Entfernen der Rolle ist ein Fehler aufgetreten.",
@@ -698,6 +695,5 @@
     "accessRoleRemoveSubmit": "Rolle entfernen",
     "accessRoleRemoved": "Rolle entfernt",
     "accessRoleRemovedDescription": "Die Rolle wurde erfolgreich entfernt.",
-    "accessRoleRequiredRemove": "Bevor Sie diese Rolle löschen, wählen Sie bitte eine neue Rolle aus, zu der die bestehenden Mitglieder übertragen werden sollen.",
-    "accessRoleSelect": "Rolle auswählen"
+    "accessRoleRequiredRemove": "Bevor Sie diese Rolle löschen, wählen Sie bitte eine neue Rolle aus, zu der die bestehenden Mitglieder übertragen werden sollen."
 }
