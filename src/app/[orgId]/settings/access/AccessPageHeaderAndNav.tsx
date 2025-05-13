@@ -2,6 +2,7 @@
 
 import { HorizontalTabs } from "@app/components/HorizontalTabs";
 import SettingsSectionTitle from "@app/components/SettingsSectionTitle";
+import { useTranslations } from "next-intl";
 
 interface AccessPageHeaderAndNavProps {
     children: React.ReactNode;
@@ -12,20 +13,21 @@ export default function AccessPageHeaderAndNav({
     children,
     hasInvitations
 }: AccessPageHeaderAndNavProps) {
+    const t = useTranslations();
     const navItems = [
         {
-            title: "Users",
+            title: t('users'),
             href: `/{orgId}/settings/access/users`
         },
         {
-            title: "Roles",
+            title: t('roles'),
             href: `/{orgId}/settings/access/roles`
         }
     ];
 
     if (hasInvitations) {
         navItems.push({
-            title: "Invitations",
+            title: t('invite'),
             href: `/{orgId}/settings/access/invitations`
         });
     }
@@ -33,8 +35,8 @@ export default function AccessPageHeaderAndNav({
     return (
         <>
             <SettingsSectionTitle
-                title="Manage Users & Roles"
-                description="Invite users and add them to roles to manage access to your organization"
+                title={t('accessUsersRoles')}
+                description={t('accessUsersRolesDescription')}
             />
 
             <HorizontalTabs items={navItems}>

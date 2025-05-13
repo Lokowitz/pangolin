@@ -43,9 +43,12 @@ import {
 import CopyToClipboard from "@app/components/CopyToClipboard";
 import { Badge } from "@app/components/ui/badge";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
+import { useTranslations } from "next-intl";
+
+const t = useTranslations();
 
 const GeneralFormSchema = z.object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+    name: z.string().min(2, { message: t('nameMin', {len: 2}) }),
     clientId: z.string().min(1, { message: "Client ID is required." }),
     clientSecret: z.string().min(1, { message: "Client Secret is required." }),
     authUrl: z.string().url({ message: "Auth URL must be a valid URL." }),

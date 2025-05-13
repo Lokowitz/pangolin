@@ -19,11 +19,14 @@ import UserProvider from "@app/providers/UserProvider";
 import { Layout } from "@app/components/Layout";
 import { SidebarNavItem, SidebarNavProps } from "@app/components/SidebarNav";
 import { orgNavItems } from "@app/app/navigation";
+import { useTranslations } from "next-intl";
 
 export const dynamic = "force-dynamic";
 
+const t = useTranslations();
+
 export const metadata: Metadata = {
-    title: `Settings - Pangolin`,
+    title: t('pangolinSettings'),
     description: ""
 };
 
@@ -56,7 +59,7 @@ export default async function SettingsLayout(props: SettingsLayoutProps) {
         const orgUser = await getOrgUser();
 
         if (!orgUser.data.data.isAdmin && !orgUser.data.data.isOwner) {
-            throw new Error("User is not an admin or owner");
+            throw new Error(t('userErrorNotAdminOrOwner'));
         }
     } catch {
         redirect(`/${params.orgId}`);

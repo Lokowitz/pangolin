@@ -24,7 +24,7 @@ export function ResourcesDataTable<TData, TValue>({
         <DataTable
             columns={columns}
             data={data}
-            title="Resources"
+            title={t('resources')}
             searchPlaceholder={t('resourcesSearch')}
             searchColumn="name"
             onAdd={createResource}

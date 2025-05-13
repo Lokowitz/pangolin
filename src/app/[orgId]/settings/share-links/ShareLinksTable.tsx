@@ -79,7 +79,7 @@ export default function ShareLinksTable({
 
         toast({
             title: t('shareDeleted'),
-            description: t('shareDeletedDesciption')
+            description: t('shareDeletedDescription')
         });
     }
 

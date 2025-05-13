@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { cache } from "react";
 import SettingsSectionTitle from "@app/components/SettingsSectionTitle";
+import { useTranslations } from "next-intl";
 
 interface UserLayoutProps {
     children: React.ReactNode;
@@ -25,6 +26,8 @@ export default async function UserLayoutProps(props: UserLayoutProps) {
     const params = await props.params;
 
     const { children } = props;
+
+    const t = useTranslations();
 
     let user = null;
     try {
@@ -42,7 +45,7 @@ export default async function UserLayoutProps(props: UserLayoutProps) {
 
     const navItems = [
         {
-            title: "Access Controls",
+            title: t('accessControls'),
             href: "/{orgId}/settings/access/users/{userId}/access-controls"
         }
     ];
@@ -51,7 +54,7 @@ export default async function UserLayoutProps(props: UserLayoutProps) {
         <>
             <SettingsSectionTitle
                 title={`${user?.email}`}
-                description="Manage the settings on this user"
+                description={t('userDescription2')}
             />
             <OrgUserProvider orgUser={user}>
                 <HorizontalTabs items={navItems}>

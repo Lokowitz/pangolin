@@ -67,7 +67,7 @@ export default async function InvitationsPage(props: InvitationsPageProps) {
             id: invite.inviteId,
             email: invite.email,
             expiresAt: new Date(Number(invite.expiresAt)).toISOString(),
-            role: invite.roleName || "Unknown Role",
+            role: invite.roleName || t('accessRoleUnknown'),
             roleId: invite.roleId
         };
     });

@@ -177,7 +177,7 @@ export default function RegenerateInvitationForm({
                     {!inviteLink ? (
                         <div>
                             <p>
-                                {t('inviteQuestionRegenerate', {email: invitation?.email})}
+                                {t('inviteQuestionRegenerate', {email: invitation?.email || ''})}
                             </p>
                             <div className="flex items-center space-x-2 mt-4">
                                 <Checkbox

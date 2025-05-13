@@ -24,7 +24,7 @@ export function SitesDataTable<TData, TValue>({
         <DataTable
             columns={columns}
             data={data}
-            title="Sites"
+            title={t('sites')}
             searchPlaceholder={t('searchSites')}
             searchColumn="name"
             onAdd={createSite}

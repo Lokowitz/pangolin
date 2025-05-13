@@ -33,8 +33,10 @@ import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useState } from "react";
 import { useTranslations } from 'next-intl';
 
+const t = useTranslations();
+
 const GeneralFormSchema = z.object({
-    name: z.string().nonempty("Name is required")
+    name: z.string().nonempty(t('nameRequired'))
 });
 
 type GeneralFormValues = z.infer<typeof GeneralFormSchema>;
@@ -47,7 +49,6 @@ export default function GeneralPage() {
     const [loading, setLoading] = useState(false);
 
     const router = useRouter();
-    const t = useTranslations();
 
     const form = useForm<GeneralFormValues>({
         resolver: zodResolver(GeneralFormSchema),

@@ -89,10 +89,10 @@ export default function SitesTable({ resources, orgId }: ResourcesTableProps) {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Failed to toggle resource",
+                    title: t('resourcesErrorUpdate'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while updating the resource"
+                        t('resourcesErrorUpdateDescription')
                     )
                 });
             });
@@ -183,7 +183,7 @@ export default function SitesTable({ resources, orgId }: ResourcesTableProps) {
         },
         {
             accessorKey: "protocol",
-            header: "Protocol",
+            header: t('protocol'),
             cell: ({ row }) => {
                 const resourceRow = row.original;
                 return <span>{resourceRow.protocol.toUpperCase()}</span>;
@@ -191,7 +191,7 @@ export default function SitesTable({ resources, orgId }: ResourcesTableProps) {
         },
         {
             accessorKey: "domain",
-            header: "Access",
+            header: t('access'),
             cell: ({ row }) => {
                 const resourceRow = row.original;
                 return (
@@ -249,7 +249,7 @@ export default function SitesTable({ resources, orgId }: ResourcesTableProps) {
         },
         {
             accessorKey: "enabled",
-            header: "Enabled",
+            header: t('enabled'),
             cell: ({ row }) => (
                 <Switch
                     defaultChecked={row.original.enabled}

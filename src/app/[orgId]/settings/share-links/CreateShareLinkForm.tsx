@@ -74,8 +74,10 @@ type FormProps = {
     onCreated?: (result: ShareLinkRow) => void;
 };
 
+const t = useTranslations();
+
 const formSchema = z.object({
-    resourceId: z.number({ message: "Please select a resource" }),
+    resourceId: z.number({ message: t('shareErrorSelectResource') }),
     resourceName: z.string(),
     resourceUrl: z.string(),
     timeUnit: z.string(),
@@ -92,7 +94,6 @@ export default function CreateShareLinkForm({
 
     const { env } = useEnvContext();
     const api = createApiClient({ env });
-    const t = useTranslations();
 
     const [link, setLink] = useState<string | null>(null);
     const [accessTokenId, setAccessTokenId] = useState<string | null>(null);
@@ -200,7 +201,7 @@ export default function CreateShareLinkForm({
                     validForSeconds: neverExpire ? undefined : timeInSeconds,
                     title:
                         values.title ||
-                        `${values.resourceName || "Resource" + values.resourceId} Share Link`
+                        t('shareLink', {resource: values.resourceName || "Resource" + values.resourceId})
                 }
             )
             .catch((e) => {
@@ -294,7 +295,7 @@ export default function CreateShareLinkForm({
                                                                         ? getSelectedResourceName(
                                                                               field.value
                                                                           )
-                                                                        : "Select resource"}
+                                                                        : t('resourceSelect')}
                                                                     <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                                 </Button>
                                                             </FormControl>
@@ -387,7 +388,7 @@ export default function CreateShareLinkForm({
                                                                 >
                                                                     <FormControl>
                                                                         <SelectTrigger>
-                                                                            <SelectValue placeholder="Select duration" />
+                                                                            <SelectValue placeholder={t('selectDuration')} />
                                                                         </SelectTrigger>
                                                                     </FormControl>
                                                                     <SelectContent>
@@ -497,7 +498,7 @@ export default function CreateShareLinkForm({
                                                     <div>
                                                         <ChevronsUpDown className="h-4 w-4" />
                                                         <span className="sr-only">
-                                                            Toggle
+                                                            {t('toggle')}
                                                         </span>
                                                     </div>
                                                 </Button>
@@ -527,7 +528,7 @@ export default function CreateShareLinkForm({
                     </CredenzaBody>
                     <CredenzaFooter>
                         <CredenzaClose asChild>
-                            <Button variant="outline">Close</Button>
+                            <Button variant="outline">{t('close')}</Button>
                         </CredenzaClose>
                         <Button
                             type="button"
