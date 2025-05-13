@@ -25,7 +25,7 @@ export function SitesDataTable<TData, TValue>({
             columns={columns}
             data={data}
             title={t('sites')}
-            searchPlaceholder={t('searchSites')}
+            searchPlaceholder={t('searchSitesProgress')}
             searchColumn="name"
             onAdd={createSite}
             addButtonText={t('siteAdd')}
