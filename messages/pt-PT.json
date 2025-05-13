@@ -649,8 +649,7 @@
     "resourceWhitelistSaveDescription": "As configurações da lista permitida foram salvas",
     "ssoUse": "Usar SSO da Plataforma",
     "ssoUseDescription": "Os usuários existentes só precisarão fazer login uma vez para todos os recursos que tiverem isso habilitado.",
-    "userRoleAdminName": "Administrador"
-    "licensePricingPage": "Para os preços e descontos mais atualizados, por favor, visite ",
+    "userRoleAdminName": "Administrador",
     "proxyErrorInvalidPort": "Número da porta inválido",
     "subdomainErrorInvalid": "Subdomínio inválido",
     "domainErrorFetch": "Erro ao buscar domínios",

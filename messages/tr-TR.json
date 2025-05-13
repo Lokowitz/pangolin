@@ -649,8 +649,7 @@
     "resourceWhitelistSaveDescription": "Whitelist settings have been saved",
     "ssoUse": "Use Platform SSO",
     "ssoUseDescription": "Existing users will only have to log in once for all resources that have this enabled.",
-    "userRoleAdminName": "Admin"
-    "licensePricingPage": "For the most up-to-date pricing and discounts, please visit the ",
+    "userRoleAdminName": "Admin",
     "proxyErrorInvalidPort": "Invalid port number",
     "subdomainErrorInvalid": "Invalid subdomain",
     "domainErrorFetch": "Error fetching domains",

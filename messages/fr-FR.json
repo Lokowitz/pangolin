@@ -649,8 +649,7 @@
     "resourceWhitelistSaveDescription": "Les paramètres de la liste blanche ont été enregistrés",
     "ssoUse": "Utiliser la SSO de la plateforme",
     "ssoUseDescription": "Les utilisateurs existants n'auront à se connecter qu'une seule fois pour toutes les ressources qui ont cette option activée.",
-    "userRoleAdminName": "Administrateur"
-    "licensePricingPage": "Pour les prix et les remises les plus récentes, veuillez visiter le ",
+    "userRoleAdminName": "Administrateur",
     "proxyErrorInvalidPort": "Numéro de port invalide",
     "subdomainErrorInvalid": "Sous-domaine invalide",
     "domainErrorFetch": "Erreur lors de la récupération des domaines",

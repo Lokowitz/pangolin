@@ -649,8 +649,7 @@
     "resourceWhitelistSaveDescription": "Le impostazioni della lista autorizzazioni sono state salvate",
     "ssoUse": "Usa SSO della Piattaforma",
     "ssoUseDescription": "Gli utenti esistenti dovranno accedere solo una volta per tutte le risorse che hanno questa opzione abilitata.",
-    "userRoleAdminName": "Amministratore"
-    "licensePricingPage": "Per i prezzi e gli sconti più aggiornati, visita il ",
+    "userRoleAdminName": "Amministratore",
     "proxyErrorInvalidPort": "Numero porta non valido",
     "subdomainErrorInvalid": "Sottodominio non valido",
     "domainErrorFetch": "Errore nel recupero dei domini",

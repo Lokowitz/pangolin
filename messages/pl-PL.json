@@ -649,8 +649,7 @@
     "resourceWhitelistSaveDescription": "Ustawienia białej listy zostały zapisane",
     "ssoUse": "Użyj platformy SSO",
     "ssoUseDescription": "Istniejący użytkownicy będą musieli zalogować się tylko raz dla wszystkich zasobów, które mają to włączone.",
-    "userRoleAdminName": "Administrator"
-    "licensePricingPage": "Aby uzyskać najnowsze ceny i rabaty, odwiedź ",
+    "userRoleAdminName": "Administrator",
     "proxyErrorInvalidPort": "Nieprawidłowy numer portu",
     "subdomainErrorInvalid": "Nieprawidłowa poddomena",
     "domainErrorFetch": "Błąd podczas pobierania domen",

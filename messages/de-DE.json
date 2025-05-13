@@ -653,8 +653,7 @@
     "resourceWhitelistSaveDescription": "Whitelist-Einstellungen wurden gespeichert",
     "ssoUse": "Plattform SSO verwenden",
     "ssoUseDescription": "Bestehende Benutzer müssen sich nur einmal für alle Ressourcen anmelden, bei denen dies aktiviert ist.",
-    "userRoleAdminName": "Administrator"
-    "licensePricingPage": "Für die aktuellsten Preise und Rabatte, besuchen Sie bitte die ",
+    "userRoleAdminName": "Administrator",
     "proxyErrorInvalidPort": "Ungültige Portnummer",
     "subdomainErrorInvalid": "Ungültige Subdomain",
     "domainErrorFetch": "Fehler beim Abrufen der Domains",
