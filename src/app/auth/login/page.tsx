@@ -9,6 +9,7 @@ import { cleanRedirect } from "@app/lib/cleanRedirect";
 import db from "@server/db";
 import { idp } from "@server/db/schemas";
 import { LoginFormIDP } from "@app/components/LoginForm";
+import { useTranslations } from "next-intl";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,8 @@ export default async function Page(props: {
         name: idp.name
     })) as LoginFormIDP[];
 
+    const t = useTranslations();
+
     return (
         <>
             {isInvite && (
@@ -47,11 +50,10 @@ export default async function Page(props: {
                     <div className="flex flex-col items-center">
                         <Mail className="w-12 h-12 mb-4 text-primary" />
                         <h2 className="text-2xl font-bold mb-2 text-center">
-                            Looks like you've been invited!
+                            {t('inviteAlready')}
                         </h2>
                         <p className="text-center">
-                            To accept the invite, you must log in or create an
-                            account.
+                            {t('inviteAlreadyDescription')}
                         </p>
                     </div>
                 </div>
@@ -70,7 +72,7 @@ export default async function Page(props: {
                         }
                         className="underline"
                     >
-                        Sign up
+                        {t('signup')}
                     </Link>
                 </p>
             )}

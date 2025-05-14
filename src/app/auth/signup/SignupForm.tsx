@@ -39,15 +39,17 @@ type SignupFormProps = {
     inviteToken?: string;
 };
 
+const t = useTranslations();
+
 const formSchema = z
     .object({
-        email: z.string().email({ message: "Invalid email address" }),
+        email: z.string().email({ message: t('emailInvalid') }),
         password: passwordSchema,
         confirmPassword: passwordSchema
     })
     .refine((data) => data.password === data.confirmPassword, {
         path: ["confirmPassword"],
-        message: "Passwords do not match"
+        message: t('passwordNotMatch')
     });
 
 export default function SignupForm({
@@ -85,7 +87,7 @@ export default function SignupForm({
             .catch((e) => {
                 console.error(e);
                 setError(
-                    formatAxiosError(e, "An error occurred while signing up")
+                    formatAxiosError(e, t('signupError'))
                 );
             });
 
@@ -113,15 +115,13 @@ export default function SignupForm({
         setLoading(false);
     }
 
-    const t = useTranslations();
-
     return (
         <Card className="w-full max-w-md">
             <CardHeader>
                 <div className="flex flex-row items-center justify-center">
                     <Image
                         src={`/logo/pangolin_orange.svg`}
-                        alt="Pangolin Logo"
+                        alt={t('pangolinLogoAlt')}
                         width="100"
                         height="100"
                     />

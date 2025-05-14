@@ -3,9 +3,12 @@ import { verifySession } from "@app/lib/auth/verifySession";
 import UserProvider from "@app/providers/UserProvider";
 import { Metadata } from "next";
 import { cache } from "react";
+import { useTranslations } from "next-intl";
+
+const t = useTranslations();
 
 export const metadata: Metadata = {
-    title: `Auth - Pangolin`,
+    title: t('pangolinAuth'),
     description: ""
 };
 

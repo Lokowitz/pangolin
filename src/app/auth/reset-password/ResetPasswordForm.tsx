@@ -44,25 +44,28 @@ import { useEnvContext } from "@app/hooks/useEnvContext";
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
 import { passwordSchema } from "@server/auth/passwordSchema";
 import { cleanRedirect } from "@app/lib/cleanRedirect";
+import { useTranslations } from "next-intl";
 
 const requestSchema = z.object({
     email: z.string().email()
 });
 
+const t = useTranslations();
+
 const formSchema = z
     .object({
-        email: z.string().email({ message: "Invalid email address" }),
-        token: z.string().min(8, { message: "Invalid token" }),
+        email: z.string().email({ message: t('emailInvalid') }),
+        token: z.string().min(8, { message: t('tokenInvalid') }),
         password: passwordSchema,
         confirmPassword: passwordSchema
     })
     .refine((data) => data.password === data.confirmPassword, {
         path: ["confirmPassword"],
-        message: "Passwords do not match"
+        message: t('passwordNotMatch')
     });
 
 const mfaSchema = z.object({
-    code: z.string().length(6, { message: "Invalid code" })
+    code: z.string().length(6, { message: t('pincodeInvalid') })
 });
 
 export type ResetPasswordFormProps = {
@@ -135,8 +138,8 @@ export default function ResetPasswordForm({
                 } as RequestPasswordResetBody
             )
             .catch((e) => {
-                setError(formatAxiosError(e, "An error occurred"));
-                console.error("Failed to request reset:", e);
+                setError(formatAxiosError(e, t('errorOccurred')));
+                console.error(t('passwordErrorRequestReset'), e);
                 setIsSubmitting(false);
             });
 
@@ -165,8 +168,8 @@ export default function ResetPasswordForm({
                 } as ResetPasswordBody
             )
             .catch((e) => {
-                setError(formatAxiosError(e, "An error occurred"));
-                console.error("Failed to reset password:", e);
+                setError(formatAxiosError(e, t('errorOccurred')));
+                console.error(t('passwordErrorReset'), e);
                 setIsSubmitting(false);
             });
 
@@ -182,7 +185,7 @@ export default function ResetPasswordForm({
                 return;
             }
 
-            setSuccessMessage("Password reset successfully! Back to log in...");
+            setSuccessMessage(t('passwordResetSuccess'));
 
             setTimeout(() => {
                 if (redirect) {
@@ -200,9 +203,9 @@ export default function ResetPasswordForm({
         <div>
             <Card className="w-full max-w-md">
                 <CardHeader>
-                    <CardTitle>Reset Password</CardTitle>
+                    <CardTitle>{t('passwordReset')}</CardTitle>
                     <CardDescription>
-                        Follow the steps to reset your password
+                        {t('passwordResetDescription')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -221,14 +224,13 @@ export default function ResetPasswordForm({
                                         name="email"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Email</FormLabel>
+                                                <FormLabel>{t('email')}</FormLabel>
                                                 <FormControl>
                                                     <Input {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                                 <FormDescription>
-                                                    We'll send a password reset
-                                                    code to this email address.
+                                                    {t('passwordResetSent')}
                                                 </FormDescription>
                                             </FormItem>
                                         )}
@@ -249,7 +251,7 @@ export default function ResetPasswordForm({
                                         name="email"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Email</FormLabel>
+                                                <FormLabel>{t('email')}</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         {...field}
@@ -268,7 +270,7 @@ export default function ResetPasswordForm({
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>
-                                                        Reset Code
+                                                        {t('passwordResetCode')}
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Input
@@ -278,8 +280,7 @@ export default function ResetPasswordForm({
                                                     </FormControl>
                                                     <FormMessage />
                                                     <FormDescription>
-                                                        Check your email for the
-                                                        reset code.
+                                                        {t('passwordResetCodeDescription')}
                                                     </FormDescription>
                                                 </FormItem>
                                             )}
@@ -292,7 +293,7 @@ export default function ResetPasswordForm({
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    New Password
+                                                    {t('passwordNew')}
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Input
@@ -310,7 +311,7 @@ export default function ResetPasswordForm({
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Confirm New Password
+                                                    {t('passwordNewConfirm')}
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Input
@@ -339,7 +340,7 @@ export default function ResetPasswordForm({
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Authenticator Code
+                                                    {t('pincodeAuth')}
                                                 </FormLabel>
                                                 <FormControl>
                                                     <div className="flex justify-center">
@@ -407,8 +408,8 @@ export default function ResetPasswordForm({
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     )}
                                     {state === "reset"
-                                        ? "Reset Password"
-                                        : "Submit Code"}
+                                        ? t('passwordReset')
+                                        : t('pincodeSubmit2')}
                                 </Button>
                             )}
 
@@ -422,7 +423,7 @@ export default function ResetPasswordForm({
                                     {isSubmitting && (
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     )}
-                                    Request Reset
+                                    {t('passwordResetSubmit')}
                                 </Button>
                             )}
 
@@ -436,7 +437,7 @@ export default function ResetPasswordForm({
                                         mfaForm.reset();
                                     }}
                                 >
-                                    Back to Password
+                                    {t('passwordBack')}
                                 </Button>
                             )}
 
@@ -450,7 +451,7 @@ export default function ResetPasswordForm({
                                         form.reset();
                                     }}
                                 >
-                                    Back to Email
+                                    {t('backToEmail')}
                                 </Button>
                             )}
                         </div>

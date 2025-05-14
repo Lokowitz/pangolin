@@ -13,6 +13,7 @@ import { AuthWithAccessTokenResponse } from "@server/routers/resource";
 import { AxiosResponse } from "axios";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 type AccessTokenProps = {
     token: string;
@@ -28,6 +29,8 @@ export default function AccessToken({
 
     const { env } = useEnvContext();
     const api = createApiClient({ env });
+
+    const t = useTranslations();
 
     function appendRequestToken(url: string, token: string) {
         const fullUrl = new URL(url);
@@ -76,7 +79,7 @@ export default function AccessToken({
                     );
                 }
             } catch (e) {
-                console.error("Error checking access token", e);
+                console.error(t('accessTokenError'), e);
             } finally {
                 setLoading(false);
             }
@@ -99,7 +102,7 @@ export default function AccessToken({
                     );
                 }
             } catch (e) {
-                console.error("Error checking access token", e);
+                console.error(t('accessTokenError'), e);
             } finally {
                 setLoading(false);
             }
@@ -115,9 +118,9 @@ export default function AccessToken({
 
     function renderTitle() {
         if (isValid) {
-            return "Access Granted";
+            return t('accessGranted');
         } else {
-            return "Access URL Invalid";
+            return t('accessUrlInvalid');
         }
     }
 
@@ -125,18 +128,16 @@ export default function AccessToken({
         if (isValid) {
             return (
                 <div>
-                    You have been granted access to this resource. Redirecting
-                    you...
+                    {t('accessGrantedDescription')}
                 </div>
             );
         } else {
             return (
                 <div>
-                    This shared access URL is invalid. Please contact the
-                    resource owner for a new URL.
+                    {t('accessUrlInvalidDescription')}
                     <div className="text-center mt-4">
                         <Button>
-                            <Link href="/">Go Home</Link>
+                            <Link href="/">{t('goHome')}</Link>
                         </Button>
                     </div>
                 </div>

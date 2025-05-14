@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Image from "next/image";
 import { cleanRedirect } from "@app/lib/cleanRedirect";
+import { useTranslations } from "next-intl";
 
 type DashboardLoginFormProps = {
     redirect?: string;
@@ -38,23 +39,25 @@ export default function DashboardLoginForm({
     //     logout();
     // });
 
+    const t = useTranslations();
+
     return (
         <Card className="w-full max-w-md">
             <CardHeader>
                 <div className="flex flex-row items-center justify-center">
                     <Image
                         src={`/logo/pangolin_orange.svg`}
-                        alt="Pangolin Logo"
+                        alt={t('pangolinLogoAlt')}
                         width="100"
                         height="100"
                     />
                 </div>
                 <div className="text-center space-y-1">
                     <h1 className="text-2xl font-bold mt-1">
-                        Welcome to Pangolin
+                        {t('welcome')}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Log in to get started
+                        {t('loginStart')}
                     </p>
                 </div>
             </CardHeader>
