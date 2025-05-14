@@ -37,9 +37,11 @@ import { useTranslations } from 'next-intl';
 
 type Step = "org" | "site" | "resources";
 
+const t = useTranslations();
+
 const orgSchema = z.object({
-    orgName: z.string().min(1, { message: "Organization name is required" }),
-    orgId: z.string().min(1, { message: "Organization ID is required" })
+    orgName: z.string().min(1, { message: t('orgNameRequired') }),
+    orgId: z.string().min(1, { message: t('orgIdRequired') })
 });
 
 export default function StepperForm() {
@@ -106,7 +108,7 @@ export default function StepperForm() {
         } catch (e) {
             console.error(e);
             setError(
-                formatAxiosError(e, "An error occurred while creating org")
+                formatAxiosError(e, t('orgErrorCreate'))
             );
         }
 
@@ -121,7 +123,7 @@ export default function StepperForm() {
                 <CardHeader>
                     <CardTitle>{t('setupNewOrg')}</CardTitle>
                     <CardDescription>
-                        {t('setupCreate')} 
+                        {t('setupCreate')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -231,7 +233,7 @@ export default function StepperForm() {
                                                 </FormControl>
                                                 <FormMessage />
                                                 <FormDescription>
-                                                    {t('orgDisplayName')} 
+                                                    {t('orgDisplayName')}
                                                 </FormDescription>
                                             </FormItem>
                                         )}

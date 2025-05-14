@@ -11,9 +11,12 @@ import { ListUserOrgsResponse } from "@server/routers/org";
 import { internal } from "@app/lib/api";
 import { AxiosResponse } from "axios";
 import { authCookieHeader } from "@app/lib/api/cookies";
+import { useTranslations } from "next-intl";
+
+const t = useTranslations();
 
 export const metadata: Metadata = {
-    title: `Setup - Pangolin`,
+    title: t('pangolinSetup'),
     description: ""
 };
 

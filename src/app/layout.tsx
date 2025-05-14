@@ -12,11 +12,13 @@ import { IsSupporterKeyVisibleResponse } from "@server/routers/supporterKey";
 import LicenseStatusProvider from "@app/providers/LicenseStatusProvider";
 import { GetLicenseStatusResponse } from "@server/routers/license";
 import LicenseViolation from "./components/LicenseViolation";
-import { NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { getLocale } from 'next-intl/server';
 
+const t = useTranslations();
+
 export const metadata: Metadata = {
-    title: `Dashboard - Pangolin`,
+    title: t('pangolinDashboard'),
     description: ""
 };
 

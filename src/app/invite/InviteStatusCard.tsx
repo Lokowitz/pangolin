@@ -45,9 +45,9 @@ export default function InviteStatusCard({
                         {t('inviteErrorNotValid')}
                     </p>
                     <ul className="list-disc list-inside text-sm space-y-2">
-                        <li>The invite may have expired</li>
-                        <li>The invite might have been revoked</li>
-                        <li>There could be a typo in the invite link</li>
+                        <li>{t('inviteErrorExpired')}</li>
+                        <li>{t('inviteErrorRevoked')}</li>
+                        <li>{t('inviteErrorTypo')}</li>
                     </ul>
                 </div>
             );

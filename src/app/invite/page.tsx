@@ -5,7 +5,10 @@ import { AcceptInviteResponse } from "@server/routers/user";
 import { AxiosResponse } from "axios";
 import { redirect } from "next/navigation";
 import InviteStatusCard from "./InviteStatusCard";
-import { formatAxiosError } from "@app/lib/api";;
+import { formatAxiosError } from "@app/lib/api";
+import { useTranslations } from "next-intl";
+
+;
 
 export default async function InvitePage(props: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -20,12 +23,14 @@ export default async function InvitePage(props: {
 
     const user = await verifySession();
 
+    const t = useTranslations();
+
     const parts = tokenParam.split("-");
     if (parts.length !== 2) {
         return (
             <>
-                <h1>Invalid Invite</h1>
-                <p>The invite link is invalid.</p>
+                <h1>{t('inviteInvalid')}</h1>
+                <p>{t('inviteInvalidDescription')}</p>
             </>
         );
     }
@@ -52,15 +57,13 @@ export default async function InvitePage(props: {
     }
 
     function cardType() {
-        if (error.includes("Invite is not for this user")) {
+        if (error.includes(t('inviteErrorWrongUser'))) {
             return "wrong_user";
         } else if (
-            error.includes(
-                "User does not exist. Please create an account first."
-            )
+            error.includes(t('inviteErrorUserNotExists'))
         ) {
             return "user_does_not_exist";
-        } else if (error.includes("You must be logged in to accept an invite")) {
+        } else if (error.includes(t('inviteErrorLoginRequired'))) {
             return "not_logged_in";
         } else {
             return "rejected";
