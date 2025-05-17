@@ -364,7 +364,7 @@
     "inviteRemoveErrorDescription": "Une erreur s'est produite lors de la suppression de l'invitation.",
     "inviteRemoved": "Invitation supprimée",
     "inviteRemovedDescription": "L'invitation pour {email} a été supprimée.",
-    "inviteQuestionRemove": "Are you sure you want to remove the invitation {email}?",
+    "inviteQuestionRemove": "Êtes-vous sûr de vouloir supprimer l'invitation {email}?",
     "inviteMessageRemove": "Une fois supprimée, cette invitation ne sera plus valide. Vous pourrez toujours réinviter l'utilisateur plus tard.",
     "inviteMessageConfirm": "Pour confirmer, veuillez saisir l'adresse e-mail de l'invitation ci-dessous.",
     "inviteQuestionRegenerate": "Êtes-vous sûr de vouloir régénérer l'invitation {email}? Cela révoquera l'invitation précédente.",
@@ -907,5 +907,5 @@
     "usersAll": "Tous les utilisateurs",
     "license": "Licence",
     "pangolinDashboard": "Tableau de bord - Pangolin",
-    "noResults": "No results found."
+    "noResults": "Aucun résultat trouvé."
 }
