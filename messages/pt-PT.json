@@ -364,7 +364,7 @@
     "inviteRemoveErrorDescription": "Ocorreu um erro ao remover o convite.",
     "inviteRemoved": "Convite removido",
     "inviteRemovedDescription": "O convite para {email} foi removido.",
-    "inviteQuestionRemove": "Are you sure you want to remove the invitation {email}?",
+    "inviteQuestionRemove": "Tem certeza de que deseja remover o convite {email}?",
     "inviteMessageRemove": "Uma vez removido, este convite não será mais válido. Você sempre pode convidar o usuário novamente mais tarde.",
     "inviteMessageConfirm": "Para confirmar, digite o endereço de e-mail do convite abaixo.",
     "inviteQuestionRegenerate": "Tem certeza que deseja regenerar o convite{email, plural, ='' {}, other { para #}}? Isso irá revogar o convite anterior.",
@@ -907,5 +907,5 @@
     "usersAll": "Todos os Usuários",
     "license": "Licença",
     "pangolinDashboard": "Painel - Pangolin",
-    "noResults": "No results found."
+    "noResults": "Nenhum resultado encontrado."
 }
