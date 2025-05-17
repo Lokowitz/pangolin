@@ -64,15 +64,15 @@ func main() {
 	}
 
 	var config Config
-	config.DoCrowdsecInstall = false
-	config.Secret = generateRandomSecretKey()
-
+	
 	// check if there is already a config file
 	if _, err := os.Stat("config/config.yml"); err != nil {
 		config = collectUserInput(reader)
-
+		
 		loadVersions(&config)
-
+		config.DoCrowdsecInstall = false
+		config.Secret = generateRandomSecretKey()
+		
 		if err := createConfigFiles(config); err != nil {
 			fmt.Printf("Error creating config files: %v\n", err)
 			os.Exit(1)

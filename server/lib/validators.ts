@@ -9,6 +9,10 @@ export function isValidIP(ip: string): boolean {
 }
 
 export function isValidUrlGlobPattern(pattern: string): boolean {
+    if (pattern === "/") {
+        return true;
+    }
+
     // Remove leading slash if present
     pattern = pattern.startsWith("/") ? pattern.slice(1) : pattern;
 

@@ -10,6 +10,7 @@ import { AxiosResponse } from "axios";
 import { authCookieHeader } from "@app/lib/api/cookies";
 import { Layout } from "@app/components/Layout";
 import { adminNavItems } from "../navigation";
+import { useTranslations } from "next-intl";
 
 export const dynamic = "force-dynamic";
 

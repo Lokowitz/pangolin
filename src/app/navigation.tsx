@@ -68,8 +68,7 @@ export const orgNavItems: SidebarNavItem[] = [
     {
         title: "API Keys",
         href: "/{orgId}/settings/api-keys",
-        icon: <KeyRound className="h-4 w-4" />,
-        showProfessional: true
+        icon: <KeyRound className="h-4 w-4" />
     },
     {
         title: "Settings",
@@ -87,8 +86,7 @@ export const adminNavItems: SidebarNavItem[] = [
     {
         title: "API Keys",
         href: "/admin/api-keys",
-        icon: <KeyRound className="h-4 w-4" />,
-        showProfessional: true
+        icon: <KeyRound className="h-4 w-4" />
     },
     {
         title: "Identity Providers",

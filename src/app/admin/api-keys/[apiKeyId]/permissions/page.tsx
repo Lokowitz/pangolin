@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 "use client";
 
 import PermissionsSelectBox from "@app/components/PermissionsSelectBox";
@@ -84,18 +79,18 @@ export default function Page() {
                 )
             })
             .catch((e) => {
-                console.error(t('apiKeysPermissionsErrorUpdate'), e);
+                console.error("Error setting permissions", e);
                 toast({
                     variant: "destructive",
-                    title: t('apiKeysPermissionsErrorUpdate'),
+                    title: "Error setting permissions",
                     description: formatAxiosError(e)
                 });
             });
 
         if (actionsRes && actionsRes.status === 200) {
             toast({
-                title: t('apiKeysPermissionsUpdated'),
-                description: t('apiKeysPermissionsUpdatedDescription')
+                title: "Permissions updated",
+                description: "The permissions have been updated."
             });
         }
 

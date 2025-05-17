@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 "use client";
 
 import {
@@ -63,16 +58,14 @@ import CopyTextBox from "@app/components/CopyTextBox";
 import PermissionsSelectBox from "@app/components/PermissionsSelectBox";
 import { useTranslations } from "next-intl";
 
-const t = useTranslations();
-
 const createFormSchema = z.object({
     name: z
         .string()
         .min(2, {
-            message: t('apiKeysNameMin')
+            message: "Name must be at least 2 characters."
         })
         .max(255, {
-            message: t('apiKeysNameMax')
+            message: "Name must not be longer than 255 characters."
         })
 });
 
@@ -87,7 +80,7 @@ const copiedFormSchema = z
             return data.copied;
         },
         {
-            message: t('apiKeysConfirmCopy2'),
+            message: "You must confirm that you have copied the API key.",
             path: ["copied"]
         }
     );
@@ -120,6 +113,8 @@ export default function Page() {
             copied: false
         }
     });
+
+    const t = useTranslations();
 
     async function onSubmit(data: CreateFormValues) {
         setCreateLoading(true);

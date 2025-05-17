@@ -40,9 +40,10 @@ import {
 import { formatAxiosError } from "@app/lib/api";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
+import { useTranslations } from "next-intl";
 
 const formSchema = z.object({
-    email: z.string().email({ message: "Please enter a valid email" }),
+    username: z.string(),
     roleId: z.string().min(1, { message: "Please select a role" })
 });
 
@@ -59,10 +60,12 @@ export default function AccessControlsPage() {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            email: user.email!,
+            username: user.username!,
             roleId: user.roleId?.toString()
         }
     });
+
+    const t = useTranslations();
 
     useEffect(() => {
         async function fetchRoles() {
@@ -72,10 +75,10 @@ export default function AccessControlsPage() {
                     console.error(e);
                     toast({
                         variant: "destructive",
-                        title: "Failed to fetch roles",
+                        title: t('accessRoleErrorFetch'),
                         description: formatAxiosError(
                             e,
-                            "An error occurred while fetching the roles"
+                            t('accessRoleErrorFetchDescription')
                         )
                     });
                 });
@@ -100,10 +103,10 @@ export default function AccessControlsPage() {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Failed to add user to role",
+                    title: t('accessRoleErrorAdd'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while adding user to the role."
+                        t('accessRoleErrorAddDescription')
                     )
                 });
             });
@@ -111,8 +114,8 @@ export default function AccessControlsPage() {
         if (res && res.status === 200) {
             toast({
                 variant: "default",
-                title: "User saved",
-                description: "The user has been updated."
+                title: t('userSaved'),
+                description: t('userSavedDescription')
             });
         }
 
@@ -123,10 +126,9 @@ export default function AccessControlsPage() {
         <SettingsContainer>
             <SettingsSection>
                 <SettingsSectionHeader>
-                    <SettingsSectionTitle>Access Controls</SettingsSectionTitle>
+                    <SettingsSectionTitle>{t('accessControls')}</SettingsSectionTitle>
                     <SettingsSectionDescription>
-                        Manage what this user can access and do in the
-                        organization
+                        {t('accessControlsDescription')}
                     </SettingsSectionDescription>
                 </SettingsSectionHeader>
 
@@ -143,14 +145,14 @@ export default function AccessControlsPage() {
                                     name="roleId"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Role</FormLabel>
+                                            <FormLabel>{t('role')}</FormLabel>
                                             <Select
                                                 onValueChange={field.onChange}
                                                 value={field.value}
                                             >
                                                 <FormControl>
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Select role" />
+                                                        <SelectValue placeholder={t('accessRoleSelect')} />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
@@ -180,7 +182,7 @@ export default function AccessControlsPage() {
                         disabled={loading}
                         form="access-controls-form"
                     >
-                        Save Access Controls
+                        {t('accessControlsSubmit')}
                     </Button>
                 </SettingsSectionFooter>
             </SettingsSection>

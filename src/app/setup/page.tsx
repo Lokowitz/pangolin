@@ -121,7 +121,7 @@ export default function StepperForm() {
                 <CardHeader>
                     <CardTitle>{t('setupNewOrg')}</CardTitle>
                     <CardDescription>
-                        {t('setupCreate')} 
+                        {t('setupCreate')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -231,7 +231,7 @@ export default function StepperForm() {
                                                 </FormControl>
                                                 <FormMessage />
                                                 <FormDescription>
-                                                    {t('orgDisplayName')} 
+                                                    {t('orgDisplayName')}
                                                 </FormDescription>
                                             </FormItem>
                                         )}
@@ -242,7 +242,7 @@ export default function StepperForm() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    {t('setupOrgId')}
+                                                    {t('orgId')}
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Input

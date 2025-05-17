@@ -65,6 +65,9 @@ import {
     updateResourceRule
 } from "@server/routers/resource";
 import { SwitchInput } from "@app/components/SwitchInput";
+import { useTranslations } from "next-intl";
+
+const t = useTranslations();
 
 const GeneralFormSchema = z
     .object({
@@ -88,7 +91,7 @@ const GeneralFormSchema = z
             return true;
         },
         {
-            message: "Invalid port number",
+            message: t('proxyErrorInvalidPort'),
             path: ["proxyPort"]
         }
     )
@@ -100,7 +103,7 @@ const GeneralFormSchema = z
             return true;
         },
         {
-            message: "Invalid subdomain",
+            message: t('subdomainErrorInvalid'),
             path: ["subdomain"]
         }
     );
@@ -174,10 +177,10 @@ export default function GeneralForm() {
                 .catch((e) => {
                     toast({
                         variant: "destructive",
-                        title: "Error fetching domains",
+                        title: t('domainErrorFetch'),
                         description: formatAxiosError(
                             e,
-                            "An error occurred when fetching the domains"
+                            t('domainErrorFetchDescription')
                         )
                     });
                 });
@@ -216,18 +219,18 @@ export default function GeneralForm() {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Failed to update resource",
+                    title: t('resourceErrorUpdate'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while updating the resource"
+                        t('resourceErrorUpdateDescription')
                     )
                 });
             });
 
         if (res && res.status === 200) {
             toast({
-                title: "Resource updated",
-                description: "The resource has been updated successfully"
+                title: t('resourceUpdated'),
+                description: t('resourceUpdatedDescription')
             });
 
             const resource = res.data.data;
@@ -255,18 +258,18 @@ export default function GeneralForm() {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Failed to transfer resource",
+                    title: t('resourceErrorTransfer'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while transferring the resource"
+                        t('resourceErrorTransferDescription')
                     )
                 });
             });
 
         if (res && res.status === 200) {
             toast({
-                title: "Resource transferred",
-                description: "The resource has been transferred successfully"
+                title: t('resourceTransferred'),
+                description: t('resourceTransferredDescription')
             });
             router.refresh();
 
@@ -290,10 +293,10 @@ export default function GeneralForm() {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Failed to toggle resource",
+                    title: t('resourceErrorToggle'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while updating the resource"
+                        t('resourceErrorToggleDescription')
                     )
                 });
             });
@@ -308,15 +311,15 @@ export default function GeneralForm() {
             <SettingsContainer>
                 <SettingsSection>
                     <SettingsSectionHeader>
-                        <SettingsSectionTitle>Visibility</SettingsSectionTitle>
+                        <SettingsSectionTitle>{t('resourceVisibilityTitle')}</SettingsSectionTitle>
                         <SettingsSectionDescription>
-                            Completely enable or disable resource visibility
+                            {t('resourceVisibilityTitleDescription')}
                         </SettingsSectionDescription>
                     </SettingsSectionHeader>
                     <SettingsSectionBody>
                         <SwitchInput
                             id="enable-resource"
-                            label="Enable Resource"
+                            label={t('resourceEnable')}
                             defaultChecked={resource.enabled}
                             onCheckedChange={async (val) => {
                                 await toggleResourceEnabled(val);
@@ -328,10 +331,10 @@ export default function GeneralForm() {
                 <SettingsSection>
                     <SettingsSectionHeader>
                         <SettingsSectionTitle>
-                            General Settings
+                            {t('resourceGeneral')}
                         </SettingsSectionTitle>
                         <SettingsSectionDescription>
-                            Configure the general settings for this resource
+                            {t('resourceGeneralDescription')}
                         </SettingsSectionDescription>
                     </SettingsSectionHeader>
 
@@ -348,7 +351,7 @@ export default function GeneralForm() {
                                         name="name"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Name</FormLabel>
+                                                <FormLabel>{t('name')}</FormLabel>
                                                 <FormControl>
                                                     <Input {...field} />
                                                 </FormControl>
@@ -367,7 +370,7 @@ export default function GeneralForm() {
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormLabel>
-                                                                Domain Type
+                                                                {t('domainType')}
                                                             </FormLabel>
                                                             <Select
                                                                 value={
@@ -398,11 +401,10 @@ export default function GeneralForm() {
                                                                 </FormControl>
                                                                 <SelectContent>
                                                                     <SelectItem value="subdomain">
-                                                                        Subdomain
+                                                                        {t('subdomain')}
                                                                     </SelectItem>
                                                                     <SelectItem value="basedomain">
-                                                                        Base
-                                                                        Domain
+                                                                        {t('baseDomain')}
                                                                     </SelectItem>
                                                                 </SelectContent>
                                                             </Select>
@@ -416,7 +418,7 @@ export default function GeneralForm() {
                                                 {domainType === "subdomain" ? (
                                                     <div className="w-fill space-y-2">
                                                         <FormLabel>
-                                                            Subdomain
+                                                            {t('subdomain')}
                                                         </FormLabel>
                                                         <div className="flex">
                                                             <div className="w-1/2">
@@ -502,7 +504,7 @@ export default function GeneralForm() {
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>
-                                                                    Base Domain
+                                                                    {t('baseDomain')}
                                                                 </FormLabel>
                                                                 <Select
                                                                     onValueChange={
@@ -556,7 +558,7 @@ export default function GeneralForm() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>
-                                                        Port Number
+                                                        {t('resourcePortNumber')}
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Input
@@ -596,7 +598,7 @@ export default function GeneralForm() {
                             disabled={saveLoading}
                             form="general-settings-form"
                         >
-                            Save General Settings
+                            {t('saveGeneralSettings')}
                         </Button>
                     </SettingsSectionFooter>
                 </SettingsSection>
@@ -604,10 +606,10 @@ export default function GeneralForm() {
                 <SettingsSection>
                     <SettingsSectionHeader>
                         <SettingsSectionTitle>
-                            Transfer Resource
+                            {t('resourceTransfer')}
                         </SettingsSectionTitle>
                         <SettingsSectionDescription>
-                            Transfer this resource to a different site
+                            {t('resourceTransferDescription')}
                         </SettingsSectionDescription>
                     </SettingsSectionHeader>
 
@@ -627,7 +629,7 @@ export default function GeneralForm() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    Destination Site
+                                                    {t('siteDestination')}
                                                 </FormLabel>
                                                 <Popover
                                                     open={open}
@@ -652,16 +654,16 @@ export default function GeneralForm() {
                                                                               site.siteId ===
                                                                               field.value
                                                                       )?.name
-                                                                    : "Select site"}
+                                                                    : t('siteSelect')}
                                                                 <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                             </Button>
                                                         </FormControl>
                                                     </PopoverTrigger>
                                                     <PopoverContent className="w-full p-0">
                                                         <Command>
-                                                            <CommandInput placeholder="Search sites" />
+                                                            <CommandInput placeholder={t('searchSites')} />
                                                             <CommandEmpty>
-                                                                No sites found.
+                                                                {t('sitesNotFound')}
                                                             </CommandEmpty>
                                                             <CommandGroup>
                                                                 {sites.map(
@@ -716,7 +718,7 @@ export default function GeneralForm() {
                             disabled={transferLoading}
                             form="transfer-form"
                         >
-                            Transfer Resource
+                            {t('resourceTransferSubmit')}
                         </Button>
                     </SettingsSectionFooter>
                 </SettingsSection>

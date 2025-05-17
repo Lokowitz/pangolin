@@ -318,8 +318,8 @@ async function updateHttpResource(
             domainId: updatePayload.domainId,
             enabled: updatePayload.enabled,
             stickySession: updatePayload.stickySession,
-            tlsServerName: updatePayload.tlsServerName || null,
-            setHostHeader: updatePayload.setHostHeader || null,
+            tlsServerName: updatePayload.tlsServerName,
+            setHostHeader: updatePayload.setHostHeader,
             fullDomain: updatePayload.fullDomain
         })
         .where(eq(resources.resourceId, resource.resourceId))

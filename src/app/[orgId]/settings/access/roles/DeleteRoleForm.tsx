@@ -38,6 +38,7 @@ import { RoleRow } from "./RolesTable";
 import { formatAxiosError } from "@app/lib/api";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
+import { useTranslations } from "next-intl";
 
 type CreateRoleFormProps = {
     open: boolean;
@@ -46,8 +47,10 @@ type CreateRoleFormProps = {
     afterDelete?: () => void;
 };
 
+const t = useTranslations();
+
 const formSchema = z.object({
-    newRoleId: z.string({ message: "New role is required" })
+    newRoleId: z.string({ message: t('accessRoleErrorNewRequired') })
 });
 
 export default function DeleteRoleForm({
@@ -73,10 +76,10 @@ export default function DeleteRoleForm({
                     console.error(e);
                     toast({
                         variant: "destructive",
-                        title: "Failed to fetch roles",
+                        title: t('accessRoleErrorFetch'),
                         description: formatAxiosError(
                             e,
-                            "An error occurred while fetching the roles"
+                            t('accessRoleErrorFetchDescription')
                         )
                     });
                 });
@@ -112,10 +115,10 @@ export default function DeleteRoleForm({
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Failed to remove role",
+                    title: t('accessRoleErrorRemove'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while removing the role."
+                        t('accessRoleErrorRemoveDescription')
                     )
                 });
             });
@@ -123,8 +126,8 @@ export default function DeleteRoleForm({
         if (res && res.status === 200) {
             toast({
                 variant: "default",
-                title: "Role removed",
-                description: "The role has been successfully removed."
+                title: t('accessRoleRemoved'),
+                description: t('accessRoleRemovedDescription')
             });
 
             if (open) {
@@ -151,22 +154,19 @@ export default function DeleteRoleForm({
             >
                 <CredenzaContent>
                     <CredenzaHeader>
-                        <CredenzaTitle>Remove Role</CredenzaTitle>
+                        <CredenzaTitle>{t('accessRoleRemove')}</CredenzaTitle>
                         <CredenzaDescription>
-                            Remove a role from the organization
+                            {t('accessRoleRemoveDescription')}
                         </CredenzaDescription>
                     </CredenzaHeader>
                     <CredenzaBody>
                         <div className="space-y-4">
                             <div className="space-y-4">
                                 <p>
-                                    You're about to delete the{" "}
-                                    <b>{roleToDelete.name}</b> role. You cannot
-                                    undo this action.
+                                    {t('accessRoleQuestionRemove', {name: roleToDelete.name})}
                                 </p>
                                 <p>
-                                    Before deleting this role, please select a
-                                    new role to transfer existing members to.
+                                    {t('accessRoleRequiredRemove')}
                                 </p>
                             </div>
                             <Form {...form}>
@@ -180,7 +180,7 @@ export default function DeleteRoleForm({
                                         name="newRoleId"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Role</FormLabel>
+                                                <FormLabel>{t('role')}</FormLabel>
                                                 <Select
                                                     onValueChange={
                                                         field.onChange
@@ -189,7 +189,7 @@ export default function DeleteRoleForm({
                                                 >
                                                     <FormControl>
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder="Select role" />
+                                                            <SelectValue placeholder={t('accessRoleSelect')} />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
@@ -215,7 +215,7 @@ export default function DeleteRoleForm({
                     </CredenzaBody>
                     <CredenzaFooter>
                         <CredenzaClose asChild>
-                            <Button variant="outline">Close</Button>
+                            <Button variant="outline">{t('close')}</Button>
                         </CredenzaClose>
                         <Button
                             type="submit"
@@ -223,7 +223,7 @@ export default function DeleteRoleForm({
                             loading={loading}
                             disabled={loading}
                         >
-                            Remove Role
+                            {t('accessRoleRemoveSubmit')}
                         </Button>
                     </CredenzaFooter>
                 </CredenzaContent>

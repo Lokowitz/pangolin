@@ -55,7 +55,7 @@ export function SettingsSectionFooter({
 }: {
     children: React.ReactNode;
 }) {
-    return <div className="flex justify-end space-x-2 mt-auto pt-8">{children}</div>;
+    return <div className="flex justify-end space-x-2 mt-auto pt-6">{children}</div>;
 }
 
 export function SettingsSectionGrid({

@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -49,7 +44,7 @@ import {
 } from "@app/components/Settings";
 import SettingsSectionTitle from "@app/components/SettingsSectionTitle";
 import { Badge } from "@app/components/ui/badge";
-import { Check, ShieldCheck, ShieldOff } from "lucide-react";
+import { Check, Heart, InfoIcon, ShieldCheck, ShieldOff } from "lucide-react";
 import CopyTextBox from "@app/components/CopyTextBox";
 import { Progress } from "@app/components/ui/progress";
 import { MinusCircle, PlusCircle } from "lucide-react";
@@ -57,6 +52,8 @@ import ConfirmDeleteDialog from "@app/components/ConfirmDeleteDialog";
 import { SitePriceCalculator } from "./components/SitePriceCalculator";
 import Link from "next/link";
 import { Checkbox } from "@app/components/ui/checkbox";
+import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
+import { useSupporterStatusContext } from "@app/hooks/useSupporterStatusContext";
 import { useTranslations } from 'next-intl';
 
 const formSchema = z.object({
@@ -78,7 +75,6 @@ function obfuscateLicenseKey(key: string): string {
 
 export default function LicensePage() {
     const api = createApiClient(useEnvContext());
-    const t = useTranslations();
     const [rows, setRows] = useState<LicenseKeyCache[]>([]);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -97,6 +93,7 @@ export default function LicensePage() {
     const [isActivatingLicense, setIsActivatingLicense] = useState(false);
     const [isDeletingLicense, setIsDeletingLicense] = useState(false);
     const [isRecheckingLicense, setIsRecheckingLicense] = useState(false);
+    const { supporterStatus } = useSupporterStatusContext();
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -105,6 +102,8 @@ export default function LicensePage() {
             agreeToTerms: false
         }
     });
+
+    const t = useTranslations();
 
     useEffect(() => {
         async function load() {
@@ -131,8 +130,11 @@ export default function LicensePage() {
             }
         } catch (e) {
             toast({
-                title: t('licenseErrorKeyLoad'),
-                description: formatAxiosError(e, t('licenseErrorKeyLoadDescription'))
+                title: "Failed to load license keys",
+                description: formatAxiosError(
+                    e,
+                    "An error occurred loading license keys."
+                )
             });
         }
     }
@@ -147,14 +149,17 @@ export default function LicensePage() {
             }
             await loadLicenseKeys();
             toast({
-                title: t('licenseKeyDeleted'),
-                description: t('licenseKeyDeletedDescription')
+                title: "License key deleted",
+                description: "The license key has been deleted."
             });
             setIsDeleteModalOpen(false);
         } catch (e) {
             toast({
-                title: t('licenseErrorKeyDelete'),
-                description: formatAxiosError(e, t('licenseErrorKeyDeleteDescription'))
+                title: "Failed to delete license key",
+                description: formatAxiosError(
+                    e,
+                    "An error occurred deleting license key."
+                )
             });
         } finally {
             setIsDeletingLicense(false);
@@ -170,13 +175,16 @@ export default function LicensePage() {
             }
             await loadLicenseKeys();
             toast({
-                title: t('licenseErrorKeyRechecked'),
-                description: t('licenseErrorKeyRecheckedDescription')
+                title: "License keys rechecked",
+                description: "All license keys have been rechecked"
             });
         } catch (e) {
             toast({
-                title: t('licenseErrorKeyRecheck'),
-                description: formatAxiosError(e, t('licenseErrorKeyRecheckDescription'))
+                title: "Failed to recheck license keys",
+                description: formatAxiosError(
+                    e,
+                    "An error occurred rechecking license keys."
+                )
             });
         } finally {
             setIsRecheckingLicense(false);
@@ -194,8 +202,8 @@ export default function LicensePage() {
             }
 
             toast({
-                title: t('licenseKeyActivated'),
-                description: t('licenseKeyActivatedDescription')
+                title: "License key activated",
+                description: "The license key has been successfully activated."
             });
 
             setIsCreateModalOpen(false);
@@ -204,8 +212,11 @@ export default function LicensePage() {
         } catch (e) {
             toast({
                 variant: "destructive",
-                title: t('licenseErrorKeyActivate'),
-                description: formatAxiosError(e, t('licenseErrorKeyActivateDescription'))
+                title: "Failed to activate license key",
+                description: formatAxiosError(
+                    e,
+                    "An error occurred while activating the license key."
+                )
             });
         } finally {
             setIsActivatingLicense(false);
@@ -319,7 +330,7 @@ export default function LicensePage() {
                     }}
                     dialog={
                         <div className="space-y-4">
-                            <p> 
+                            <p>
                                 {t('licenseQuestionRemove', {selectedKey: obfuscateLicenseKey(selectedLicenseKey.licenseKey)})}
                             </p>
                             <p>
@@ -346,6 +357,18 @@ export default function LicensePage() {
                 description={t('licenseTitleDescription')}
             />
 
+            <Alert variant="neutral" className="mb-6">
+                <InfoIcon className="h-4 w-4" />
+                <AlertTitle className="font-semibold">
+                    About Licensing
+                </AlertTitle>
+                <AlertDescription>
+                    This is for business and enterprise users who are using
+                    Pangolin in a commercial environment. If you are using
+                    Pangolin for personal use, you can ignore this section.
+                </AlertDescription>
+            </Alert>
+
             <SettingsContainer>
                 <SettingsSectionGrid cols={2}>
                     <SettingsSection>
@@ -363,18 +386,25 @@ export default function LicensePage() {
                                             <Check />
                                             {licenseStatus?.tier ===
                                             "PROFESSIONAL"
-                                                ? "Professional License"
+                                                ? t('licenseTierProfessional')
                                                 : licenseStatus?.tier ===
                                                     "ENTERPRISE"
-                                                  ? "Enterprise License"
-                                                  : "Licensed"}
+                                                  ? t('licenseTierEnterprise')
+                                                  : t('licensed')}
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
-                                        <div className="text-2xl">
-                                            {t('notLicensed')}
-                                        </div>
+                                        {supporterStatus?.visible ? (
+                                            <div className="text-2xl">
+                                                Community Edition
+                                            </div>
+                                        ) : (
+                                            <div className="text-2xl flex items-center gap-2 text-pink-500">
+                                                <Heart />
+                                                Community Edition
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
