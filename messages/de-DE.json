@@ -364,7 +364,7 @@
     "inviteRemoveErrorDescription": "Beim Entfernen der Einladung ist ein Fehler aufgetreten.",
     "inviteRemoved": "Einladung entfernt",
     "inviteRemovedDescription": "Die Einladung für {email} wurde entfernt.",
-    "inviteQuestionRemove": "Are you sure you want to remove the invitation {email}?",
+    "inviteQuestionRemove": "Sind Sie sicher, dass Sie die Einladung {email} entfernen möchten?",
     "inviteMessageRemove": "Sobald entfernt, wird diese Einladung nicht mehr gültig sein. Sie können den Benutzer später jederzeit erneut einladen.",
     "inviteMessageConfirm": "Bitte geben Sie zur Bestätigung die E-Mail-Adresse der Einladung unten ein.",
     "inviteQuestionRegenerate": "Sind Sie sicher, dass Sie die Einladung {email} neu generieren möchten? Dies wird die vorherige Einladung widerrufen.",
@@ -907,5 +907,5 @@
     "usersAll": "Alle Benutzer",
     "license": "Lizenz",
     "pangolinDashboard": "Dashboard - Pangolin",
-    "noResults": "No results found."
+    "noResults": "Keine Ergebnisse gefunden."
 }
