@@ -364,7 +364,7 @@
     "inviteRemoveErrorDescription": "Si è verificato un errore durante la rimozione dell'invito.",
     "inviteRemoved": "Invito rimosso",
     "inviteRemovedDescription": "L'invito per {email} è stato rimosso.",
-    "inviteQuestionRemove": "Are you sure you want to remove the invitation {email}?",
+    "inviteQuestionRemove": "Sei sicuro di voler rimuovere l'invito {email}?",
     "inviteMessageRemove": "Una volta rimosso, questo invito non sarà più valido. Puoi sempre reinvitare l'utente in seguito.",
     "inviteMessageConfirm": "Per confermare, digita l'indirizzo email dell'invito qui sotto.",
     "inviteQuestionRegenerate": "Sei sicuro di voler rigenerare l'invito {email}? Questo revocherà l'invito precedente.",
@@ -907,5 +907,5 @@
     "usersAll": "Tutti Gli Utenti",
     "license": "Licenza",
     "pangolinDashboard": "Cruscotto - Pangolino",
-    "noResults": "No results found."
+    "noResults": "Nessun risultato trovato."
 }
