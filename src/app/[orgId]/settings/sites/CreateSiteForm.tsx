@@ -52,16 +52,14 @@ import {
 import LoaderPlaceholder from "@app/components/PlaceHolderLoader";
 import { useTranslations } from 'next-intl';
 
-const t = useTranslations();
-
 const createSiteFormSchema = z.object({
     name: z
         .string()
         .min(2, {
-            message: t('nameMin', {len: 2})
+            message: "Name must be at least 2 characters."
         })
         .max(30, {
-            message: t('nameMax', {len: 30})
+            message: "Name must not be longer than 30 characters."
         }),
     method: z.enum(["wireguard", "newt", "local"])
 });
@@ -116,6 +114,8 @@ export default function CreateSiteForm({
 
     const nameField = form.watch("name");
     const methodField = form.watch("method");
+
+    const t = useTranslations();
 
     useEffect(() => {
         const nameIsValid = nameField?.length >= 2 && nameField?.length <= 30;
@@ -172,8 +172,8 @@ export default function CreateSiteForm({
             if (!keypair || !siteDefaults) {
                 toast({
                     variant: "destructive",
-                    title: t('siteErrorCreate'),
-                    description: t('siteErrorCreateKeyPair')
+                    title: "Error creating site",
+                    description: "Key pair or site defaults not found"
                 });
                 setLoading?.(false);
                 setIsLoading(false);
@@ -191,8 +191,8 @@ export default function CreateSiteForm({
             if (!siteDefaults) {
                 toast({
                     variant: "destructive",
-                    title: t('siteErrorCreate'),
-                    description: t('siteErrorCreateDefaults')
+                    title: "Error creating site",
+                    description: "Site defaults not found"
                 });
                 setLoading?.(false);
                 setIsLoading(false);
@@ -215,7 +215,7 @@ export default function CreateSiteForm({
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: t('siteErrorCreate'),
+                    title: "Error creating site",
                     description: formatAxiosError(e)
                 });
             });

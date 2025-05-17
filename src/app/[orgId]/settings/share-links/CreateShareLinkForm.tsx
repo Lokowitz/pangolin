@@ -74,10 +74,8 @@ type FormProps = {
     onCreated?: (result: ShareLinkRow) => void;
 };
 
-const t = useTranslations();
-
 const formSchema = z.object({
-    resourceId: z.number({ message: t('shareErrorSelectResource') }),
+    resourceId: z.number({ message: "Please select a resource" }),
     resourceName: z.string(),
     resourceUrl: z.string(),
     timeUnit: z.string(),
@@ -112,6 +110,8 @@ export default function CreateShareLinkForm({
         }[]
     >([]);
 
+    const t = useTranslations();
+
     const timeUnits = [
         { unit: "minutes", name: t('minutes') },
         { unit: "hours", name: t('hours') },
@@ -144,8 +144,11 @@ export default function CreateShareLinkForm({
                     console.error(e);
                     toast({
                         variant: "destructive",
-                        title: t('shareErrorFetchResource'),
-                        description: formatAxiosError(e, t('shareErrorFetchResourceDescription'))
+                        title: "Failed to fetch resources",
+                        description: formatAxiosError(
+                            e,
+                            "An error occurred while fetching the resources"
+                        )
                     });
                 });
 
@@ -201,15 +204,18 @@ export default function CreateShareLinkForm({
                     validForSeconds: neverExpire ? undefined : timeInSeconds,
                     title:
                         values.title ||
-                        t('shareLink', {resource: values.resourceName || "Resource" + values.resourceId})
+                        `${values.resourceName || "Resource" + values.resourceId} Share Link`
                 }
             )
             .catch((e) => {
                 console.error(e);
                 toast({
                     variant: "destructive",
-                    title: t('shareErrorCreate'),
-                    description: formatAxiosError(e, t('shareErrorCreateDescription'))
+                    title: "Failed to create share link",
+                    description: formatAxiosError(
+                        e,
+                        "An error occurred while creating the share link"
+                    )
                 });
             });
 

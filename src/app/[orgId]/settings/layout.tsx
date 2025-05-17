@@ -23,10 +23,8 @@ import { useTranslations } from "next-intl";
 
 export const dynamic = "force-dynamic";
 
-const t = useTranslations();
-
 export const metadata: Metadata = {
-    title: t('pangolinSettings'),
+    title: `Settings - Pangolin`,
     description: ""
 };
 
@@ -48,6 +46,8 @@ export default async function SettingsLayout(props: SettingsLayoutProps) {
     }
 
     const cookie = await authCookieHeader();
+
+    const t = useTranslations();
 
     try {
         const getOrgUser = cache(() =>

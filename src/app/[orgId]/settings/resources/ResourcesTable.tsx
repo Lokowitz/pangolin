@@ -89,10 +89,10 @@ export default function SitesTable({ resources, orgId }: ResourcesTableProps) {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: t('resourcesErrorUpdate'),
+                    title: "Failed to toggle resource",
                     description: formatAxiosError(
                         e,
-                        t('resourcesErrorUpdateDescription')
+                        "An error occurred while updating the resource"
                     )
                 });
             });

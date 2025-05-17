@@ -66,15 +66,13 @@ import Link from "next/link";
 import { QRCodeCanvas } from "qrcode.react";
 import { useTranslations } from 'next-intl';
 
-const t = useTranslations();
-
 const createSiteFormSchema = z
     .object({
         name: z
             .string()
-            .min(2, { message: t('nameMin', {len: 2}) })
+            .min(2, "Name must be at least 2 characters.")
             .max(30, {
-                message: t('nameMax', {len: 30})
+                message: "Name must not be longer than 30 characters."
             }),
         method: z.enum(["newt", "wireguard", "local"]),
         copied: z.boolean()
@@ -87,7 +85,7 @@ const createSiteFormSchema = z
             return true;
         },
         {
-            message: t('sitesConfirmCopy'),
+            message: "Please confirm that you have copied the config.",
             path: ["copied"]
         }
     );
@@ -383,8 +381,8 @@ WantedBy=default.target`
             if (!siteDefaults || !wgConfig) {
                 toast({
                     variant: "destructive",
-                    title: t('siteErrorCreate'),
-                    description: t('siteErrorCreateKeyPair')
+                    title: "Error creating site",
+                    description: "Key pair or site defaults not found"
                 });
                 setCreateLoading(false);
                 return;
@@ -401,8 +399,8 @@ WantedBy=default.target`
             if (!siteDefaults) {
                 toast({
                     variant: "destructive",
-                    title: t('siteErrorCreate'),
-                    description: t('siteErrorCreateDefaults')
+                    title: "Error creating site",
+                    description: "Site defaults not found"
                 });
                 setCreateLoading(false);
                 return;
@@ -424,7 +422,7 @@ WantedBy=default.target`
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: t('siteErrorCreate'),
+                    title: "Error creating site",
                     description: formatAxiosError(e)
                 });
             });
