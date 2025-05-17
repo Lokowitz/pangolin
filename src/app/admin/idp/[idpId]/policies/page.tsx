@@ -75,10 +75,8 @@ type Organization = {
     name: string;
 };
 
-const t = useTranslations();
-
 const policyFormSchema = z.object({
-    orgId: z.string().min(1, { message: t('orgRequired') }),
+    orgId: z.string().min(1, { message: "Organization is required" }),
     roleMapping: z.string().optional(),
     orgMapping: z.string().optional()
 });
@@ -124,6 +122,8 @@ export default function PoliciesPage() {
             defaultOrgMapping: ""
         }
     });
+
+    const t = useTranslations();
 
     const loadIdp = async () => {
         try {

@@ -123,7 +123,7 @@ export default function RegenerateInvitationForm({
                 onRegenerate({
                     id: invitation.id,
                     email: invitation.email,
-                    expiresAt: res.data.data.expiresAt,
+                    expiresAt: res.data.data.expiresAt ?? "",
                     role: invitation.role,
                     roleId: invitation.roleId
                 });
@@ -177,7 +177,7 @@ export default function RegenerateInvitationForm({
                     {!inviteLink ? (
                         <div>
                             <p>
-                                {t('inviteQuestionRegenerate', {email: invitation?.email})}
+                                {t('inviteQuestionRegenerate', {email: invitation?.email || ''})}
                             </p>
                             <div className="flex items-center space-x-2 mt-4">
                                 <Checkbox

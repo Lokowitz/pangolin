@@ -12,12 +12,10 @@ import { Layout } from "@app/components/Layout";
 import { adminNavItems } from "../navigation";
 import { useTranslations } from "next-intl";
 
-const t = useTranslations();
-
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-    title: t('pangolinServerAdmin'),
+    title: `Server Admin - Pangolin`,
     description: ""
 };
 

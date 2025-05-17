@@ -39,21 +39,19 @@ import { Badge } from "@app/components/ui/badge";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
 import { useTranslations } from "next-intl";
 
-const t = useTranslations();
-
 const createIdpFormSchema = z.object({
-    name: z.string().min(2, { message: t('nameMin', {len: 2}) }),
+    name: z.string().min(2, "Name must be at least 2 characters."),
     type: z.enum(["oidc"]),
-    clientId: z.string().min(1, { message: t('idpClientIdRequired') }),
-    clientSecret: z.string().min(1, { message: t('idpClientSecretRequired') }),
-    authUrl: z.string().url({ message: t('idpErrorAuthUrlInvalid') }),
-    tokenUrl: z.string().url({ message: t('idpErrorTokenUrlInvalid') }),
+    clientId: z.string().min(1, { message: "Client ID is required." }),
+    clientSecret: z.string().min(1, { message: "Client Secret is required." }),
+    authUrl: z.string().url({ message: "Auth URL must be a valid URL." }),
+    tokenUrl: z.string().url({ message: "Token URL must be a valid URL." }),
     identifierPath: z
         .string()
-        .min(1, { message: t('idpPathRequired') }),
+        .min(1, { message: "Identifier Path is required." }),
     emailPath: z.string().optional(),
     namePath: z.string().optional(),
-    scopes: z.string().min(1, { message: t('idpScopeRequired') }),
+    scopes: z.string().min(1, { message: "Scopes are required." }),
     autoProvision: z.boolean().default(false)
 });
 
@@ -68,8 +66,8 @@ interface ProviderTypeOption {
 const providerTypes: ReadonlyArray<ProviderTypeOption> = [
     {
         id: "oidc",
-        title: t('idpOidc'),
-        description: t('idpOidcDescription')
+        title: "OAuth2/OIDC",
+        description: "Configure an OpenID Connect identity provider"
     }
 ];
 
@@ -96,6 +94,8 @@ export default function Page() {
             autoProvision: false
         }
     });
+
+    const t = useTranslations();
 
     async function onSubmit(data: CreateIdpFormValues) {
         setCreateLoading(true);
