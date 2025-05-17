@@ -81,10 +81,6 @@ export async function createOidcIdp(
             autoProvision
         } = parsedBody.data;
 
-        if (!(await license.isUnlocked())) {
-            autoProvision = false;
-        }
-
         const key = config.getRawConfig().server.secret;
 
         const encryptedSecret = encrypt(clientSecret, key);

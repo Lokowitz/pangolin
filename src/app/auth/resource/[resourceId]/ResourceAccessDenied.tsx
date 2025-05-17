@@ -9,21 +9,23 @@ import {
     CardTitle,
 } from "@app/components/ui/card";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export default function ResourceAccessDenied() {
+    const t = useTranslations();
+
     return (
         <Card className="w-full max-w-md">
             <CardHeader>
                 <CardTitle className="text-center text-2xl font-bold">
-                    Access Denied
+                    {t('accessDenied')}
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                You're not allowed to access this resource. If this is a mistake,
-                please contact the administrator.
+                {t('accessDeniedDescription')}
                 <div className="text-center mt-4">
                     <Button>
-                        <Link href="/">Go Home</Link>
+                        <Link href="/">{t('goHome')}</Link>
                     </Button>
                 </div>
             </CardContent>

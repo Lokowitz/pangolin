@@ -3,6 +3,7 @@ import ValidateOidcToken from "./ValidateOidcToken";
 import { idp } from "@server/db/schemas";
 import db from "@server/db";
 import { eq } from "drizzle-orm";
+import { useTranslations } from "next-intl";
 
 export default async function Page(props: {
     params: Promise<{ orgId: string; idpId: string }>;
@@ -23,8 +24,10 @@ export default async function Page(props: {
         .from(idp)
         .where(eq(idp.idpId, parseInt(params.idpId!)));
 
+    const t = useTranslations();
+
     if (!idpRes) {
-        return <div>IdP not found</div>;
+        return <div>{t('idpErrorNotFound')}</div>;
     }
 
     return (

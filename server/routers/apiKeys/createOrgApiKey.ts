@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 import { NextFunction, Request, Response } from "express";
 import db from "@server/db";
 import HttpCode from "@server/types/HttpCode";

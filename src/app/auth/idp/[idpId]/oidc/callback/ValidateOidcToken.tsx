@@ -16,6 +16,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
+import { useTranslations } from "next-intl";
 
 type ValidateOidcTokenParams = {
     orgId: string;
@@ -36,11 +37,13 @@ export default function ValidateOidcToken(props: ValidateOidcTokenParams) {
 
     const { licenseStatus, isLicenseViolation } = useLicenseStatusContext();
 
+    const t = useTranslations();
+
     useEffect(() => {
         async function validate() {
             setLoading(true);
 
-            console.log("Validating OIDC token", {
+            console.log(t('idpOidcTokenValidating'), {
                 code: props.code,
                 expectedState: props.expectedState,
                 stateCookie: props.stateCookie
@@ -59,7 +62,7 @@ export default function ValidateOidcToken(props: ValidateOidcTokenParams) {
                     storedState: props.stateCookie
                 });
 
-                console.log("Validate OIDC token response", res.data);
+                console.log(t('idpOidcTokenResponse'), res.data);
 
                 const redirectUrl = res.data.data.redirectUrl;
 
@@ -76,7 +79,7 @@ export default function ValidateOidcToken(props: ValidateOidcTokenParams) {
                     router.push(res.data.data.redirectUrl);
                 }
             } catch (e) {
-                setError(formatAxiosError(e, "Error validating OIDC token"));
+                setError(formatAxiosError(e, t('idpErrorOidcTokenValidating')));
             } finally {
                 setLoading(false);
             }
@@ -89,20 +92,20 @@ export default function ValidateOidcToken(props: ValidateOidcTokenParams) {
         <div className="flex items-center justify-center min-h-screen">
             <Card className="w-full max-w-md">
                 <CardHeader>
-                    <CardTitle>Connecting to {props.idp.name}</CardTitle>
-                    <CardDescription>Validating your identity</CardDescription>
+                    <CardTitle>{t('idpConnectingTo', {name: props.idp.name})}</CardTitle>
+                    <CardDescription>{t('idpConnectingToDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center space-y-4">
                     {loading && (
                         <div className="flex items-center space-x-2">
                             <Loader2 className="h-5 w-5 animate-spin" />
-                            <span>Connecting...</span>
+                            <span>{t('idpConnectingToProcess')}</span>
                         </div>
                     )}
                     {!loading && !error && (
                         <div className="flex items-center space-x-2 text-green-600">
                             <CheckCircle2 className="h-5 w-5" />
-                            <span>Connected</span>
+                            <span>{t('idpConnectingToFinished')}</span>
                         </div>
                     )}
                     {error && (
@@ -110,9 +113,7 @@ export default function ValidateOidcToken(props: ValidateOidcTokenParams) {
                             <AlertCircle className="h-5 w-5" />
                             <AlertDescription className="flex flex-col space-y-2">
                                 <span>
-                                    There was a problem connecting to{" "}
-                                    {props.idp.name}. Please contact your
-                                    administrator.
+                                    {t('idpErrorConnectingTo', {name: props.idp.name})}
                                 </span>
                                 <span className="text-xs">{error}</span>
                             </AlertDescription>

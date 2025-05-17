@@ -22,6 +22,7 @@ import { Breadcrumbs } from "@app/components/Breadcrumbs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUserContext } from "@app/hooks/useUserContext";
+import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -58,6 +59,7 @@ export function Layout({
     const pathname = usePathname();
     const isAdminPage = pathname?.startsWith("/admin");
     const { user } = useUserContext();
+    const { isUnlocked } = useLicenseStatusContext();
 
     return (
         <div className="flex flex-col h-screen overflow-hidden">
@@ -207,7 +209,9 @@ export function Layout({
                                         rel="noopener noreferrer"
                                         className="flex items-center justify-center gap-1"
                                     >
-                                        Open Source
+                                        {!isUnlocked()
+                                            ? "Community Edition"
+                                            : "Commercial Edition"}
                                         <ExternalLink size={12} />
                                     </Link>
                                 </div>

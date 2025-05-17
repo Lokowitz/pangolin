@@ -24,7 +24,7 @@ export function UsersDataTable<TData, TValue>({
         <DataTable
             columns={columns}
             data={data}
-            title="Users"
+            title={t('users')}
             searchPlaceholder={t('accessUsersSearch')}
             searchColumn="email"
             onAdd={inviteUser}

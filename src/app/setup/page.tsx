@@ -242,7 +242,7 @@ export default function StepperForm() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>
-                                                    {t('setupOrgId')}
+                                                    {t('orgId')}
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Input

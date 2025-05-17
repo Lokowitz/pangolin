@@ -24,7 +24,7 @@ export function ShareLinksDataTable<TData, TValue>({
         <DataTable
             columns={columns}
             data={data}
-            title="Share Links"
+            title={t('shareLinks')}
             searchPlaceholder={t('shareSearch')}
             searchColumn="name"
             onAdd={createShareLink}

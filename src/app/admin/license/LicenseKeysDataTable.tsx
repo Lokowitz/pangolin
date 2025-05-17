@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
@@ -78,7 +73,7 @@ export function LicenseKeysDataTable({
                 );
             },
             cell: ({ row }) => {
-                return row.original.valid ? "Yes" : "No";
+                return row.original.valid ? t('yes') : t('no');
             }
         },
         {
@@ -99,7 +94,7 @@ export function LicenseKeysDataTable({
             cell: ({ row }) => {
                 const type = row.original.type;
                 const label =
-                    type === "SITES" ? "Additional Sites" : "Host License";
+                    type === "SITES" ? t('sitesAdditional') : t('licenseHost');
                 const variant = type === "SITES" ? "secondary" : "default";
                 return row.original.valid ? (
                     <Badge variant={variant}>{label}</Badge>
@@ -141,7 +136,7 @@ export function LicenseKeysDataTable({
         <DataTable
             columns={columns}
             data={licenseKeys}
-            title="License Keys"
+            title={t('licenseKeys')}
             searchPlaceholder={t('licenseKeySearch')}
             searchColumn="licenseKey"
             onAdd={onCreate}

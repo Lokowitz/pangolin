@@ -37,6 +37,7 @@ import { formatAxiosError } from "@app/lib/api";;
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { cleanRedirect } from "@app/lib/cleanRedirect";
+import { useTranslations } from "next-intl";
 
 const FormSchema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
@@ -70,6 +71,8 @@ export default function VerifyEmailForm({
             pin: "",
         },
     });
+
+    const t = useTranslations();
 
     async function onSubmit(data: z.infer<typeof FormSchema>) {
         setIsSubmitting(true);
@@ -114,8 +117,7 @@ export default function VerifyEmailForm({
             toast({
                 variant: "default",
                 title: "Verification code resent",
-                description:
-                    "We've resent a verification code to your email address. Please check your inbox.",
+                description: "We've resent a verification code to your email address. Please check your inbox.",
             });
         }
 
@@ -126,9 +128,9 @@ export default function VerifyEmailForm({
         <div>
             <Card className="w-full max-w-md">
                 <CardHeader>
-                    <CardTitle>Verify Email</CardTitle>
+                    <CardTitle>{t('emailVerify')}</CardTitle>
                     <CardDescription>
-                        Enter the verification code sent to your email address.
+                        {t('emailVerifyDescription')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -142,7 +144,7 @@ export default function VerifyEmailForm({
                                 name="email"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Email</FormLabel>
+                                        <FormLabel>{t('email')}</FormLabel>
                                         <FormControl>
                                             <Input
                                                 {...field}
@@ -159,7 +161,7 @@ export default function VerifyEmailForm({
                                 name="pin"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Verification Code</FormLabel>
+                                        <FormLabel>{t('verificationCode')}</FormLabel>
                                         <FormControl>
                                             <div className="flex justify-center">
                                                 <InputOTP
@@ -197,8 +199,7 @@ export default function VerifyEmailForm({
                                         </FormControl>
                                         <FormMessage />
                                         <FormDescription>
-                                            We sent a verification code to your
-                                            email address.
+                                            {t('verificationCodeEmailSent')}
                                         </FormDescription>
                                     </FormItem>
                                 )}
@@ -226,7 +227,7 @@ export default function VerifyEmailForm({
                                 {isSubmitting && (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 )}
-                                Submit
+                                {t('emailVerifySubmit')}
                             </Button>
                         </form>
                     </Form>
@@ -241,8 +242,8 @@ export default function VerifyEmailForm({
                     disabled={isResending}
                 >
                     {isResending
-                        ? "Resending..."
-                        : "Didn't receive a code? Click here to resend"}
+                        ? t('emailVerifyResendProgress')
+                        : t('emailVerifyResend')}
                 </Button>
             </div>
         </div>

@@ -123,7 +123,7 @@ export default function RegenerateInvitationForm({
                 onRegenerate({
                     id: invitation.id,
                     email: invitation.email,
-                    expiresAt: res.data.data.expiresAt,
+                    expiresAt: res.data.data.expiresAt ?? "",
                     role: invitation.role,
                     roleId: invitation.roleId
                 });

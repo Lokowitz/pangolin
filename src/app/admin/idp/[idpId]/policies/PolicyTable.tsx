@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
@@ -24,6 +19,7 @@ import {
 } from "@app/components/ui/dropdown-menu";
 import Link from "next/link";
 import { InfoPopup } from "@app/components/ui/info-popup";
+import { useTranslations } from "next-intl";
 
 export interface PolicyRow {
     orgId: string;
@@ -39,6 +35,7 @@ interface Props {
 }
 
 export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props) {
+    const t = useTranslations();
     const columns: ColumnDef<PolicyRow>[] = [
         {
             id: "dots",
@@ -49,7 +46,7 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
+                                <span className="sr-only">{t('openMenu')}</span>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -59,7 +56,7 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
                                     onDelete(r.orgId);
                                 }}
                             >
-                                <span className="text-red-500">Delete</span>
+                                <span className="text-red-500">{t('delete')}</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -76,7 +73,7 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
                             column.toggleSorting(column.getIsSorted() === "asc")
                         }
                     >
-                        Organization ID
+                        {t('orgId')}
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
@@ -92,7 +89,7 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
                             column.toggleSorting(column.getIsSorted() === "asc")
                         }
                     >
-                        Role Mapping
+                        {t('roleMapping')}
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
@@ -119,7 +116,7 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
                             column.toggleSorting(column.getIsSorted() === "asc")
                         }
                     >
-                        Organization Mapping
+                        {t('orgMapping')}
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
@@ -147,7 +144,7 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
                             className="ml-2"
                             onClick={() => onEdit(policy)}
                         >
-                            Edit
+                            {t('edit')}
                         </Button>
                     </div>
                 );

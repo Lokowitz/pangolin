@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 "use client";
 
 import { CheckboxWithLabel } from "@app/components/ui/checkbox";
@@ -26,7 +21,6 @@ function getActionsCategories(root: boolean) {
             "Update Organization": "updateOrg",
             "Get Organization User": "getOrgUser",
             "List Organization Domains": "listOrgDomains",
-            "Check Org ID": "checkOrgId",
         },
 
         Site: {

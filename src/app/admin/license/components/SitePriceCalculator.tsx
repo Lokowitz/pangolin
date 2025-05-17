@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 import { useState } from "react";
 import { Button } from "@app/components/ui/button";
 import { MinusCircle, PlusCircle } from "lucide-react";
@@ -88,7 +83,7 @@ export function SitePriceCalculator({
                                     size="icon"
                                     onClick={decrementSites}
                                     disabled={siteCount <= 1}
-                                    aria-label="Decrease site count"
+                                    aria-label={t('sitestCountDecrease')}
                                 >
                                     <MinusCircle className="h-5 w-5" />
                                 </Button>
@@ -99,7 +94,7 @@ export function SitePriceCalculator({
                                     variant="ghost"
                                     size="icon"
                                     onClick={incrementSites}
-                                    aria-label="Increase site count"
+                                    aria-label={t('sitestCountIncrease')}
                                 >
                                     <PlusCircle className="h-5 w-5" />
                                 </Button>
@@ -107,35 +102,6 @@ export function SitePriceCalculator({
                         </div>
 
                         <div className="border-t pt-4">
-                            {mode === "license" && (
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium">
-                                        {t('licenseFee')}:
-                                    </span>
-                                    <span className="font-medium">
-                                        ${licenseFlatRate.toFixed(2)}
-                                    </span>
-                                </div>
-                            )}
-                            <div className="flex justify-between items-center mt-2">
-                                <span className="text-sm font-medium">
-                                    {t('licensePriceSite')}:
-                                </span>
-                                <span className="font-medium">
-                                    ${pricePerSite.toFixed(2)}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center mt-2">
-                                <span className="text-sm font-medium">
-                                    {t('numberOfSites')}:
-                                </span>
-                                <span className="font-medium">{siteCount}</span>
-                            </div>
-                            <div className="flex justify-between items-center mt-4 text-lg font-bold">
-                                <span>{t('total')}:</span>
-                                <span>${totalCost.toFixed(2)} / mo</span>
-                            </div>
-
                             <p className="text-muted-foreground text-sm mt-2 text-center">
                                 {t('licensePricingPage')}
                                 <a
@@ -156,7 +122,7 @@ export function SitePriceCalculator({
                         <Button variant="outline">{t('cancel')}</Button>
                     </CredenzaClose>
                     <Button onClick={continueToPayment}>
-                        {t('licenseContinuePayment')}
+                        See Purchase Portal
                     </Button>
                 </CredenzaFooter>
             </CredenzaContent>

@@ -15,6 +15,7 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator
 } from "@app/components/ui/breadcrumb";
+import { useTranslations } from "next-intl";
 
 interface SettingsLayoutProps {
     children: React.ReactNode;
@@ -36,23 +37,24 @@ export default async function SettingsLayout(props: SettingsLayoutProps) {
         redirect("/admin/idp");
     }
 
+    const t = useTranslations();
+
     const navItems: HorizontalTabs = [
         {
-            title: "General",
+            title: t('general'),
             href: `/admin/idp/${params.idpId}/general`
         },
         {
-            title: "Organization Policies",
-            href: `/admin/idp/${params.idpId}/policies`,
-            showProfessional: true
+            title: t('orgPolicies'),
+            href: `/admin/idp/${params.idpId}/policies`
         }
     ];
 
     return (
         <>
             <SettingsSectionTitle
-                title={`${idp.idp.name} Settings`}
-                description="Configure the settings for your identity provider"
+                title={t('idpSettings', { idpName: idp?.idp.name })}
+                description={t('idpSettingsDescription')}
             />
 
             <div className="space-y-6">

@@ -115,6 +115,8 @@ export default function CreateSiteForm({
     const nameField = form.watch("name");
     const methodField = form.watch("method");
 
+    const t = useTranslations();
+
     useEffect(() => {
         const nameIsValid = nameField?.length >= 2 && nameField?.length <= 30;
         const isFormValid = methodField === "local" || isChecked;
@@ -170,8 +172,8 @@ export default function CreateSiteForm({
             if (!keypair || !siteDefaults) {
                 toast({
                     variant: "destructive",
-                    title: "Error creating site",
-                    description: "Key pair or site defaults not found"
+                    title: t('siteErrorCreate'),
+                    description: t('siteErrorCreateKeyPair')
                 });
                 setLoading?.(false);
                 setIsLoading(false);
@@ -189,8 +191,8 @@ export default function CreateSiteForm({
             if (!siteDefaults) {
                 toast({
                     variant: "destructive",
-                    title: "Error creating site",
-                    description: "Site defaults not found"
+                    title: t('siteErrorCreate'),
+                    description: t('siteErrorCreateDefaults')
                 });
                 setLoading?.(false);
                 setIsLoading(false);
@@ -213,7 +215,7 @@ export default function CreateSiteForm({
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Error creating site",
+                    title: t('siteErrorCreate'),
                     description: formatAxiosError(e)
                 });
             });
@@ -315,7 +317,7 @@ PersistentKeepalive = 5`
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="local">
-                                                Local
+                                                {t('local')}
                                             </SelectItem>
                                             <SelectItem
                                                 value="newt"

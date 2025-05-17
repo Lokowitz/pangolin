@@ -71,6 +71,8 @@ export default function SignupForm({
         }
     });
 
+    const t = useTranslations();
+
     async function onSubmit(values: z.infer<typeof formSchema>) {
         const { email, password } = values;
 
@@ -113,15 +115,13 @@ export default function SignupForm({
         setLoading(false);
     }
 
-    const t = useTranslations();
-
     return (
         <Card className="w-full max-w-md">
             <CardHeader>
                 <div className="flex flex-row items-center justify-center">
                     <Image
                         src={`/logo/pangolin_orange.svg`}
-                        alt="Pangolin Logo"
+                        alt={t('pangolinLogoAlt')}
                         width="100"
                         height="100"
                     />
