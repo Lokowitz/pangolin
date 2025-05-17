@@ -39,12 +39,10 @@ import { useEnvContext } from "@app/hooks/useEnvContext";
 import { cleanRedirect } from "@app/lib/cleanRedirect";
 import { useTranslations } from "next-intl";
 
-const t = useTranslations();
-
 const FormSchema = z.object({
-    email: z.string().email({ message: t('emailInvalid') }),
+    email: z.string().email({ message: "Invalid email address" }),
     pin: z.string().min(8, {
-        message: t('verificationCodeLengthRequirements'),
+        message: "Your verification code must be 8 characters.",
     }),
 });
 
@@ -74,6 +72,8 @@ export default function VerifyEmailForm({
         },
     });
 
+    const t = useTranslations();
+
     async function onSubmit(data: z.infer<typeof FormSchema>) {
         setIsSubmitting(true);
 
@@ -82,15 +82,15 @@ export default function VerifyEmailForm({
                 code: data.pin,
             })
             .catch((e) => {
-                setError(formatAxiosError(e, t('errorOccurred')));
-                console.error(t('emailErrorVerify'), e);
+                setError(formatAxiosError(e, "An error occurred"));
+                console.error("Failed to verify email:", e);
                 setIsSubmitting(false);
             });
 
         if (res && res.data?.data?.valid) {
             setError(null);
             setSuccessMessage(
-                t('emailVerified')
+                "Email successfully verified! Redirecting you..."
             );
             setTimeout(() => {
                 if (redirect) {
@@ -108,16 +108,16 @@ export default function VerifyEmailForm({
         setIsResending(true);
 
         const res = await api.post("/auth/verify-email/request").catch((e) => {
-            setError(formatAxiosError(e, t('errorOccurred')));
-            console.error(t('verificationCodeErrorResend'), e);
+            setError(formatAxiosError(e, "An error occurred"));
+            console.error("Failed to resend verification code:", e);
         });
 
         if (res) {
             setError(null);
             toast({
                 variant: "default",
-                title: t('verificationCodeResend'),
-                description: t('verificationCodeResendDescription'),
+                title: "Verification code resent",
+                description: "We've resent a verification code to your email address. Please check your inbox.",
             });
         }
 

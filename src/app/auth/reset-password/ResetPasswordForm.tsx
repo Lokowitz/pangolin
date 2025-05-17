@@ -50,22 +50,20 @@ const requestSchema = z.object({
     email: z.string().email()
 });
 
-const t = useTranslations();
-
 const formSchema = z
     .object({
-        email: z.string().email({ message: t('emailInvalid') }),
-        token: z.string().min(8, { message: t('tokenInvalid') }),
+        email: z.string().email({ message: "Invalid email address" }),
+        token: z.string().min(8, { message: "Invalid token" }),
         password: passwordSchema,
         confirmPassword: passwordSchema
     })
     .refine((data) => data.password === data.confirmPassword, {
         path: ["confirmPassword"],
-        message: t('passwordNotMatch')
+        message: "Passwords do not match"
     });
 
 const mfaSchema = z.object({
-    code: z.string().length(6, { message: t('pincodeInvalid') })
+    code: z.string().length(6, { message: "Invalid code" })
 });
 
 export type ResetPasswordFormProps = {
@@ -125,6 +123,8 @@ export default function ResetPasswordForm({
         }
     });
 
+    const t = useTranslations();
+
     async function onRequest(data: z.infer<typeof requestSchema>) {
         const { email } = data;
 
@@ -138,8 +138,8 @@ export default function ResetPasswordForm({
                 } as RequestPasswordResetBody
             )
             .catch((e) => {
-                setError(formatAxiosError(e, t('errorOccurred')));
-                console.error(t('passwordErrorRequestReset'), e);
+                setError(formatAxiosError(e, "An error occurred"));
+                console.error("Failed to request reset:", e);
                 setIsSubmitting(false);
             });
 
@@ -168,8 +168,8 @@ export default function ResetPasswordForm({
                 } as ResetPasswordBody
             )
             .catch((e) => {
-                setError(formatAxiosError(e, t('errorOccurred')));
-                console.error(t('passwordErrorReset'), e);
+                setError(formatAxiosError(e, "An error occurred"));
+                console.error("Failed to reset password:", e);
                 setIsSubmitting(false);
             });
 
@@ -185,7 +185,7 @@ export default function ResetPasswordForm({
                 return;
             }
 
-            setSuccessMessage(t('passwordResetSuccess'));
+            setSuccessMessage("Password reset successfully! Back to log in...");
 
             setTimeout(() => {
                 if (redirect) {

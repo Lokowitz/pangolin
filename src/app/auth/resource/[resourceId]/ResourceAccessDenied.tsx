@@ -11,9 +11,9 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
-const t = useTranslations();
-
 export default function ResourceAccessDenied() {
+    const t = useTranslations();
+
     return (
         <Card className="w-full max-w-md">
             <CardHeader>

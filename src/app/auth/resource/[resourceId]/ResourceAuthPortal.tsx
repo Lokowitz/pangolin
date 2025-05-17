@@ -46,18 +46,16 @@ import Link from "next/link";
 import { useSupporterStatusContext } from "@app/hooks/useSupporterStatusContext";
 import { useTranslations } from "next-intl";
 
-const t = useTranslations();
-
 const pinSchema = z.object({
     pin: z
         .string()
-        .length(6, { message: t('pincodeRequirementsLength') })
-        .regex(/^\d+$/, { message: t('pincodeRequirementsChars') })
+        .length(6, { message: "PIN must be exactly 6 digits" })
+        .regex(/^\d+$/, { message: "PIN must only contain numbers" })
 });
 
 const passwordSchema = z.object({
     password: z.string().min(1, {
-        message: t('passwordRequirementsLength')
+        message: "Password must be at least 1 character long"
     })
 });
 
@@ -68,7 +66,7 @@ const requestOtpSchema = z.object({
 const submitOtpSchema = z.object({
     email: z.string().email(),
     otp: z.string().min(1, {
-        message: t('otpEmailRequirementsLength')
+        message: "OTP must be at least 1 character long"
     })
 });
 
@@ -172,6 +170,8 @@ export default function ResourceAuthPortal(props: ResourceAuthPortalProps) {
         );
         return fullUrl.toString();
     }
+
+    const t = useTranslations();
 
     const onWhitelistSubmit = (values: any) => {
         setLoadingLogin(true);

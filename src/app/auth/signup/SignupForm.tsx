@@ -39,17 +39,15 @@ type SignupFormProps = {
     inviteToken?: string;
 };
 
-const t = useTranslations();
-
 const formSchema = z
     .object({
-        email: z.string().email({ message: t('emailInvalid') }),
+        email: z.string().email({ message: "Invalid email address" }),
         password: passwordSchema,
         confirmPassword: passwordSchema
     })
     .refine((data) => data.password === data.confirmPassword, {
         path: ["confirmPassword"],
-        message: t('passwordNotMatch')
+        message: "Passwords do not match"
     });
 
 export default function SignupForm({
@@ -73,6 +71,8 @@ export default function SignupForm({
         }
     });
 
+    const t = useTranslations();
+
     async function onSubmit(values: z.infer<typeof formSchema>) {
         const { email, password } = values;
 
@@ -87,7 +87,7 @@ export default function SignupForm({
             .catch((e) => {
                 console.error(e);
                 setError(
-                    formatAxiosError(e, t('signupError'))
+                    formatAxiosError(e, "An error occurred while signing up")
                 );
             });
 

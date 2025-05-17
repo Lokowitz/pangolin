@@ -102,7 +102,7 @@ export default function AccessToken({
                     );
                 }
             } catch (e) {
-                console.error(t('accessTokenError'), e);
+                console.error("Error checking access token", e);
             } finally {
                 setLoading(false);
             }

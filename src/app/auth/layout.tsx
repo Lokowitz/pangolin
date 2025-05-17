@@ -5,10 +5,8 @@ import { Metadata } from "next";
 import { cache } from "react";
 import { useTranslations } from "next-intl";
 
-const t = useTranslations();
-
 export const metadata: Metadata = {
-    title: t('pangolinAuth'),
+    title: `Auth - Pangolin`,
     description: ""
 };
 
@@ -19,6 +17,7 @@ type AuthLayoutProps = {
 export default async function AuthLayout({ children }: AuthLayoutProps) {
     const getUser = cache(verifySession);
     const user = await getUser();
+    const t = useTranslations();
 
     return (
         <div className="h-full flex flex-col">
