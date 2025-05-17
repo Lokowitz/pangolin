@@ -193,7 +193,6 @@ export default function Page() {
                                             defaultChecked={form.getValues(
                                                 "autoProvision"
                                             )}
-                                            disabled={!isUnlocked()}
                                             onCheckedChange={(checked) => {
                                                 form.setValue(
                                                     "autoProvision",
@@ -201,14 +200,6 @@ export default function Page() {
                                                 );
                                             }}
                                         />
-                                        {!isUnlocked() && (
-                                            <Badge
-                                                variant="outlinePrimary"
-                                                className="ml-2"
-                                            >
-                                                {t('licenseBadge')}
-                                            </Badge>
-                                        )}
                                     </div>
                                     <span className="text-sm text-muted-foreground">
                                         {t('idpAutoProvisionUsersDescription')}

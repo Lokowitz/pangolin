@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -11,7 +6,6 @@ import logger from "@server/logger";
 import {
     errorHandlerMiddleware,
     notFoundMiddleware,
-    verifyValidLicense
 } from "@server/middlewares";
 import { authenticated, unauthenticated } from "@server/routers/integration";
 import { logIncomingMiddleware } from "./middlewares/logIncoming";
@@ -25,8 +19,6 @@ const externalPort = config.getRawConfig().server.integration_port;
 
 export function createIntegrationApiServer() {
     const apiServer = express();
-
-    apiServer.use(verifyValidLicense);
 
     if (config.getRawConfig().server.trust_proxy) {
         apiServer.set("trust proxy", 1);

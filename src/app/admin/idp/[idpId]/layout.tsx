@@ -46,8 +46,7 @@ export default async function SettingsLayout(props: SettingsLayoutProps) {
         },
         {
             title: t('orgPolicies'),
-            href: `/admin/idp/${params.idpId}/policies`,
-            showProfessional: true
+            href: `/admin/idp/${params.idpId}/policies`
         }
     ];
 

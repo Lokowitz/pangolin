@@ -44,6 +44,7 @@ import { formatAxiosError } from "@app/lib/api";
 import { createApiClient } from "@app/lib/api";
 import { Checkbox } from "@app/components/ui/checkbox";
 import { ListIdpsResponse } from "@server/routers/idp";
+import { useTranslations } from "next-intl";
 
 type UserType = "internal" | "oidc";
 
@@ -59,28 +60,30 @@ interface IdpOption {
     type: string;
 }
 
+const t = useTranslations();
+
 const internalFormSchema = z.object({
-    email: z.string().email({ message: "Invalid email address" }),
-    validForHours: z.string().min(1, { message: "Please select a duration" }),
-    roleId: z.string().min(1, { message: "Please select a role" })
+    email: z.string().email({ message: t('emailInvalid') }),
+    validForHours: z.string().min(1, { message: t('inviteValidityDuration') }),
+    roleId: z.string().min(1, { message: t('accessRoleSelectPlease') })
 });
 
 const externalFormSchema = z.object({
-    username: z.string().min(1, { message: "Username is required" }),
+    username: z.string().min(1, { message: t('usernameRequired') }),
     email: z
         .string()
-        .email({ message: "Invalid email address" })
+        .email({ message: t('emailInvalid') })
         .optional()
         .or(z.literal("")),
     name: z.string().optional(),
-    roleId: z.string().min(1, { message: "Please select a role" }),
-    idpId: z.string().min(1, { message: "Please select an identity provider" })
+    roleId: z.string().min(1, { message: t('accessRoleSelectPlease') }),
+    idpId: z.string().min(1, { message: t('idpSelectPlease') })
 });
 
 const formatIdpType = (type: string) => {
     switch (type.toLowerCase()) {
         case "oidc":
-            return "Generic OAuth2/OIDC provider.";
+            return t('idpGenericOidc');
         default:
             return type;
     }
@@ -103,13 +106,13 @@ export default function Page() {
     const [dataLoaded, setDataLoaded] = useState(false);
 
     const validFor = [
-        { hours: 24, name: "1 day" },
-        { hours: 48, name: "2 days" },
-        { hours: 72, name: "3 days" },
-        { hours: 96, name: "4 days" },
-        { hours: 120, name: "5 days" },
-        { hours: 144, name: "6 days" },
-        { hours: 168, name: "7 days" }
+        { hours: 24, name: t('day', {count: 1}) },
+        { hours: 48, name: t('day', {count: 2}) },
+        { hours: 72, name: t('day', {count: 3}) },
+        { hours: 96, name: t('day', {count: 4}) },
+        { hours: 120, name: t('day', {count: 5}) },
+        { hours: 144, name: t('day', {count: 6}) },
+        { hours: 168, name: t('day', {count: 7}) }
     ];
 
     const internalForm = useForm<z.infer<typeof internalFormSchema>>({
@@ -155,10 +158,10 @@ export default function Page() {
                     console.error(e);
                     toast({
                         variant: "destructive",
-                        title: "Failed to fetch roles",
+                        title: t('accessRoleErrorFetch'),
                         description: formatAxiosError(
                             e,
-                            "An error occurred while fetching the roles"
+                            t('accessRoleErrorFetchDescription')
                         )
                     });
                 });
@@ -178,10 +181,10 @@ export default function Page() {
                     console.error(e);
                     toast({
                         variant: "destructive",
-                        title: "Failed to fetch identity providers",
+                        title: t('idpErrorFetch'),
                         description: formatAxiosError(
                             e,
-                            "An error occurred while fetching identity providers"
+                            t('idpErrorFetchDescription')
                         )
                     });
                 });
@@ -218,17 +221,16 @@ export default function Page() {
                 if (e.response?.status === 409) {
                     toast({
                         variant: "destructive",
-                        title: "User Already Exists",
-                        description:
-                            "This user is already a member of the organization."
+                        title: t('userErrorExists'),
+                        description: t('userErrorExistsDescription')
                     });
                 } else {
                     toast({
                         variant: "destructive",
-                        title: "Failed to invite user",
+                        title: t('inviteError'),
                         description: formatAxiosError(
                             e,
-                            "An error occurred while inviting the user"
+                            t('inviteErrorDescription')
                         )
                     });
                 }
@@ -238,8 +240,8 @@ export default function Page() {
             setInviteLink(res.data.data.inviteLink);
             toast({
                 variant: "default",
-                title: "User invited",
-                description: "The user has been successfully invited."
+                title: t('userInvited'),
+                description: t('userInvitedDescription')
             });
 
             setExpiresInDays(parseInt(values.validForHours) / 24);
@@ -265,10 +267,10 @@ export default function Page() {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Failed to create user",
+                    title: t('userErrorCreate'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while creating the user"
+                        t('userErrorCreateDescription')
                     )
                 });
             });
@@ -276,8 +278,8 @@ export default function Page() {
         if (res && res.status === 201) {
             toast({
                 variant: "default",
-                title: "User created",
-                description: "The user has been successfully created."
+                title: t('userCreated'),
+                description: t('userCreatedDescription')
             });
             router.push(`/${orgId}/settings/access/users`);
         }
@@ -288,13 +290,13 @@ export default function Page() {
     const userTypes: ReadonlyArray<UserTypeOption> = [
         {
             id: "internal",
-            title: "Internal User",
-            description: "Invite a user to join your organization directly."
+            title: t('userTypeInternal'),
+            description: t('userTypeInternalDescription')
         },
         {
             id: "oidc",
-            title: "External User",
-            description: "Create a user with an external identity provider."
+            title: t('userTypeExternal'),
+            description: t('userTypeExternalDescription')
         }
     ];
 
@@ -302,8 +304,8 @@ export default function Page() {
         <>
             <div className="flex justify-between">
                 <HeaderTitle
-                    title="Create User"
-                    description="Follow the steps below to create a new user"
+                    title={t('accessUserCreate')}
+                    description={t('accessUserCreateDescription')}
                 />
                 <Button
                     variant="outline"
@@ -311,7 +313,7 @@ export default function Page() {
                         router.push(`/${orgId}/settings/access/users`);
                     }}
                 >
-                    See All Users
+                    {t('userSeeAll')}
                 </Button>
             </div>
 
@@ -320,10 +322,10 @@ export default function Page() {
                     <SettingsSection>
                         <SettingsSectionHeader>
                             <SettingsSectionTitle>
-                                User Type
+                                {t('userTypeTitle')}
                             </SettingsSectionTitle>
                             <SettingsSectionDescription>
-                                Determine how you want to create the user
+                                {t('userTypeDescription')}
                             </SettingsSectionDescription>
                         </SettingsSectionHeader>
                         <SettingsSectionBody>
@@ -349,10 +351,10 @@ export default function Page() {
                             <SettingsSection>
                                 <SettingsSectionHeader>
                                     <SettingsSectionTitle>
-                                        User Information
+                                        {t('userInfo')}
                                     </SettingsSectionTitle>
                                     <SettingsSectionDescription>
-                                        Enter the details for the new user
+                                        {t('userSettingsDescription')}
                                     </SettingsSectionDescription>
                                 </SettingsSectionHeader>
                                 <SettingsSectionBody>
@@ -373,7 +375,7 @@ export default function Page() {
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormLabel>
-                                                                Email
+                                                                {t('email')}
                                                             </FormLabel>
                                                             <FormControl>
                                                                 <Input
@@ -402,8 +404,7 @@ export default function Page() {
                                                             htmlFor="send-email"
                                                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                                         >
-                                                            Send invite email to
-                                                            user
+                                                            {t('inviteEmailSent')}
                                                         </label>
                                                     </div>
                                                 )}
@@ -416,7 +417,7 @@ export default function Page() {
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormLabel>
-                                                                Valid For
+                                                                {t('inviteValid')}
                                                             </FormLabel>
                                                             <Select
                                                                 onValueChange={
@@ -428,7 +429,7 @@ export default function Page() {
                                                             >
                                                                 <FormControl>
                                                                     <SelectTrigger>
-                                                                        <SelectValue placeholder="Select duration" />
+                                                                        <SelectValue placeholder={t('selectDuration')} />
                                                                     </SelectTrigger>
                                                                 </FormControl>
                                                                 <SelectContent>
@@ -463,7 +464,7 @@ export default function Page() {
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormLabel>
-                                                                Role
+                                                                {t('role')}
                                                             </FormLabel>
                                                             <Select
                                                                 onValueChange={
@@ -472,7 +473,7 @@ export default function Page() {
                                                             >
                                                                 <FormControl>
                                                                     <SelectTrigger>
-                                                                        <SelectValue placeholder="Select role" />
+                                                                        <SelectValue placeholder={t('accessRoleSelect')} />
                                                                     </SelectTrigger>
                                                                 </FormControl>
                                                                 <SelectContent>
@@ -503,37 +504,16 @@ export default function Page() {
                                                     <div className="max-w-md space-y-4">
                                                         {sendEmail && (
                                                             <p>
-                                                                An email has
-                                                                been sent to the
-                                                                user with the
-                                                                access link
-                                                                below. They must
-                                                                access the link
-                                                                to accept the
-                                                                invitation.
+                                                                {t('inviteEmailSentDescription')}
                                                             </p>
                                                         )}
                                                         {!sendEmail && (
                                                             <p>
-                                                                The user has
-                                                                been invited.
-                                                                They must access
-                                                                the link below
-                                                                to accept the
-                                                                invitation.
+                                                                {t('inviteSentDescription')}
                                                             </p>
                                                         )}
                                                         <p>
-                                                            The invite will
-                                                            expire in{" "}
-                                                            <b>
-                                                                {expiresInDays}{" "}
-                                                                {expiresInDays ===
-                                                                1
-                                                                    ? "day"
-                                                                    : "days"}
-                                                            </b>
-                                                            .
+                                                            {t('inviteExpiresIn', {days: expiresInDays})}
                                                         </p>
                                                         <CopyTextBox
                                                             text={inviteLink}
@@ -554,20 +534,16 @@ export default function Page() {
                             <SettingsSection>
                                 <SettingsSectionHeader>
                                     <SettingsSectionTitle>
-                                        Identity Provider
+                                        {t('idpTitle')}
                                     </SettingsSectionTitle>
                                     <SettingsSectionDescription>
-                                        Select the identity provider for the
-                                        external user
+                                        {t('idpSelect')}
                                     </SettingsSectionDescription>
                                 </SettingsSectionHeader>
                                 <SettingsSectionBody>
                                     {idps.length === 0 ? (
                                         <p className="text-muted-foreground">
-                                            No identity providers are
-                                            configured. Please configure an
-                                            identity provider before creating
-                                            external users.
+                                            {t('idpNotConfigured')}
                                         </p>
                                     ) : (
                                         <Form {...externalForm}>
@@ -621,10 +597,10 @@ export default function Page() {
                                 <SettingsSection>
                                     <SettingsSectionHeader>
                                         <SettingsSectionTitle>
-                                            User Information
+                                            {t('userSettings')}
                                         </SettingsSectionTitle>
                                         <SettingsSectionDescription>
-                                            Enter the details for the new user
+                                            {t('userSettingsDescription')}
                                         </SettingsSectionDescription>
                                     </SettingsSectionHeader>
                                     <SettingsSectionBody>
@@ -645,7 +621,7 @@ export default function Page() {
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>
-                                                                    Username
+                                                                    {t('username')}
                                                                 </FormLabel>
                                                                 <FormControl>
                                                                     <Input
@@ -653,15 +629,7 @@ export default function Page() {
                                                                     />
                                                                 </FormControl>
                                                                 <p className="text-sm text-muted-foreground mt-1">
-                                                                    This must
-                                                                    match the
-                                                                    unique
-                                                                    username
-                                                                    that exists
-                                                                    in the
-                                                                    selected
-                                                                    identity
-                                                                    provider.
+                                                                    {t('usernameUniq')}
                                                                 </p>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -676,8 +644,7 @@ export default function Page() {
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>
-                                                                    Email
-                                                                    (Optional)
+                                                                    {t('emailOptional')}
                                                                 </FormLabel>
                                                                 <FormControl>
                                                                     <Input
@@ -697,8 +664,7 @@ export default function Page() {
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>
-                                                                    Name
-                                                                    (Optional)
+                                                                    {t('nameOptional')}
                                                                 </FormLabel>
                                                                 <FormControl>
                                                                     <Input
@@ -718,7 +684,7 @@ export default function Page() {
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>
-                                                                    Role
+                                                                    {t('role')}
                                                                 </FormLabel>
                                                                 <Select
                                                                     onValueChange={
@@ -727,7 +693,7 @@ export default function Page() {
                                                                 >
                                                                     <FormControl>
                                                                         <SelectTrigger>
-                                                                            <SelectValue placeholder="Select role" />
+                                                                            <SelectValue placeholder={t('accessRoleSelect')} />
                                                                         </SelectTrigger>
                                                                     </FormControl>
                                                                     <SelectContent>
@@ -771,7 +737,7 @@ export default function Page() {
                             router.push(`/${orgId}/settings/access/users`);
                         }}
                     >
-                        Cancel
+                        {t('cancel')}
                     </Button>
                     {userType && dataLoaded && (
                         <Button
@@ -783,7 +749,7 @@ export default function Page() {
                                 (userType === "internal" && inviteLink !== null)
                             }
                         >
-                            Create User
+                            {t('accessUserCreate')}
                         </Button>
                     )}
                 </div>

@@ -52,16 +52,14 @@ import {
 import LoaderPlaceholder from "@app/components/PlaceHolderLoader";
 import { useTranslations } from 'next-intl';
 
-const t = useTranslations();
-
 const createSiteFormSchema = z.object({
     name: z
         .string()
         .min(2, {
-            message: t('nameMin', {len: 2})
+            message: "Name must be at least 2 characters."
         })
         .max(30, {
-            message: t('nameMax', {len: 30})
+            message: "Name must not be longer than 30 characters."
         }),
     method: z.enum(["wireguard", "newt", "local"])
 });
@@ -116,6 +114,8 @@ export default function CreateSiteForm({
 
     const nameField = form.watch("name");
     const methodField = form.watch("method");
+
+    const t = useTranslations();
 
     useEffect(() => {
         const nameIsValid = nameField?.length >= 2 && nameField?.length <= 30;
@@ -315,7 +315,7 @@ PersistentKeepalive = 5`
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="local">
-                                                Local
+                                                {t('local')}
                                             </SelectItem>
                                             <SelectItem
                                                 value="newt"

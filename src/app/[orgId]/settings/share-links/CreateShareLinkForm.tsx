@@ -92,7 +92,6 @@ export default function CreateShareLinkForm({
 
     const { env } = useEnvContext();
     const api = createApiClient({ env });
-    const t = useTranslations();
 
     const [link, setLink] = useState<string | null>(null);
     const [accessTokenId, setAccessTokenId] = useState<string | null>(null);
@@ -110,6 +109,8 @@ export default function CreateShareLinkForm({
             siteName: string | null;
         }[]
     >([]);
+
+    const t = useTranslations();
 
     const timeUnits = [
         { unit: "minutes", name: t('minutes') },
@@ -143,8 +144,11 @@ export default function CreateShareLinkForm({
                     console.error(e);
                     toast({
                         variant: "destructive",
-                        title: t('shareErrorFetchResource'),
-                        description: formatAxiosError(e, t('shareErrorFetchResourceDescription'))
+                        title: "Failed to fetch resources",
+                        description: formatAxiosError(
+                            e,
+                            "An error occurred while fetching the resources"
+                        )
                     });
                 });
 
@@ -207,8 +211,11 @@ export default function CreateShareLinkForm({
                 console.error(e);
                 toast({
                     variant: "destructive",
-                    title: t('shareErrorCreate'),
-                    description: formatAxiosError(e, t('shareErrorCreateDescription'))
+                    title: "Failed to create share link",
+                    description: formatAxiosError(
+                        e,
+                        "An error occurred while creating the share link"
+                    )
                 });
             });
 
@@ -294,7 +301,7 @@ export default function CreateShareLinkForm({
                                                                         ? getSelectedResourceName(
                                                                               field.value
                                                                           )
-                                                                        : "Select resource"}
+                                                                        : t('resourceSelect')}
                                                                     <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                                 </Button>
                                                             </FormControl>
@@ -387,7 +394,7 @@ export default function CreateShareLinkForm({
                                                                 >
                                                                     <FormControl>
                                                                         <SelectTrigger>
-                                                                            <SelectValue placeholder="Select duration" />
+                                                                            <SelectValue placeholder={t('selectDuration')} />
                                                                         </SelectTrigger>
                                                                     </FormControl>
                                                                     <SelectContent>
@@ -497,7 +504,7 @@ export default function CreateShareLinkForm({
                                                     <div>
                                                         <ChevronsUpDown className="h-4 w-4" />
                                                         <span className="sr-only">
-                                                            Toggle
+                                                            {t('toggle')}
                                                         </span>
                                                     </div>
                                                 </Button>
@@ -527,7 +534,7 @@ export default function CreateShareLinkForm({
                     </CredenzaBody>
                     <CredenzaFooter>
                         <CredenzaClose asChild>
-                            <Button variant="outline">Close</Button>
+                            <Button variant="outline">{t('close')}</Button>
                         </CredenzaClose>
                         <Button
                             type="button"

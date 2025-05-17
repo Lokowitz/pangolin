@@ -25,7 +25,7 @@ export default function SiteInfoCard({}: SiteInfoCardProps) {
         } else if (type === "local") {
             return t('local');
         } else {
-            return "Unknown";
+            return t('unknown');
         }
     };
 

@@ -47,7 +47,6 @@ export default function GeneralPage() {
     const [loading, setLoading] = useState(false);
 
     const router = useRouter();
-    const t = useTranslations();
 
     const form = useForm<GeneralFormValues>({
         resolver: zodResolver(GeneralFormSchema),
@@ -56,6 +55,7 @@ export default function GeneralPage() {
         },
         mode: "onChange"
     });
+    const t = useTranslations();
 
     async function onSubmit(data: GeneralFormValues) {
         setLoading(true);
@@ -67,16 +67,19 @@ export default function GeneralPage() {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: t('siteErrorUpdate'),
-                    description: formatAxiosError(e,t('siteErrorUpdateDescription'))
+                    title: "Failed to update site",
+                    description: formatAxiosError(
+                        e,
+                        "An error occurred while updating the site."
+                    )
                 });
             });
 
         updateSite({ name: data.name });
 
         toast({
-            title: t('siteUpdated'),
-            description: t('siteUpdatedDescription')
+            title: "Site updated",
+            description: "The site has been updated."
         });
 
         setLoading(false);

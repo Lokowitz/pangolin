@@ -31,7 +31,7 @@ import {
     CardTitle
 } from "@app/components/ui/card";
 
-interface DataTableProps<TData, TValue> {
+type DataTableProps<TData, TValue> = {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     title?: string;
@@ -39,7 +39,11 @@ interface DataTableProps<TData, TValue> {
     onAdd?: () => void;
     searchPlaceholder?: string;
     searchColumn?: string;
-}
+    defaultSort?: {
+        id: string;
+        desc: boolean;
+    };
+};
 
 export function DataTable<TData, TValue>({
     columns,
@@ -48,9 +52,12 @@ export function DataTable<TData, TValue>({
     addButtonText,
     onAdd,
     searchPlaceholder = "Search...",
-    searchColumn = "name"
+    searchColumn = "name",
+    defaultSort
 }: DataTableProps<TData, TValue>) {
-    const [sorting, setSorting] = useState<SortingState>([]);
+    const [sorting, setSorting] = useState<SortingState>(
+        defaultSort ? [defaultSort] : []
+    );
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [globalFilter, setGlobalFilter] = useState<any>([]);
 

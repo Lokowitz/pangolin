@@ -10,6 +10,7 @@ import { GetOrgResponse } from "@server/routers/org";
 import OrgProvider from "@app/providers/OrgProvider";
 import ResourcesSplashCard from "./ResourcesSplashCard";
 import { getTranslations } from 'next-intl/server';
+import { useTranslations } from "next-intl";
 
 type ResourcesPageProps = {
     params: Promise<{ orgId: string }>;
@@ -46,14 +47,16 @@ export default async function ResourcesPage(props: ResourcesPageProps) {
         redirect(`/${params.orgId}/settings/resources`);
     }
 
+    const t = useTranslations();
+
     const resourceRows: ResourceRow[] = resources.map((resource) => {
         return {
             id: resource.resourceId,
             name: resource.name,
             orgId: params.orgId,
             domain: `${resource.ssl ? "https://" : "http://"}${resource.fullDomain}`,
-            site: resource.siteName || "None",
-            siteId: resource.siteId || "Unknown",
+            site: resource.siteName || t('none'),
+            siteId: resource.siteId || t('unknown'),
             protocol: resource.protocol,
             proxyPort: resource.proxyPort,
             http: resource.http,
@@ -68,8 +71,6 @@ export default async function ResourcesPage(props: ResourcesPageProps) {
             enabled: resource.enabled
         };
     });
-
-    const t = await getTranslations();
 
     return (
         <>

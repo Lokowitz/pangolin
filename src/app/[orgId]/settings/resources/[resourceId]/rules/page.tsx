@@ -65,7 +65,6 @@ import {
     InfoSections,
     InfoSectionTitle
 } from "@app/components/InfoSection";
-import { Separator } from "@app/components/ui/separator";
 import { InfoPopup } from "@app/components/ui/info-popup";
 import {
     isValidCIDR,
@@ -74,6 +73,7 @@ import {
 } from "@server/lib/validators";
 import { Switch } from "@app/components/ui/switch";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 // Schema for rule validation
 const addRuleSchema = z.object({
@@ -88,16 +88,18 @@ type LocalRule = ArrayElement<ListResourceRulesResponse["rules"]> & {
     updated?: boolean;
 };
 
-enum RuleAction {
-    ACCEPT = "Always Allow",
-    DROP = "Always Deny"
-}
+const t = useTranslations();
 
-enum RuleMatch {
-    PATH = "Path",
-    IP = "IP",
-    CIDR = "IP Range"
-}
+const RuleAction = {
+    ACCEPT: t('alwaysAllow'),
+    DROP: t('alwaysDeny')
+} as const;
+
+const RuleMatch = {
+    PATH: t('path'),
+    IP: "IP",
+    CIDR: t('ipAddressRange')
+} as const;
 
 export default function ResourceRules(props: {
     params: Promise<{ resourceId: number }>;
@@ -134,10 +136,10 @@ export default function ResourceRules(props: {
                 console.error(err);
                 toast({
                     variant: "destructive",
-                    title: "Failed to fetch rules",
+                    title: t('rulesErrorFetch'),
                     description: formatAxiosError(
                         err,
-                        "An error occurred while fetching rules"
+                        t('rulesErrorFetchDescription')
                     )
                 });
             } finally {
@@ -158,8 +160,8 @@ export default function ResourceRules(props: {
         if (isDuplicate) {
             toast({
                 variant: "destructive",
-                title: "Duplicate rule",
-                description: "A rule with these settings already exists"
+                title: t('rulesErrorDuplicate'),
+                description: t('rulesErrorDuplicateDescription')
             });
             return;
         }
@@ -167,8 +169,8 @@ export default function ResourceRules(props: {
         if (data.match === "CIDR" && !isValidCIDR(data.value)) {
             toast({
                 variant: "destructive",
-                title: "Invalid CIDR",
-                description: "Please enter a valid CIDR value"
+                title: t('rulesErrorInvalidIpAddressRange'),
+                description: t('rulesErrorInvalidIpAddressRangeDescription')
             });
             setLoading(false);
             return;
@@ -176,8 +178,8 @@ export default function ResourceRules(props: {
         if (data.match === "PATH" && !isValidUrlGlobPattern(data.value)) {
             toast({
                 variant: "destructive",
-                title: "Invalid URL path",
-                description: "Please enter a valid URL path value"
+                title: t('rulesErrorInvalidUrl'),
+                description: t('rulesErrorInvalidUrlDescription')
             });
             setLoading(false);
             return;
@@ -185,8 +187,8 @@ export default function ResourceRules(props: {
         if (data.match === "IP" && !isValidIP(data.value)) {
             toast({
                 variant: "destructive",
-                title: "Invalid IP",
-                description: "Please enter a valid IP address"
+                title: t('rulesErrorInvalidIpAddress'),
+                description: t('rulesErrorInvalidIpAddressDescription')
             });
             setLoading(false);
             return;
@@ -241,10 +243,10 @@ export default function ResourceRules(props: {
                 console.error(err);
                 toast({
                     variant: "destructive",
-                    title: "Failed to update rules",
+                    title: t('rulesErrorUpdate'),
                     description: formatAxiosError(
                         err,
-                        "An error occurred while updating rules"
+                        t('rulesErrorUpdateDescription')
                     )
                 });
             });
@@ -254,8 +256,8 @@ export default function ResourceRules(props: {
             updateResource({ applyRules: val });
 
             toast({
-                title: "Enable Rules",
-                description: "Rule evaluation has been updated"
+                title: t('rulesUpdated'),
+                description: t('rulesUpdatedDescription')
             });
             router.refresh();
         }
@@ -264,11 +266,11 @@ export default function ResourceRules(props: {
     function getValueHelpText(type: string) {
         switch (type) {
             case "CIDR":
-                return "Enter an address in CIDR format (e.g., 103.21.244.0/22)";
+                return t('rulesMatchIpAddressRangeDescription');
             case "IP":
-                return "Enter an IP address (e.g., 103.21.244.12)";
+                return t('rulesMatchIpAddress');
             case "PATH":
-                return "Enter a URL path or pattern (e.g., /api/v1/todos or /api/v1/*)";
+                return t('rulesMatchUrl');
         }
     }
 
@@ -287,8 +289,8 @@ export default function ResourceRules(props: {
                 if (rule.match === "CIDR" && !isValidCIDR(rule.value)) {
                     toast({
                         variant: "destructive",
-                        title: "Invalid CIDR",
-                        description: "Please enter a valid CIDR value"
+                        title: t('rulesErrorInvalidIpAddressRange'),
+                        description: t('rulesErrorInvalidIpAddressRangeDescription')
                     });
                     setLoading(false);
                     return;
@@ -299,8 +301,8 @@ export default function ResourceRules(props: {
                 ) {
                     toast({
                         variant: "destructive",
-                        title: "Invalid URL path",
-                        description: "Please enter a valid URL path value"
+                        title: t('rulesErrorInvalidUrl'),
+                        description: t('rulesErrorInvalidUrlDescription')
                     });
                     setLoading(false);
                     return;
@@ -308,8 +310,8 @@ export default function ResourceRules(props: {
                 if (rule.match === "IP" && !isValidIP(rule.value)) {
                     toast({
                         variant: "destructive",
-                        title: "Invalid IP",
-                        description: "Please enter a valid IP address"
+                        title: t('rulesErrorInvalidIpAddress'),
+                        description: t('rulesErrorInvalidIpAddressDescription')
                     });
                     setLoading(false);
                     return;
@@ -318,8 +320,8 @@ export default function ResourceRules(props: {
                 if (rule.priority === undefined) {
                     toast({
                         variant: "destructive",
-                        title: "Invalid Priority",
-                        description: "Please enter a valid priority"
+                        title: t('rulesErrorInvalidPriority'),
+                        description: t('rulesErrorInvalidPriorityDescription')
                     });
                     setLoading(false);
                     return;
@@ -330,8 +332,8 @@ export default function ResourceRules(props: {
                 if (priorities.length !== new Set(priorities).size) {
                     toast({
                         variant: "destructive",
-                        title: "Duplicate Priorities",
-                        description: "Please enter unique priorities"
+                        title: t('rulesErrorDuplicatePriority'),
+                        description: t('rulesErrorDuplicatePriorityDescription')
                     });
                     setLoading(false);
                     return;
@@ -370,8 +372,8 @@ export default function ResourceRules(props: {
             }
 
             toast({
-                title: "Rules updated",
-                description: "Rules updated successfully"
+                title: t('ruleUpdated'),
+                description: t('ruleUpdatedDescription')
             });
 
             setRulesToRemove([]);
@@ -380,10 +382,10 @@ export default function ResourceRules(props: {
             console.error(err);
             toast({
                 variant: "destructive",
-                title: "Operation failed",
+                title: t('ruleErrorUpdate'),
                 description: formatAxiosError(
                     err,
-                    "An error occurred during the save operation"
+                    t('ruleErrorUpdateDescription')
                 )
             });
         }
@@ -401,7 +403,7 @@ export default function ResourceRules(props: {
                             column.toggleSorting(column.getIsSorted() === "asc")
                         }
                     >
-                        Priority
+                        {t('rulesPriority')}
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
@@ -421,8 +423,8 @@ export default function ResourceRules(props: {
                         if (!parsed.data) {
                             toast({
                                 variant: "destructive",
-                                title: "Invalid IP",
-                                description: "Please enter a valid priority"
+                                title: t('rulesErrorInvalidIpAddress'), // correct priority or IP?
+                                description: t('rulesErrorInvalidPriorityDescription')
                             });
                             setLoading(false);
                             return;
@@ -437,7 +439,7 @@ export default function ResourceRules(props: {
         },
         {
             accessorKey: "action",
-            header: "Action",
+            header: t('rulesAction'),
             cell: ({ row }) => (
                 <Select
                     defaultValue={row.original.action}
@@ -459,7 +461,7 @@ export default function ResourceRules(props: {
         },
         {
             accessorKey: "match",
-            header: "Match Type",
+            header: t('rulesMatchType'),
             cell: ({ row }) => (
                 <Select
                     defaultValue={row.original.match}
@@ -480,7 +482,7 @@ export default function ResourceRules(props: {
         },
         {
             accessorKey: "value",
-            header: "Value",
+            header: t('value'),
             cell: ({ row }) => (
                 <Input
                     defaultValue={row.original.value}
@@ -495,7 +497,7 @@ export default function ResourceRules(props: {
         },
         {
             accessorKey: "enabled",
-            header: "Enabled",
+            header: t('enabled'),
             cell: ({ row }) => (
                 <Switch
                     defaultChecked={row.original.enabled}
@@ -513,7 +515,7 @@ export default function ResourceRules(props: {
                         variant="outline"
                         onClick={() => removeRule(row.original.ruleId)}
                     >
-                        Delete
+                        {t('delete')}
                     </Button>
                 </div>
             )
@@ -543,46 +545,40 @@ export default function ResourceRules(props: {
         <SettingsContainer>
             <Alert className="hidden md:block">
                 <InfoIcon className="h-4 w-4" />
-                <AlertTitle className="font-semibold">About Rules</AlertTitle>
+                <AlertTitle className="font-semibold">{t('rulesAbout')}</AlertTitle>
                 <AlertDescription className="mt-4">
                     <div className="space-y-1 mb-4">
                         <p>
-                            Rules allow you to control access to your resource
-                            based on a set of criteria. You can create rules to
-                            allow or deny access based on IP address or URL
-                            path.
+                            {t('rulesAboutDescription')}
                         </p>
                     </div>
                     <InfoSections cols={2}>
                         <InfoSection>
-                            <InfoSectionTitle>Actions</InfoSectionTitle>
+                            <InfoSectionTitle>{t('rulesActions')}</InfoSectionTitle>
                             <ul className="text-sm text-muted-foreground space-y-1">
                                 <li className="flex items-center gap-2">
                                     <Check className="text-green-500 w-4 h-4" />
-                                    Always Allow: Bypass all authentication
-                                    methods
+                                    {t('rulesActionAlwaysAllow')}
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <X className="text-red-500 w-4 h-4" />
-                                    Always Deny: Block all requests; no
-                                    authentication can be attempted
+                                    {t('rulesActionAlwaysDeny')}
                                 </li>
                             </ul>
                         </InfoSection>
                         <InfoSection>
                             <InfoSectionTitle>
-                                Matching Criteria
+                                {t('rulesMatchCriteria')}
                             </InfoSectionTitle>
                             <ul className="text-sm text-muted-foreground space-y-1">
                                 <li className="flex items-center gap-2">
-                                    Match a specific IP address
+                                    {t('rulesMatchCriteriaIpAddress')}
                                 </li>
                                 <li className="flex items-center gap-2">
-                                    Match a range of IP addresses in CIDR
-                                    notation
+                                    {t('rulesMatchCriteriaIpAddressRange')}
                                 </li>
                                 <li className="flex items-center gap-2">
-                                    Match a URL path or pattern
+                                    {t('rulesMatchCriteriaUrl')}
                                 </li>
                             </ul>
                         </InfoSection>
@@ -592,15 +588,15 @@ export default function ResourceRules(props: {
 
             <SettingsSection>
                 <SettingsSectionHeader>
-                    <SettingsSectionTitle>Enable Rules</SettingsSectionTitle>
+                    <SettingsSectionTitle>{t('rulesEnable')}</SettingsSectionTitle>
                     <SettingsSectionDescription>
-                        Enable or disable rule evaluation for this resource
+                        {t('rulesEnableDescription')}
                     </SettingsSectionDescription>
                 </SettingsSectionHeader>
                 <SettingsSectionBody>
                     <SwitchInput
                         id="rules-toggle"
-                        label="Enable Rules"
+                        label={t('rulesEnable')}
                         defaultChecked={rulesEnabled}
                         onCheckedChange={async (val) => {
                             await saveApplyRules(val);
@@ -612,10 +608,10 @@ export default function ResourceRules(props: {
             <SettingsSection>
                 <SettingsSectionHeader>
                     <SettingsSectionTitle>
-                        Resource Rules Configuration
+                        {t('rulesResource')}
                     </SettingsSectionTitle>
                     <SettingsSectionDescription>
-                        Configure rules to control access to your resource
+                        {t('rulesResourceDescription')}
                     </SettingsSectionDescription>
                 </SettingsSectionHeader>
                 <SettingsSectionBody>
@@ -630,7 +626,7 @@ export default function ResourceRules(props: {
                                     name="action"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Action</FormLabel>
+                                            <FormLabel>{t('rulesAction')}</FormLabel>
                                             <FormControl>
                                                 <Select
                                                     value={field.value}
@@ -660,7 +656,7 @@ export default function ResourceRules(props: {
                                     name="match"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Match Type</FormLabel>
+                                            <FormLabel>{t('rulesMatchType')}</FormLabel>
                                             <FormControl>
                                                 <Select
                                                     value={field.value}
@@ -696,7 +692,7 @@ export default function ResourceRules(props: {
                                     render={({ field }) => (
                                         <FormItem className="space-y-0 mb-2">
                                             <InfoPopup
-                                                text="Value"
+                                                text={t('value')}
                                                 info={
                                                     getValueHelpText(
                                                         addRuleForm.watch(
@@ -718,7 +714,7 @@ export default function ResourceRules(props: {
                                     className="mb-2"
                                     disabled={!rulesEnabled}
                                 >
-                                    Add Rule
+                                    {t('ruleSubmit')}
                                 </Button>
                             </div>
                         </form>
@@ -761,13 +757,13 @@ export default function ResourceRules(props: {
                                         colSpan={columns.length}
                                         className="h-24 text-center"
                                     >
-                                        No rules. Add a rule using the form.
+                                        {t('rulesNoOne')}
                                     </TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
                         <TableCaption>
-                            Rules are evaluated by priority in ascending order.
+                            {t('rulesOrder')}
                         </TableCaption>
                     </Table>
                 </SettingsSectionBody>
@@ -777,7 +773,7 @@ export default function ResourceRules(props: {
                         loading={loading}
                         disabled={loading}
                     >
-                        Save Rules
+                        {t('rulesSubmit')}
                     </Button>
                 </SettingsSectionFooter>
             </SettingsSection>

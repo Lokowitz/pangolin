@@ -29,9 +29,12 @@ const configSchema = z.object({
             .optional()
             .pipe(z.string().url())
             .transform((url) => url.toLowerCase()),
-        log_level: z.enum(["debug", "info", "warn", "error"]),
-        save_logs: z.boolean(),
-        log_failed_attempts: z.boolean().optional()
+        log_level: z
+            .enum(["debug", "info", "warn", "error"])
+            .optional()
+            .default("info"),
+        save_logs: z.boolean().optional().default(false),
+        log_failed_attempts: z.boolean().optional().default(false)
     }),
     domains: z
         .record(
@@ -41,8 +44,8 @@ const configSchema = z.object({
                     .string()
                     .nonempty("base_domain must not be empty")
                     .transform((url) => url.toLowerCase()),
-                cert_resolver: z.string().optional(),
-                prefer_wildcard_cert: z.boolean().optional()
+                cert_resolver: z.string().optional().default("letsencrypt"),
+                prefer_wildcard_cert: z.boolean().optional().default(false)
             })
         )
         .refine(
@@ -62,19 +65,42 @@ const configSchema = z.object({
     server: z.object({
         integration_port: portSchema
             .optional()
+            .default(3003)
             .transform(stoi)
             .pipe(portSchema.optional()),
-        external_port: portSchema.optional().transform(stoi).pipe(portSchema),
-        internal_port: portSchema.optional().transform(stoi).pipe(portSchema),
-        next_port: portSchema.optional().transform(stoi).pipe(portSchema),
-        internal_hostname: z.string().transform((url) => url.toLowerCase()),
-        session_cookie_name: z.string(),
-        resource_access_token_param: z.string(),
-        resource_access_token_headers: z.object({
-            id: z.string(),
-            token: z.string()
-        }),
-        resource_session_request_param: z.string(),
+        external_port: portSchema
+            .optional()
+            .default(3000)
+            .transform(stoi)
+            .pipe(portSchema),
+        internal_port: portSchema
+            .optional()
+            .default(3001)
+            .transform(stoi)
+            .pipe(portSchema),
+        next_port: portSchema
+            .optional()
+            .default(3002)
+            .transform(stoi)
+            .pipe(portSchema),
+        internal_hostname: z
+            .string()
+            .optional()
+            .default("pangolin")
+            .transform((url) => url.toLowerCase()),
+        session_cookie_name: z.string().optional().default("p_session_token"),
+        resource_access_token_param: z.string().optional().default("p_token"),
+        resource_access_token_headers: z
+            .object({
+                id: z.string().optional().default("P-Access-Token-Id"),
+                token: z.string().optional().default("P-Access-Token")
+            })
+            .optional()
+            .default({}),
+        resource_session_request_param: z
+            .string()
+            .optional()
+            .default("resource_session_request_param"),
         dashboard_session_length_hours: z
             .number()
             .positive()
@@ -102,35 +128,61 @@ const configSchema = z.object({
             .transform(getEnvOrYaml("SERVER_SECRET"))
             .pipe(z.string().min(8))
     }),
-    traefik: z.object({
-        http_entrypoint: z.string(),
-        https_entrypoint: z.string().optional(),
-        additional_middlewares: z.array(z.string()).optional()
-    }),
-    gerbil: z.object({
-        start_port: portSchema.optional().transform(stoi).pipe(portSchema),
-        base_endpoint: z
-            .string()
-            .optional()
-            .pipe(z.string())
-            .transform((url) => url.toLowerCase()),
-        use_subdomain: z.boolean(),
-        subnet_group: z.string(),
-        block_size: z.number().positive().gt(0),
-        site_block_size: z.number().positive().gt(0)
-    }),
-    rate_limits: z.object({
-        global: z.object({
-            window_minutes: z.number().positive().gt(0),
-            max_requests: z.number().positive().gt(0)
-        }),
-        auth: z
-            .object({
-                window_minutes: z.number().positive().gt(0),
-                max_requests: z.number().positive().gt(0)
-            })
-            .optional()
-    }),
+    traefik: z
+        .object({
+            http_entrypoint: z.string().optional().default("web"),
+            https_entrypoint: z.string().optional().default("websecure"),
+            additional_middlewares: z.array(z.string()).optional()
+        })
+        .optional()
+        .default({}),
+    gerbil: z
+        .object({
+            start_port: portSchema
+                .optional()
+                .default(51820)
+                .transform(stoi)
+                .pipe(portSchema),
+            base_endpoint: z
+                .string()
+                .optional()
+                .pipe(z.string())
+                .transform((url) => url.toLowerCase()),
+            use_subdomain: z.boolean().optional().default(false),
+            subnet_group: z.string().optional().default("100.89.137.0/20"),
+            block_size: z.number().positive().gt(0).optional().default(24),
+            site_block_size: z.number().positive().gt(0).optional().default(30)
+        })
+        .optional()
+        .default({}),
+    rate_limits: z
+        .object({
+            global: z
+                .object({
+                    window_minutes: z
+                        .number()
+                        .positive()
+                        .gt(0)
+                        .optional()
+                        .default(1),
+                    max_requests: z
+                        .number()
+                        .positive()
+                        .gt(0)
+                        .optional()
+                        .default(500)
+                })
+                .optional()
+                .default({}),
+            auth: z
+                .object({
+                    window_minutes: z.number().positive().gt(0),
+                    max_requests: z.number().positive().gt(0)
+                })
+                .optional()
+        })
+        .optional()
+        .default({}),
     email: z
         .object({
             smtp_host: z.string().optional(),
@@ -164,7 +216,8 @@ const configSchema = z.object({
             disable_user_create_org: z.boolean().optional(),
             allow_raw_resources: z.boolean().optional(),
             allow_base_domain_resources: z.boolean().optional(),
-            allow_local_sites: z.boolean().optional()
+            allow_local_sites: z.boolean().optional(),
+            enable_integration_api: z.boolean().optional()
         })
         .optional()
 });

@@ -11,6 +11,7 @@ import { verifySession } from "@app/lib/auth/verifySession";
 import AccessPageHeaderAndNav from "../AccessPageHeaderAndNav";
 import SettingsSectionTitle from "@app/components/SettingsSectionTitle";
 import { getTranslations } from 'next-intl/server';
+import { useTranslations } from "next-intl";
 
 type UsersPageProps = {
     params: Promise<{ orgId: string }>;
@@ -23,6 +24,8 @@ export default async function UsersPage(props: UsersPageProps) {
 
     const getUser = cache(verifySession);
     const user = await getUser();
+
+    const t = useTranslations();
 
     let users: ListUsersResponse["users"] = [];
     let hasInvitations = false;
@@ -77,14 +80,12 @@ export default async function UsersPage(props: UsersPageProps) {
             email: user.email,
             type: user.type,
             idpId: user.idpId,
-            idpName: user.idpName || "Internal",
-            status: "Confirmed",
-            role: user.isOwner ? "Owner" : user.roleName || "Member",
+            idpName: user.idpName || t('idpNameInternal'),
+            status: t('userConfirmed'),
+            role: user.isOwner ? t('accessRoleOwner') : user.roleName || t('accessRoleMember'),
             isOwner: user.isOwner || false
         };
     });
-
-    const t = await getTranslations();
 
     return (
         <>

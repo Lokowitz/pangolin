@@ -48,6 +48,7 @@ import { useRouter } from "next/navigation";
 import { UserType } from "@server/types/UserTypes";
 import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 const UsersRolesFormSchema = z.object({
     roles: z.array(
@@ -129,6 +130,8 @@ export default function ResourceAuthenticationPage() {
         defaultValues: { emails: [] }
     });
 
+    const t = useTranslations();
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -203,10 +206,10 @@ export default function ResourceAuthenticationPage() {
                 console.error(e);
                 toast({
                     variant: "destructive",
-                    title: "Failed to fetch data",
+                    title: t('resourceErrorAuthFetch'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while fetching the data"
+                        t('resourceErrorAuthFetchDescription')
                     )
                 });
             }
@@ -233,18 +236,18 @@ export default function ResourceAuthenticationPage() {
             });
 
             toast({
-                title: "Saved successfully",
-                description: "Whitelist settings have been saved"
+                title: t('resourceWhitelistSave'),
+                description: t('resourceWhitelistSaveDescription')
             });
             router.refresh();
         } catch (e) {
             console.error(e);
             toast({
                 variant: "destructive",
-                title: "Failed to save whitelist",
+                title: t('resourceErrorWhitelistSave'),
                 description: formatAxiosError(
                     e,
-                    "An error occurred while saving the whitelist"
+                    t('resourceErrorWhitelistSaveDescription')
                 )
             });
         } finally {
@@ -281,18 +284,18 @@ export default function ResourceAuthenticationPage() {
             });
 
             toast({
-                title: "Saved successfully",
-                description: "Authentication settings have been saved"
+                title: t('resourceAuthSettingsSave'),
+                description: t('resourceAuthSettingsSaveDescription')
             });
             router.refresh();
         } catch (e) {
             console.error(e);
             toast({
                 variant: "destructive",
-                title: "Failed to set roles",
+                title: t('resourceErrorUsersRolesSave'),
                 description: formatAxiosError(
                     e,
-                    "An error occurred while setting the roles"
+                    t('resourceErrorUsersRolesSaveDescription')
                 )
             });
         } finally {
@@ -308,9 +311,8 @@ export default function ResourceAuthenticationPage() {
         })
             .then(() => {
                 toast({
-                    title: "Resource password removed",
-                    description:
-                        "The resource password has been removed successfully"
+                    title: t('resourcePasswordRemove'),
+                    description: t('resourcePasswordRemoveDescription')
                 });
 
                 updateAuthInfo({
@@ -321,10 +323,10 @@ export default function ResourceAuthenticationPage() {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Error removing resource password",
+                    title: t('resourceErrorPasswordRemove'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while removing the resource password"
+                        t('resourceErrorPasswordRemoveDescription')
                     )
                 });
             })
@@ -339,9 +341,8 @@ export default function ResourceAuthenticationPage() {
         })
             .then(() => {
                 toast({
-                    title: "Resource pincode removed",
-                    description:
-                        "The resource password has been removed successfully"
+                    title: t('resourcePincodeRemove'),
+                    description: t('resourcePincodeRemoveDescription')
                 });
 
                 updateAuthInfo({
@@ -352,10 +353,10 @@ export default function ResourceAuthenticationPage() {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Error removing resource pincode",
+                    title: t('resourceErrorPincodeRemove'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while removing the resource pincode"
+                        t('resourceErrorPincodeRemoveDescription')
                     )
                 });
             })
@@ -400,18 +401,17 @@ export default function ResourceAuthenticationPage() {
                 <SettingsSection>
                     <SettingsSectionHeader>
                         <SettingsSectionTitle>
-                            Users & Roles
+                            {t('resourceUsersRoles')}
                         </SettingsSectionTitle>
                         <SettingsSectionDescription>
-                            Configure which users and roles can visit this
-                            resource
+                            {t('resourceUsersRolesDescription')}
                         </SettingsSectionDescription>
                     </SettingsSectionHeader>
                     <SettingsSectionBody>
                         <SwitchInput
                             id="sso-toggle"
-                            label="Use Platform SSO"
-                            description="Existing users will only have to log in once for all resources that have this enabled."
+                            label={t('ssoUse')}
+                            description={t('ssoUseDescription')}
                             defaultChecked={resource.sso}
                             onCheckedChange={(val) => setSsoEnabled(val)}
                         />
@@ -431,7 +431,7 @@ export default function ResourceAuthenticationPage() {
                                             name="roles"
                                             render={({ field }) => (
                                                 <FormItem className="flex flex-col items-start">
-                                                    <FormLabel>Roles</FormLabel>
+                                                    <FormLabel>{t('roles')}</FormLabel>
                                                     <FormControl>
                                                         <TagInput
                                                             {...field}
@@ -441,7 +441,7 @@ export default function ResourceAuthenticationPage() {
                                                             setActiveTagIndex={
                                                                 setActiveRolesTagIndex
                                                             }
-                                                            placeholder="Select a role"
+                                                            placeholder={t('accessRoleSelect2')}
                                                             size="sm"
                                                             tags={
                                                                 usersRolesForm.getValues()
@@ -475,8 +475,7 @@ export default function ResourceAuthenticationPage() {
                                                     </FormControl>
                                                     <FormMessage />
                                                     <FormDescription>
-                                                        Admins can always access
-                                                        this resource.
+                                                        {t('resourceRoleDescription')}
                                                     </FormDescription>
                                                 </FormItem>
                                             )}
@@ -486,7 +485,7 @@ export default function ResourceAuthenticationPage() {
                                             name="users"
                                             render={({ field }) => (
                                                 <FormItem className="flex flex-col items-start">
-                                                    <FormLabel>Users</FormLabel>
+                                                    <FormLabel>{t('users')}</FormLabel>
                                                     <FormControl>
                                                         <TagInput
                                                             {...field}
@@ -496,7 +495,7 @@ export default function ResourceAuthenticationPage() {
                                                             setActiveTagIndex={
                                                                 setActiveUsersTagIndex
                                                             }
-                                                            placeholder="Select a user"
+                                                            placeholder={t('accessUserSelect')}
                                                             tags={
                                                                 usersRolesForm.getValues()
                                                                     .users
@@ -544,7 +543,7 @@ export default function ResourceAuthenticationPage() {
                             disabled={loadingSaveUsersRoles}
                             form="users-roles-form"
                         >
-                            Save Users & Roles
+                            {t('resourceUsersRolesSubmit')}
                         </Button>
                     </SettingsSectionFooter>
                 </SettingsSection>
@@ -552,11 +551,10 @@ export default function ResourceAuthenticationPage() {
                 <SettingsSection>
                     <SettingsSectionHeader>
                         <SettingsSectionTitle>
-                            Authentication Methods
+                            {t('resourceAuthMethods')}
                         </SettingsSectionTitle>
                         <SettingsSectionDescription>
-                            Allow access to the resource via additional auth
-                            methods
+                            {t('resourceAuthMethodsDescriptions')}
                         </SettingsSectionDescription>
                     </SettingsSectionHeader>
                     <SettingsSectionBody>
@@ -568,7 +566,7 @@ export default function ResourceAuthenticationPage() {
                                 <Key />
                                 <span>
                                     Password Protection{" "}
-                                    {authInfo.password ? "Enabled" : "Disabled"}
+                                    {authInfo.password ? t('enabled') : t('disabled')}
                                 </span>
                             </div>
                             <Button
@@ -581,8 +579,8 @@ export default function ResourceAuthenticationPage() {
                                 loading={loadingRemoveResourcePassword}
                             >
                                 {authInfo.password
-                                    ? "Remove Password"
-                                    : "Add Password"}
+                                    ? t('passwordRemove')
+                                    : t('passwordAdd')}
                             </Button>
                         </div>
 
@@ -593,8 +591,7 @@ export default function ResourceAuthenticationPage() {
                             >
                                 <Binary />
                                 <span>
-                                    PIN Code Protection{" "}
-                                    {authInfo.pincode ? "Enabled" : "Disabled"}
+                                    {t('resourcePincodeProtection', {status: authInfo.pincode ? t('enabled') : t('disabled')})}
                                 </span>
                             </div>
                             <Button
@@ -607,8 +604,8 @@ export default function ResourceAuthenticationPage() {
                                 loading={loadingRemoveResourcePincode}
                             >
                                 {authInfo.pincode
-                                    ? "Remove PIN Code"
-                                    : "Add PIN Code"}
+                                    ? t('pincodeRemove')
+                                    : t('pincodeAdd')}
                             </Button>
                         </div>
                     </SettingsSectionBody>
@@ -617,11 +614,10 @@ export default function ResourceAuthenticationPage() {
                 <SettingsSection>
                     <SettingsSectionHeader>
                         <SettingsSectionTitle>
-                            One-time Passwords
+                            {t('otpEmailTitle')}
                         </SettingsSectionTitle>
                         <SettingsSectionDescription>
-                            Require email-based authentication for resource
-                            access
+                            {t('otpEmailTitleDescription')}
                         </SettingsSectionDescription>
                     </SettingsSectionHeader>
                     <SettingsSectionBody>
@@ -629,16 +625,16 @@ export default function ResourceAuthenticationPage() {
                             <Alert variant="neutral" className="mb-4">
                                 <InfoIcon className="h-4 w-4" />
                                 <AlertTitle className="font-semibold">
-                                    SMTP Required
+                                    {t('otpEmailSmtpRequired')}
                                 </AlertTitle>
                                 <AlertDescription>
-                                    SMTP must be enabled on the server to use one-time password authentication.
+                                    {t('otpEmailSmtpRequiredDescription')}
                                 </AlertDescription>
                             </Alert>
                         )}
                         <SwitchInput
                             id="whitelist-toggle"
-                            label="Email Whitelist"
+                            label={t('otpEmailWhitelist')}
                             defaultChecked={resource.emailWhitelistEnabled}
                             onCheckedChange={setWhitelistEnabled}
                             disabled={!env.email.emailEnabled}
@@ -654,8 +650,8 @@ export default function ResourceAuthenticationPage() {
                                             <FormItem>
                                                 <FormLabel>
                                                     <InfoPopup
-                                                        text="Whitelisted Emails"
-                                                        info="Only users with these email addresses will be able to access this resource. They will be prompted to enter a one-time password sent to their email. Wildcards (*@example.com) can be used to allow any email address from a domain."
+                                                        text={t('otpEmailWhitelistList')}
+                                                        info={t('otpEmailWhitelistListDescription')}
                                                     />
                                                 </FormLabel>
                                                 <FormControl>
@@ -678,8 +674,7 @@ export default function ResourceAuthenticationPage() {
                                                                         .regex(
                                                                             /^\*@[\w.-]+\.[a-zA-Z]{2,}$/,
                                                                             {
-                                                                                message:
-                                                                                    "Invalid email address. Wildcard (*) must be the entire local part."
+                                                                                message: t('otpEmailErrorInvalid')
                                                                             }
                                                                         )
                                                                 )
@@ -690,7 +685,7 @@ export default function ResourceAuthenticationPage() {
                                                         setActiveTagIndex={
                                                             setActiveEmailTagIndex
                                                         }
-                                                        placeholder="Enter an email"
+                                                        placeholder={t('otpEmailEnter')}
                                                         tags={
                                                             whitelistForm.getValues()
                                                                 .emails
@@ -713,9 +708,7 @@ export default function ResourceAuthenticationPage() {
                                                     />
                                                 </FormControl>
                                                 <FormDescription>
-                                                    Press enter to add an
-                                                    email after typing it in
-                                                    the input field.
+                                                    {t('otpEmailEnterDescription')}
                                                 </FormDescription>
                                             </FormItem>
                                         )}
@@ -731,7 +724,7 @@ export default function ResourceAuthenticationPage() {
                             loading={loadingSaveWhitelist}
                             disabled={loadingSaveWhitelist}
                         >
-                            Save Whitelist
+                            {t('otpEmailWhitelistSave')}
                         </Button>
                     </SettingsSectionFooter>
                 </SettingsSection>

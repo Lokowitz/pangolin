@@ -70,7 +70,7 @@ const createSiteFormSchema = z
     .object({
         name: z
             .string()
-            .min(2, { message: "Name must be at least 2 characters." })
+            .min(2, "Name must be at least 2 characters.")
             .max(30, {
                 message: "Name must not be longer than 30 characters."
             }),
@@ -324,7 +324,7 @@ WantedBy=default.target`
     };
 
     const getCommand = () => {
-        const placeholder = ["Unknown command"];
+        const placeholder = [t('unknownCommand')];
         if (!commands) {
             return placeholder;
         }
@@ -381,8 +381,8 @@ WantedBy=default.target`
             if (!siteDefaults || !wgConfig) {
                 toast({
                     variant: "destructive",
-                    title: t('siteErrorCreate'),
-                    description: t('siteErrorCreateKeyPair')
+                    title: "Error creating site",
+                    description: "Key pair or site defaults not found"
                 });
                 setCreateLoading(false);
                 return;
@@ -399,8 +399,8 @@ WantedBy=default.target`
             if (!siteDefaults) {
                 toast({
                     variant: "destructive",
-                    title: t('siteErrorCreate'),
-                    description: t('siteErrorCreateDefaults')
+                    title: "Error creating site",
+                    description: "Site defaults not found"
                 });
                 setCreateLoading(false);
                 return;
@@ -422,7 +422,7 @@ WantedBy=default.target`
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: t('siteErrorCreate'),
+                    title: "Error creating site",
                     description: formatAxiosError(e)
                 });
             });
@@ -448,14 +448,14 @@ WantedBy=default.target`
                 );
                 if (!response.ok) {
                     throw new Error(
-                        `Failed to fetch release info: ${response.statusText}`
+                        t('newtErrorFetchReleases', {err: response.statusText})
                     );
                 }
                 const data = await response.json();
                 const latestVersion = data.tag_name;
                 newtVersion = latestVersion;
             } catch (error) {
-                console.error("Error fetching latest release:", error);
+                console.error(t('newtErrorFetchLatest', {err: error instanceof Error ? error.message : String(error)}));
             }
 
             const generatedKeypair = generateKeypair();
@@ -612,7 +612,7 @@ WantedBy=default.target`
                                         <InfoSections cols={3}>
                                             <InfoSection>
                                                 <InfoSectionTitle>
-                                                    Newt Endpoint
+                                                    {t('newtEndpoint')}
                                                 </InfoSectionTitle>
                                                 <InfoSectionContent>
                                                     <CopyToClipboard
@@ -624,7 +624,7 @@ WantedBy=default.target`
                                             </InfoSection>
                                             <InfoSection>
                                                 <InfoSectionTitle>
-                                                    Newt ID
+                                                    {t('newtId')}
                                                 </InfoSectionTitle>
                                                 <InfoSectionContent>
                                                     <CopyToClipboard
@@ -634,7 +634,7 @@ WantedBy=default.target`
                                             </InfoSection>
                                             <InfoSection>
                                                 <InfoSectionTitle>
-                                                    Newt Secret Key
+                                                    {t('newtSecretKey')}
                                                 </InfoSectionTitle>
                                                 <InfoSectionContent>
                                                     <CopyToClipboard
@@ -737,8 +737,8 @@ WantedBy=default.target`
                                                 {["docker", "podman"].includes(
                                                     platform
                                                 )
-                                                    ? "Method"
-                                                    : "Architecture"}
+                                                    ? t('method')
+                                                    : t('architecture')}
                                             </p>
                                             <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                                                 {getArchitectures().map(

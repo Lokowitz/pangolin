@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -49,7 +44,7 @@ import {
 } from "@app/components/Settings";
 import SettingsSectionTitle from "@app/components/SettingsSectionTitle";
 import { Badge } from "@app/components/ui/badge";
-import { Check, ShieldCheck, ShieldOff } from "lucide-react";
+import { Check, Heart, InfoIcon, ShieldCheck, ShieldOff } from "lucide-react";
 import CopyTextBox from "@app/components/CopyTextBox";
 import { Progress } from "@app/components/ui/progress";
 import { MinusCircle, PlusCircle } from "lucide-react";
@@ -57,6 +52,8 @@ import ConfirmDeleteDialog from "@app/components/ConfirmDeleteDialog";
 import { SitePriceCalculator } from "./components/SitePriceCalculator";
 import Link from "next/link";
 import { Checkbox } from "@app/components/ui/checkbox";
+import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
+import { useSupporterStatusContext } from "@app/hooks/useSupporterStatusContext";
 import { useTranslations } from 'next-intl';
 
 const formSchema = z.object({
@@ -96,6 +93,7 @@ export default function LicensePage() {
     const [isActivatingLicense, setIsActivatingLicense] = useState(false);
     const [isDeletingLicense, setIsDeletingLicense] = useState(false);
     const [isRecheckingLicense, setIsRecheckingLicense] = useState(false);
+    const { supporterStatus } = useSupporterStatusContext();
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -359,6 +357,18 @@ export default function LicensePage() {
                 description={t('licenseTitleDescription')}
             />
 
+            <Alert variant="neutral" className="mb-6">
+                <InfoIcon className="h-4 w-4" />
+                <AlertTitle className="font-semibold">
+                    About Licensing
+                </AlertTitle>
+                <AlertDescription>
+                    This is for business and enterprise users who are using
+                    Pangolin in a commercial environment. If you are using
+                    Pangolin for personal use, you can ignore this section.
+                </AlertDescription>
+            </Alert>
+
             <SettingsContainer>
                 <SettingsSectionGrid cols={2}>
                     <SettingsSection>
@@ -385,9 +395,16 @@ export default function LicensePage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
-                                        <div className="text-2xl">
-                                            {t('licensedNot')}
-                                        </div>
+                                        {supporterStatus?.visible ? (
+                                            <div className="text-2xl">
+                                                Community Edition
+                                            </div>
+                                        ) : (
+                                            <div className="text-2xl flex items-center gap-2 text-pink-500">
+                                                <Heart />
+                                                Community Edition
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>

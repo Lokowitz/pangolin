@@ -36,7 +36,7 @@ export const SitesSplashCard = () => {
             <button
                 onClick={handleDismiss}
                 className="absolute top-2 right-2 p-2"
-                aria-label="Dismiss"
+                aria-label={t('dismiss')}
             >
                 <X className="w-5 h-5" />
             </button>
@@ -70,7 +70,7 @@ export const SitesSplashCard = () => {
                                 className="w-full flex items-center"
                                 variant="secondary"
                             >
-                                Install Newt{" "}
+                                {t('siteInstallNewt')}{" "}
                                 <ArrowRight className="ml-2 w-4 h-4" />
                             </Button>
                         </Link>
@@ -78,20 +78,19 @@ export const SitesSplashCard = () => {
                 </div>
                 <div className="space-y-4">
                     <h3 className="text-xl font-semibold flex items-center gap-2">
-                        Basic WireGuard
+                        {t('siteWg')}
                     </h3>
                     <p className="text-sm">
-                        Use any WireGuard client to connect. You will have to
-                        address your internal resources using the peer IP.
+                        {t('siteWgAnyClients')}
                     </p>
                     <ul className="text-sm text-muted-foreground space-y-2">
                         <li className="flex items-center gap-2">
                             <Docker className="text-purple-500 w-4 h-4" />
-                            Compatible with all WireGuard clients
+                            {t('siteWgCompatibleAllClients')}
                         </li>
                         <li className="flex items-center gap-2">
                             <Server className="text-purple-500 w-4 h-4" />
-                            Manual configuration required
+                            {t('siteWgManualConfigurationRequired')}
                         </li>
                     </ul>
                 </div>

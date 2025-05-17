@@ -181,7 +181,7 @@ export default function UsersTable({ users: u }: UsersTableProps) {
                                 variant="ghost"
                                 className="opacity-0 cursor-default"
                             >
-                                Placeholder
+                                {t('placeholder')}
                             </Button>
                         )}
                         {!userRow.isOwner && (
@@ -192,7 +192,7 @@ export default function UsersTable({ users: u }: UsersTableProps) {
                                     variant={"outlinePrimary"}
                                     className="ml-2"
                                 >
-                                    Manage
+                                    {t('manage')}
                                     <ArrowRight className="ml-2 w-4 h-4" />
                                 </Button>
                             </Link>
@@ -210,10 +210,10 @@ export default function UsersTable({ users: u }: UsersTableProps) {
                 .catch((e) => {
                     toast({
                         variant: "destructive",
-                        title: "Failed to remove user",
+                        title: t('userErrorOrgRemove'),
                         description: formatAxiosError(
                             e,
-                            "An error occurred while removing the user."
+                            t('userErrorOrgRemoveDescription')
                         )
                     });
                 });
@@ -221,8 +221,8 @@ export default function UsersTable({ users: u }: UsersTableProps) {
             if (res && res.status === 200) {
                 toast({
                     variant: "default",
-                    title: "User removed",
-                    description: `The user ${selectedUser.email} has been removed from the organization.`
+                    title: t('userOrgRemoved'),
+                    description: t('userOrgRemovedDescription', {email: selectedUser.email || ''})
                 });
 
                 setUsers((prev) =>
@@ -244,29 +244,19 @@ export default function UsersTable({ users: u }: UsersTableProps) {
                 dialog={
                     <div className="space-y-4">
                         <p>
-                            Are you sure you want to remove{" "}
-                            <b>
-                                {selectedUser?.email ||
-                                    selectedUser?.name ||
-                                    selectedUser?.username}
-                            </b>{" "}
-                            from the organization?
+                            {t('userQuestionOrgRemove', {email: selectedUser?.email || selectedUser?.name || selectedUser?.username || ''})}
                         </p>
 
                         <p>
-                            Once removed, this user will no longer have access
-                            to the organization. You can always re-invite them
-                            later, but they will need to accept the invitation
-                            again.
+                            {t('userMessageOrgRemove')}
                         </p>
 
                         <p>
-                            To confirm, please type the name of the of the user
-                            below.
+                            {t('userMessageOrgConfirm')}
                         </p>
                     </div>
                 }
-                buttonText="Confirm Remove User"
+                buttonText={t('userRemoveOrgConfirm')}
                 onConfirm={removeUser}
                 string={
                     selectedUser?.email ||
@@ -274,7 +264,7 @@ export default function UsersTable({ users: u }: UsersTableProps) {
                     selectedUser?.username ||
                     ""
                 }
-                title="Remove User from Organization"
+                title={t('userRemoveOrg')}
             />
 
             <UsersDataTable
