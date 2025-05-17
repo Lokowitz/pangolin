@@ -364,7 +364,7 @@
     "inviteRemoveErrorDescription": "Wystąpił błąd podczas usuwania zaproszenia.",
     "inviteRemoved": "Zaproszenie usunięte",
     "inviteRemovedDescription": "Zaproszenie dla {email} zostało usunięte.",
-    "inviteQuestionRemove": "Are you sure you want to remove the invitation {email}?",
+    "inviteQuestionRemove": "Czy na pewno chcesz usunąć zaproszenie {email}?",
     "inviteMessageRemove": "Po usunięciu to zaproszenie nie będzie już ważne. Zawsze możesz ponownie zaprosić użytkownika później.",
     "inviteMessageConfirm": "Aby potwierdzić, wpisz poniżej adres email zaproszenia.",
     "inviteQuestionRegenerate": "Czy na pewno chcesz ponownie wygenerować zaproszenie {email}? Spowoduje to unieważnienie poprzedniego zaproszenia.",
@@ -907,5 +907,5 @@
     "usersAll": "Wszyscy użytkownicy",
     "license": "Licencja",
     "pangolinDashboard": "Panel - Pangolin",
-    "noResults": "No results found."
+    "noResults": "Nie znaleziono wyników."
 }
