@@ -52,16 +52,14 @@ import {
 import LoaderPlaceholder from "@app/components/PlaceHolderLoader";
 import { useTranslations } from 'next-intl';
 
-const t = useTranslations();
-
 const createSiteFormSchema = z.object({
     name: z
         .string()
         .min(2, {
-            message: {t('siteNameMin')}
+            message: "Name must be at least 2 characters."
         })
         .max(30, {
-            message: {t('siteNameMax')}
+            message: "Name must not be longer than 30 characters."
         }),
     method: z.enum(["wireguard", "newt", "local"])
 });
@@ -172,8 +170,8 @@ export default function CreateSiteForm({
             if (!keypair || !siteDefaults) {
                 toast({
                     variant: "destructive",
-                    title: {t('siteErrorCreate')},
-                    description: {t('siteErrorCreateKeyPair')}
+                    title: "Error creating site",
+                    description: "Key pair or site defaults not found"
                 });
                 setLoading?.(false);
                 setIsLoading(false);
@@ -191,8 +189,8 @@ export default function CreateSiteForm({
             if (!siteDefaults) {
                 toast({
                     variant: "destructive",
-                    title: {t('siteErrorCreate')},
-                    description: {t('siteErrorCreateDefaults')}
+                    title: "Error creating site",
+                    description: "Site defaults not found"
                 });
                 setLoading?.(false);
                 setIsLoading(false);
@@ -215,7 +213,7 @@ export default function CreateSiteForm({
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: {t('siteErrorCreate')},
+                    title: "Error creating site",
                     description: formatAxiosError(e)
                 });
             });
@@ -272,6 +270,8 @@ PersistentKeepalive = 5`
             - NEWT_SECRET=${siteDefaults?.newtSecret}`;
 
     const newtConfigDockerRun = `docker run -it fosrl/newt --id ${siteDefaults?.newtId} --secret ${siteDefaults?.newtSecret} --endpoint ${env.app.dashboardUrl}`;
+
+    const t = useTranslations();
 
     return loadingPage ? (
         <LoaderPlaceholder height="300px" />

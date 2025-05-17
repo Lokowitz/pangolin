@@ -15,10 +15,8 @@ import LicenseViolation from "./components/LicenseViolation";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { getLocale } from 'next-intl/server';
 
-const t = useTranslations();
-
 export const metadata: Metadata = {
-    title: t('pangolinDashboard'),
+    title: `Dashboard - Pangolin`,
     description: ""
 };
 

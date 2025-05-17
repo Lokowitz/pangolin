@@ -12,11 +12,9 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-const t = useTranslations();
-
 export const orgLangingNavItems: SidebarNavItem[] = [
     {
-        title: t('overview'),
+        title: "Overview",
         href: "/{orgId}",
         icon: <Home className="h-4 w-4" />
     }
@@ -24,7 +22,7 @@ export const orgLangingNavItems: SidebarNavItem[] = [
 
 export const rootNavItems: SidebarNavItem[] = [
     {
-        title: t('home'),
+        title: "Home",
         href: "/",
         icon: <Home className="h-4 w-4" />
     }
@@ -32,50 +30,50 @@ export const rootNavItems: SidebarNavItem[] = [
 
 export const orgNavItems: SidebarNavItem[] = [
     {
-        title: t('sites'),
+        title: "Sites",
         href: "/{orgId}/settings/sites",
         icon: <Combine className="h-4 w-4" />
     },
     {
-        title: t('resources'),
+        title: "Resources",
         href: "/{orgId}/settings/resources",
         icon: <Waypoints className="h-4 w-4" />
     },
     {
-        title: t('accessControl'),
+        title: "Access Control",
         href: "/{orgId}/settings/access",
         icon: <Users className="h-4 w-4" />,
         autoExpand: true,
         children: [
             {
-                title: t('users'),
+                title: "Users",
                 href: "/{orgId}/settings/access/users",
                 children: [
                     {
-                        title: t('invite'),
+                        title: "Invitations",
                         href: "/{orgId}/settings/access/invitations"
                     }
                 ]
             },
             {
-                title: t('roles'),
+                title: "Roles",
                 href: "/{orgId}/settings/access/roles"
             }
         ]
     },
     {
-        title: t('share'),
+        title: "Shareable Links",
         href: "/{orgId}/settings/share-links",
         icon: <LinkIcon className="h-4 w-4" />
     },
     {
-        title: t('apiKeys'),
+        title: "API Keys",
         href: "/{orgId}/settings/api-keys",
         icon: <KeyRound className="h-4 w-4" />,
         showProfessional: true
     },
     {
-        title: t('settings'),
+        title: "Settings",
         href: "/{orgId}/settings/general",
         icon: <Settings className="h-4 w-4" />
     }
@@ -83,23 +81,23 @@ export const orgNavItems: SidebarNavItem[] = [
 
 export const adminNavItems: SidebarNavItem[] = [
     {
-        title: t('usersAll'),
+        title: "All Users",
         href: "/admin/users",
         icon: <Users className="h-4 w-4" />
     },
     {
-        title: t('apiKeys'),
+        title: "API Keys",
         href: "/admin/api-keys",
         icon: <KeyRound className="h-4 w-4" />,
         showProfessional: true
     },
     {
-        title: t('idp'),
+        title: "Identity Providers",
         href: "/admin/idp",
         icon: <Fingerprint className="h-4 w-4" />
     },
     {
-        title: t('license'),
+        title: "License",
         href: "/admin/license",
         icon: <TicketCheck className="h-4 w-4" />
     }
