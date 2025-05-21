@@ -24,7 +24,7 @@ export function RolesDataTable<TData, TValue>({
         <DataTable
             columns={columns}
             data={data}
-            title="Roles"
+            title={t('roles')}
             searchPlaceholder={t('accessRolesSearch')}
             searchColumn="name"
             onAdd={createRole}

@@ -58,48 +58,48 @@ import CopyTextBox from "@app/components/CopyTextBox";
 import PermissionsSelectBox from "@app/components/PermissionsSelectBox";
 import { useTranslations } from "next-intl";
 
-const createFormSchema = z.object({
-    name: z
-        .string()
-        .min(2, {
-            message: "Name must be at least 2 characters."
-        })
-        .max(255, {
-            message: "Name must not be longer than 255 characters."
-        })
-});
-
-type CreateFormValues = z.infer<typeof createFormSchema>;
-
-const copiedFormSchema = z
-    .object({
-        copied: z.boolean()
-    })
-    .refine(
-        (data) => {
-            return data.copied;
-        },
-        {
-            message: "You must confirm that you have copied the API key.",
-            path: ["copied"]
-        }
-    );
-
-type CopiedFormValues = z.infer<typeof copiedFormSchema>;
-
 export default function Page() {
     const { env } = useEnvContext();
     const api = createApiClient({ env });
     const { orgId } = useParams();
     const router = useRouter();
     const t = useTranslations();
-    
+
     const [loadingPage, setLoadingPage] = useState(true);
     const [createLoading, setCreateLoading] = useState(false);
     const [apiKey, setApiKey] = useState<CreateOrgApiKeyResponse | null>(null);
     const [selectedPermissions, setSelectedPermissions] = useState<
         Record<string, boolean>
     >({});
+
+    const createFormSchema = z.object({
+        name: z
+            .string()
+            .min(2, {
+                message: t('nameMin', {len: 2})
+            })
+            .max(255, {
+                message: t('nameMax', {len: 255})
+            })
+    });
+
+    type CreateFormValues = z.infer<typeof createFormSchema>;
+
+    const copiedFormSchema = z
+        .object({
+            copied: z.boolean()
+        })
+        .refine(
+            (data) => {
+                return data.copied;
+            },
+            {
+                message: t('apiKeysConfirmCopy2'),
+                path: ["copied"]
+            }
+        );
+
+    type CopiedFormValues = z.infer<typeof copiedFormSchema>;
 
     const form = useForm<CreateFormValues>({
         resolver: zodResolver(createFormSchema),

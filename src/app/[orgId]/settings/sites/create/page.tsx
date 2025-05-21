@@ -381,8 +381,8 @@ WantedBy=default.target`
             if (!siteDefaults || !wgConfig) {
                 toast({
                     variant: "destructive",
-                    title: "Error creating site",
-                    description: "Key pair or site defaults not found"
+                    title: t('siteErrorCreate'),
+                    description: t('siteErrorCreateKeyPair')
                 });
                 setCreateLoading(false);
                 return;
@@ -399,8 +399,8 @@ WantedBy=default.target`
             if (!siteDefaults) {
                 toast({
                     variant: "destructive",
-                    title: "Error creating site",
-                    description: "Site defaults not found"
+                    title: t('siteErrorCreate'),
+                    description: t('siteErrorCreateDefaults')
                 });
                 setCreateLoading(false);
                 return;
@@ -422,7 +422,7 @@ WantedBy=default.target`
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Error creating site",
+                    title: t('siteErrorCreate'),
                     description: formatAxiosError(e)
                 });
             });

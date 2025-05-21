@@ -88,17 +88,6 @@ type LocalRule = ArrayElement<ListResourceRulesResponse["rules"]> & {
     updated?: boolean;
 };
 
-const RuleAction = {
-    ACCEPT: "Always Allow",
-    DROP: "Always Deny"
-} as const;
-
-const RuleMatch = {
-    PATH: "Path",
-    IP: "IP",
-    CIDR: "IP Range"
-} as const;
-
 export default function ResourceRules(props: {
     params: Promise<{ resourceId: number }>;
 }) {
@@ -112,6 +101,17 @@ export default function ResourceRules(props: {
     const [rulesEnabled, setRulesEnabled] = useState(resource.applyRules);
     const router = useRouter();
     const t = useTranslations();
+
+    const RuleAction = {
+        ACCEPT: t('alwaysAllow'),
+        DROP: t('alwaysDeny')
+    } as const;
+
+    const RuleMatch = {
+        PATH: t('path'),
+        IP: "IP",
+        CIDR: t('ipAddressRange')
+    } as const;
 
     const addRuleForm = useForm({
         resolver: zodResolver(addRuleSchema),

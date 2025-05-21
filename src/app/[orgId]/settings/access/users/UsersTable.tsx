@@ -222,7 +222,7 @@ export default function UsersTable({ users: u }: UsersTableProps) {
                 toast({
                     variant: "default",
                     title: t('userOrgRemoved'),
-                    description: t('userOrgRemovedDescription', {email: selectedUser.email})
+                    description: t('userOrgRemovedDescription', {email: selectedUser.email}) // FIXME
                 });
 
                 setUsers((prev) =>
@@ -244,7 +244,7 @@ export default function UsersTable({ users: u }: UsersTableProps) {
                 dialog={
                     <div className="space-y-4">
                         <p>
-                            {t('userQuestionOrgRemove', {email: selectedUser?.email || selectedUser?.name || selectedUser?.username})}
+                            {t('userQuestionOrgRemove', {email: selectedUser?.email || selectedUser?.name || selectedUser?.username})} // FIXME
                         </p>
 
                         <p>

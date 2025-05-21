@@ -7,6 +7,7 @@ import {
     InfoSections,
     InfoSectionTitle
 } from "@app/components/InfoSection";
+import { useTranslations } from "next-intl";
 
 type PermissionsSelectBoxProps = {
     root?: boolean;
@@ -15,101 +16,103 @@ type PermissionsSelectBoxProps = {
 };
 
 function getActionsCategories(root: boolean) {
+    const t = useTranslations();
+
     const actionsByCategory: Record<string, Record<string, string>> = {
         Organization: {
-            "Get Organization": "getOrg",
-            "Update Organization": "updateOrg",
-            "Get Organization User": "getOrgUser",
-            "List Organization Domains": "listOrgDomains",
+            [t('actionGetOrg')]: "getOrg",
+            [t('actionUpdateOrg')]: "updateOrg",
+            [t('actionGetOrgUser')]: "getOrgUser",
+            [t('actionListOrgDomains')]: "listOrgDomains",
         },
 
         Site: {
-            "Create Site": "createSite",
-            "Delete Site": "deleteSite",
-            "Get Site": "getSite",
-            "List Sites": "listSites",
-            "Update Site": "updateSite",
-            "List Allowed Site Roles": "listSiteRoles"
+            [t('actionCreateSite')]: "createSite",
+            [t('actionDeleteSite')]: "deleteSite",
+            [t('actionGetSite')]: "getSite",
+            [t('actionListSites')]: "listSites",
+            [t('actionUpdateSite')]: "updateSite",
+            [t('actionListSiteRoles')]: "listSiteRoles"
         },
 
         Resource: {
-            "Create Resource": "createResource",
-            "Delete Resource": "deleteResource",
-            "Get Resource": "getResource",
-            "List Resources": "listResources",
-            "Update Resource": "updateResource",
-            "List Resource Users": "listResourceUsers",
-            "Set Resource Users": "setResourceUsers",
-            "Set Allowed Resource Roles": "setResourceRoles",
-            "List Allowed Resource Roles": "listResourceRoles",
-            "Set Resource Password": "setResourcePassword",
-            "Set Resource Pincode": "setResourcePincode",
-            "Set Resource Email Whitelist": "setResourceWhitelist",
-            "Get Resource Email Whitelist": "getResourceWhitelist"
+            [t('actionCreateResource')]: "createResource",
+            [t('actionDeleteResource')]: "deleteResource",
+            [t('actionGetResource')]: "getResource",
+            [t('actionListResource')]: "listResources",
+            [t('actionUpdateResource')]: "updateResource",
+            [t('actionListResourceUsers')]: "listResourceUsers",
+            [t('actionSetResourceUsers')]: "setResourceUsers",
+            [t('actionSetAllowedResourceRoles')]: "setResourceRoles",
+            [t('actionListAllowedResourceRoles')]: "listResourceRoles",
+            [t('actionSetResourcePassword')]: "setResourcePassword",
+            [t('actionSetResourcePincode')]: "setResourcePincode",
+            [t('actionSetResourceEmailWhitelist')]: "setResourceWhitelist",
+            [t('actionGetResourceEmailWhitelist')]: "getResourceWhitelist"
         },
 
         Target: {
-            "Create Target": "createTarget",
-            "Delete Target": "deleteTarget",
-            "Get Target": "getTarget",
-            "List Targets": "listTargets",
-            "Update Target": "updateTarget"
+            [t('actionCreateTarget')]: "createTarget",
+            [t('actionDeleteTarget')]: "deleteTarget",
+            [t('actionGetTarget')]: "getTarget",
+            [t('actionListTargets')]: "listTargets",
+            [t('actionUpdateTarget')]: "updateTarget"
         },
 
         Role: {
-            "Create Role": "createRole",
-            "Delete Role": "deleteRole",
-            "Get Role": "getRole",
-            "List Roles": "listRoles",
-            "Update Role": "updateRole",
-            "List Allowed Role Resources": "listRoleResources"
+            [t('actionCreateRole')]: "createRole",
+            [t('actionDeleteRole')]: "deleteRole",
+            [t('actionGetRole')]: "getRole",
+            [t('actionListRole')]: "listRoles",
+            [t('actionUpdateRole')]: "updateRole",
+            [t('actionListAllowedRoleResources')]: "listRoleResources"
         },
 
         User: {
-            "Invite User": "inviteUser",
-            "Remove User": "removeUser",
-            "List Users": "listUsers",
-            "Add User Role": "addUserRole"
+            [t('actionInviteUser')]: "inviteUser",
+            [t('actionRemoveUser')]: "removeUser",
+            [t('actionListUsers')]: "listUsers",
+            [t('actionAddUserRole')]: "addUserRole"
         },
 
         "Access Token": {
-            "Generate Access Token": "generateAccessToken",
-            "Delete Access Token": "deleteAcessToken",
-            "List Access Tokens": "listAccessTokens"
+            [t('actionGenerateAccessToken')]: "generateAccessToken",
+            [t('actionDeleteAccessToken')]: "deleteAcessToken",
+            [t('actionListAccessTokens')]: "listAccessTokens"
         },
 
         "Resource Rule": {
-            "Create Resource Rule": "createResourceRule",
-            "Delete Resource Rule": "deleteResourceRule",
-            "List Resource Rules": "listResourceRules",
-            "Update Resource Rule": "updateResourceRule"
+            [t('actionCreateResourceRule')]: "createResourceRule",
+            [t('actionDeleteResourceRule')]: "deleteResourceRule",
+            [t('actionListResourceRules')]: "listResourceRules",
+            [t('actionUpdateResourceRule')]: "updateResourceRule"
         }
     };
 
     if (root) {
         actionsByCategory["Organization"] = {
-            "List Organizations": "listOrgs",
-            "Check ID": "checkOrgId",
-            "Create Organization": "createOrg",
-            "Delete Organization": "deleteOrg",
-            "List API Keys": "listApiKeys",
-            "List API Key Actions": "listApiKeyActions",
-            "Set API Key Allowed Actions": "setApiKeyActions",
-            "Create API Key": "createApiKey",
-            "Delete API Key": "deleteApiKey",
+            [t('actionListOrgs')]: "listOrgs",
+            [t('actionCheckOrgId')]: "checkOrgId",
+            [t('actionCreateOrg')]: "createOrg",
+            [t('actionDeleteOrg')]: "deleteOrg",
+            [t('actionListApiKeys')]: "listApiKeys",
+            [t('actionListApiKeyActions')]: "listApiKeyActions",
+            [t('actionSetApiKeyActions')]: "setApiKeyActions",
+            [t('actionCreateApiKey')]: "createApiKey",
+            [t('actionDeleteApiKey')]: "deleteApiKey",
             ...actionsByCategory["Organization"]
         };
 
         actionsByCategory["Identity Provider (IDP)"] = {
-            "Create IDP": "createIdp",
-            "Update IDP": "updateIdp",
-            "Delete IDP": "deleteIdp",
-            "List IDP": "listIdps",
-            "Get IDP": "getIdp",
-            "Create IDP Org Policy": "createIdpOrg",
-            "Delete IDP Org Policy": "deleteIdpOrg",
-            "List IDP Orgs": "listIdpOrgs",
-            "Update IDP Org": "updateIdpOrg"
+            [t('actionCreateIdp')]: "createIdp",
+            [t('actionUpdateIdp')]: "updateIdp",
+            [t('actionDeleteIdp')]: "deleteIdp",
+            [t('actionListIdps')]: "listIdps",
+            [t('actionGetIdp')]: "getIdp",
+            [t('actionCreateIdpOrg')]: "createIdpOrg",
+            [t('actionDeleteIdpOrg')]: "deleteIdpOrg",
+            [t('actionListIdpOrgs')]: "listIdpOrgs",
+            [t('actionUpdateIdpOrg')]: "updateIdpOrg"
         };
     }
 

@@ -14,6 +14,7 @@ import {
     SelectTrigger,
     SelectValue
 } from "@app/components/ui/select";
+import { useTranslations } from "next-intl";
 
 interface DataTablePaginationProps<TData> {
     table: Table<TData>;
@@ -22,6 +23,8 @@ interface DataTablePaginationProps<TData> {
 export function DataTablePagination<TData>({
     table
 }: DataTablePaginationProps<TData>) {
+    const t = useTranslations();
+
     return (
         <div className="flex items-center justify-between text-muted-foreground">
             <div className="flex items-center space-x-2">
@@ -48,8 +51,7 @@ export function DataTablePagination<TData>({
 
             <div className="flex items-center space-x-3 lg:space-x-8">
                 <div className="flex items-center justify-center text-sm font-medium">
-                    Page {table.getState().pagination.pageIndex + 1} of{" "}
-                    {table.getPageCount()}
+                    {t('paginator', {current: table.getState().pagination.pageIndex + 1, last: table.getPageCount()})}
                 </div>
                 <div className="flex items-center space-x-2">
                     <Button
@@ -58,7 +60,7 @@ export function DataTablePagination<TData>({
                         onClick={() => table.setPageIndex(0)}
                         disabled={!table.getCanPreviousPage()}
                     >
-                        <span className="sr-only">Go to first page</span>
+                        <span className="sr-only">{t('paginatorToFirst')}</span>
                         <DoubleArrowLeftIcon className="h-4 w-4" />
                     </Button>
                     <Button
@@ -67,7 +69,7 @@ export function DataTablePagination<TData>({
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
                     >
-                        <span className="sr-only">Go to previous page</span>
+                        <span className="sr-only">{t('paginatorToPrevious')}</span>
                         <ChevronLeftIcon className="h-4 w-4" />
                     </Button>
                     <Button
@@ -76,7 +78,7 @@ export function DataTablePagination<TData>({
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
                     >
-                        <span className="sr-only">Go to next page</span>
+                        <span className="sr-only">{t('paginatorToNext')}</span>
                         <ChevronRightIcon className="h-4 w-4" />
                     </Button>
                     <Button
@@ -87,7 +89,7 @@ export function DataTablePagination<TData>({
                         }
                         disabled={!table.getCanNextPage()}
                     >
-                        <span className="sr-only">Go to last page</span>
+                        <span className="sr-only">{t('paginatorToLast')}</span>
                         <DoubleArrowRightIcon className="h-4 w-4" />
                     </Button>
                 </div>

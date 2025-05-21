@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Separator } from "@app/components/ui/separator";
 import { useSupporterStatusContext } from "@app/hooks/useSupporterStatusContext";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
     Popover,
     PopoverContent,
@@ -48,6 +48,7 @@ import {
 } from "./ui/card";
 import { Check, ExternalLink } from "lucide-react";
 import confetti from "canvas-confetti";
+import { useTranslations } from "next-intl";
 
 const formSchema = z.object({
     githubUsername: z
@@ -73,6 +74,8 @@ export default function SupporterStatus() {
         }
     });
 
+    const t = useTranslations();
+
     async function hide() {
         await api.post("/supporter-key/hide");
 
@@ -95,8 +98,8 @@ export default function SupporterStatus() {
             if (!data || !data.valid) {
                 toast({
                     variant: "destructive",
-                    title: "Invalid Key",
-                    description: "Your supporter key is invalid."
+                    title: t('supportKeyInvalid'),
+                    description: t('supportKeyInvalidDescription')
                 });
                 return;
             }
@@ -104,9 +107,8 @@ export default function SupporterStatus() {
             // Trigger the toast
             toast({
                 variant: "default",
-                title: "Valid Key",
-                description:
-                    "Your supporter key has been validated. Thank you for your support!"
+                title: t('supportKeyValid'),
+                description: t('supportKeyValidDescription')
             });
 
             // Fireworks-style confetti
@@ -162,7 +164,7 @@ export default function SupporterStatus() {
         } catch (error) {
             toast({
                 variant: "destructive",
-                title: "Error",
+                title: t('error'),
                 description: formatAxiosError(
                     error,
                     "Failed to validate supporter key."
@@ -183,55 +185,47 @@ export default function SupporterStatus() {
                 <CredenzaContent className="max-w-3xl">
                     <CredenzaHeader>
                         <CredenzaTitle>
-                            Support Development and Adopt a Pangolin!
+                            {t('supportKey')}
                         </CredenzaTitle>
                     </CredenzaHeader>
                     <CredenzaBody>
                         <p>
-                            Purchase a supporter key to help us continue
-                            developing Pangolin for the community. Your
-                            contribution allows us to commit more time to
-                            maintain and add new features to the application for
-                            everyone. We will never use this to paywall
-                            features. This is separate from any Commercial
-                            Edition.
+                            {t('supportKeyDescription')}
                         </p>
 
                         <p>
-                            You will also get to adopt and meet your very own
-                            pet Pangolin!
+                            {t('supportKeyPet')}
                         </p>
 
                         <p>
-                            Payments are processed via GitHub. Afterward, you
-                            can retrieve your key on{" "}
+                            {t('supportKeyPurchase')}{" "}
                             <Link
                                 href="https://supporters.fossorial.io/"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="underline"
                             >
-                                our website
+                                {t('supportKeyPurchaseLink')}
                             </Link>{" "}
-                            and redeem it here.{" "}
+                            {t('supportKeyPurchase2')}{" "}
                             <Link
                                 href="https://docs.fossorial.io/supporter-program"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="underline"
                             >
-                                Learn more.
+                                {t('supportKeyLearnMore')}
                             </Link>
                         </p>
 
                         <div className="py-6">
                             <p className="mb-3 text-center">
-                                Please select the option that best suits you.
+                                {t('supportKeyOptions')}
                             </p>
                             <div className="grid md:grid-cols-2 grid-cols-1 gap-8">
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle>Full Supporter</CardTitle>
+                                        <CardTitle>{t('supportKetOptionFull')}</CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <p className="text-4xl mb-6">$95</p>
@@ -239,19 +233,19 @@ export default function SupporterStatus() {
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-6 w-6 text-green-500" />
                                                 <span className="text-muted-foreground">
-                                                    For the whole server
+                                                    {t('forWholeServer')}
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-6 w-6 text-green-500" />
                                                 <span className="text-muted-foreground">
-                                                    Lifetime purchase
+                                                    {t('lifetimePurchase')}
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-6 w-6 text-green-500" />
                                                 <span className="text-muted-foreground">
-                                                    Supporter status
+                                                    {t('supporterStatus')}
                                                 </span>
                                             </li>
                                         </ul>
@@ -264,7 +258,7 @@ export default function SupporterStatus() {
                                             className="w-full"
                                         >
                                             <Button className="w-full">
-                                                Buy
+                                                {t('buy')}
                                             </Button>
                                         </Link>
                                     </CardFooter>
@@ -274,7 +268,7 @@ export default function SupporterStatus() {
                                     className={`${supporterStatus?.tier === "Limited Supporter" ? "opacity-50" : ""}`}
                                 >
                                     <CardHeader>
-                                        <CardTitle>Limited Supporter</CardTitle>
+                                        <CardTitle>{t('supportKeyOptionLimited')}</CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <p className="text-4xl mb-6">$25</p>
@@ -282,19 +276,19 @@ export default function SupporterStatus() {
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-6 w-6 text-green-500" />
                                                 <span className="text-muted-foreground">
-                                                    For 5 or less users
+                                                    {t('forFiveUsers')}
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-6 w-6 text-green-500" />
                                                 <span className="text-muted-foreground">
-                                                    Lifetime purchase
+                                                    {t('lifetimePurchase')}
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-6 w-6 text-green-500" />
                                                 <span className="text-muted-foreground">
-                                                    Supporter status
+                                                    {t('supporterStatus')}
                                                 </span>
                                             </li>
                                         </ul>
@@ -309,7 +303,7 @@ export default function SupporterStatus() {
                                                 className="w-full"
                                             >
                                                 <Button className="w-full">
-                                                    Buy
+                                                    {t('buy')}
                                                 </Button>
                                             </Link>
                                         ) : (
@@ -320,7 +314,7 @@ export default function SupporterStatus() {
                                                     "Limited Supporter"
                                                 }
                                             >
-                                                Buy
+                                                {t('buy')}
                                             </Button>
                                         )}
                                     </CardFooter>
@@ -336,20 +330,20 @@ export default function SupporterStatus() {
                                     setKeyOpen(true);
                                 }}
                             >
-                                Redeem Supporter Key
+                                {t('supportKeyRedeem')}
                             </Button>
                             <Button
                                 variant="ghost"
                                 className="w-full"
                                 onClick={() => hide()}
                             >
-                                Hide for 7 days
+                                {t('supportKeyHideSevenDays')}
                             </Button>
                         </div>
                     </CredenzaBody>
                     <CredenzaFooter>
                         <CredenzaClose asChild>
-                            <Button variant="outline">Close</Button>
+                            <Button variant="outline">{t('close')}</Button>
                         </CredenzaClose>
                     </CredenzaFooter>
                 </CredenzaContent>
@@ -363,9 +357,9 @@ export default function SupporterStatus() {
             >
                 <CredenzaContent>
                     <CredenzaHeader>
-                        <CredenzaTitle>Enter Supporter Key</CredenzaTitle>
+                        <CredenzaTitle>{t('supportKeyEnter')}</CredenzaTitle>
                         <CredenzaDescription>
-                            Meet your very own pet Pangolin!
+                            {t('supportKeyEnterDescription')}
                         </CredenzaDescription>
                     </CredenzaHeader>
                     <CredenzaBody>
@@ -381,7 +375,7 @@ export default function SupporterStatus() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                GitHub Username
+                                                {t('githubUsername')}
                                             </FormLabel>
                                             <FormControl>
                                                 <Input {...field} />
@@ -395,7 +389,7 @@ export default function SupporterStatus() {
                                     name="key"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Supporter Key</FormLabel>
+                                            <FormLabel>{t('supportKeyInput')}</FormLabel>
                                             <FormControl>
                                                 <Input {...field} />
                                             </FormControl>
@@ -408,10 +402,10 @@ export default function SupporterStatus() {
                     </CredenzaBody>
                     <CredenzaFooter>
                         <CredenzaClose asChild>
-                            <Button variant="outline">Close</Button>
+                            <Button variant="outline">{t('close')}</Button>
                         </CredenzaClose>
                         <Button type="submit" form="form">
-                            Submit
+                            {t('submit')}
                         </Button>
                     </CredenzaFooter>
                 </CredenzaContent>
@@ -426,7 +420,7 @@ export default function SupporterStatus() {
                         setPurchaseOptionsOpen(true);
                     }}
                 >
-                    Buy Supporter Key
+                    {t('supportKeyBuy')}
                 </Button>
             ) : null}
         </>

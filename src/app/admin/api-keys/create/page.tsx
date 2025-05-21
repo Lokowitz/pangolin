@@ -124,7 +124,7 @@ export default function Page() {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Error creating API key",
+                    title: t('apiKeysErrorCreate'),
                     description: formatAxiosError(e)
                 });
             });
@@ -145,10 +145,10 @@ export default function Page() {
                     )
                 })
                 .catch((e) => {
-                    console.error("Error setting permissions", e);
+                    console.error(t('apiKeysErrorSetPermission'), e);
                     toast({
                         variant: "destructive",
-                        title: "Error setting permissions",
+                        title: t('apiKeysErrorSetPermission'),
                         description: formatAxiosError(e)
                     });
                 });

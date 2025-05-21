@@ -229,11 +229,11 @@ export default function CreateSiteForm({
                 nice: data.niceId.toString(),
                 mbIn:
                     data.type == "wireguard" || data.type == "newt"
-                        ? "0 MB"
+                        ? t('megabytes', {count: 0})
                         : "-",
                 mbOut:
                     data.type == "wireguard" || data.type == "newt"
-                        ? "0 MB"
+                        ? t('megabytes', {count: 0})
                         : "-",
                 orgId: orgId as string,
                 type: data.type as any,
@@ -273,8 +273,6 @@ PersistentKeepalive = 5`
 
     const newtConfigDockerRun = `docker run -it fosrl/newt --id ${siteDefaults?.newtId} --secret ${siteDefaults?.newtSecret} --endpoint ${env.app.dashboardUrl}`;
 
-    const t = useTranslations();
-
     return loadingPage ? (
         <LoaderPlaceholder height="300px" />
     ) : (
@@ -313,7 +311,7 @@ PersistentKeepalive = 5`
                                         onValueChange={field.onChange}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select method" />
+                                            <SelectValue placeholder={t('methodSelect')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="local">

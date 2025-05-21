@@ -162,9 +162,10 @@ export default function ResourceAuthenticationPage() {
                     rolesResponse.data.data.roles
                         .map((role) => ({
                             id: role.roleId.toString(),
-                            text: role.name
+                            text: role.name,
+                            isAdmin: role.isAdmin
                         }))
-                        .filter((role) => role.text !== "Admin")
+                        .filter((role) => !role.isAdmin)
                 );
 
                 usersRolesForm.setValue(
@@ -172,9 +173,10 @@ export default function ResourceAuthenticationPage() {
                     resourceRolesResponse.data.data.roles
                         .map((i) => ({
                             id: i.roleId.toString(),
-                            text: i.name
+                            text: i.name,
+                            isAdmin: i.isAdmin
                         }))
-                        .filter((role) => role.text !== "Admin")
+                        .filter((role) => !role.isAdmin)
                 );
 
                 setAllUsers(

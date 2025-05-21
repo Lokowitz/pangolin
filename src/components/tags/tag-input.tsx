@@ -10,6 +10,7 @@ import { TagList } from "./tag-list";
 import { tagVariants } from "./tag";
 import { Autocomplete } from "./autocomplete";
 import { cn } from "@app/lib/cn";
+import { useTranslations } from "next-intl";
 
 export enum Delimiter {
     Comma = ",",
@@ -166,11 +167,13 @@ const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
         );
         const inputRef = React.useRef<HTMLInputElement>(null);
 
+        const t = useTranslations();
+
         if (
             (maxTags !== undefined && maxTags < 0) ||
             (props.minTags !== undefined && props.minTags < 0)
         ) {
-            console.warn("maxTags and minTags cannot be less than 0");
+            console.warn(t('tagsWarnCannotBeLessThanZero'));
             // error
             return null;
         }
@@ -194,24 +197,22 @@ const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
                             (option) => option.text === newTagText
                         )
                     ) {
-                        console.warn(
-                            "Tag not allowed as per autocomplete options"
-                        );
+                        console.warn(t('tagsWarnNotAllowedAutocompleteOptions'));
                         return;
                     }
 
                     if (validateTag && !validateTag(newTagText)) {
-                        console.warn("Invalid tag as per validateTag");
+                        console.warn(t('tagsWarnInvalid'));
                         return;
                     }
 
                     if (minLength && newTagText.length < minLength) {
-                        console.warn(`Tag "${newTagText}" is too short`);
+                        console.warn(t('tagWarnTooShort', {tagText: newTagText}));
                         return;
                     }
 
                     if (maxLength && newTagText.length > maxLength) {
-                        console.warn(`Tag "${newTagText}" is too long`);
+                        console.warn(t('tagWarnTooLong', {tagText: newTagText}));
                         return;
                     }
 
@@ -228,12 +229,10 @@ const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
                             setTags((prevTags) => [...prevTags, newTag]);
                             onTagAdd?.(newTagText);
                         } else {
-                            console.warn(
-                                "Reached the maximum number of tags allowed"
-                            );
+                            console.warn(t('tagsWarnReachedMaxNumber'));
                         }
                     } else {
-                        console.warn(`Duplicate tag "${newTagText}" not added`);
+                        console.warn(t('tagWarnDuplicate', {tagText: newTagText}));
                     }
                 });
                 setInputValue("");
@@ -259,12 +258,12 @@ const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
                 }
 
                 if (minLength && newTagText.length < minLength) {
-                    console.warn("Tag is too short");
+                    console.warn(t('tagWarnTooShort'));
                     return;
                 }
 
                 if (maxLength && newTagText.length > maxLength) {
-                    console.warn("Tag is too long");
+                    console.warn(t('tagWarnTooLong'));
                     return;
                 }
 
@@ -309,7 +308,7 @@ const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
                 }
 
                 if (minLength && newTagText.length < minLength) {
-                    console.warn("Tag is too short");
+                    console.warn(t('tagWarnTooShort'));
                     // error
                     return;
                 }
@@ -317,7 +316,7 @@ const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
                 // Validate maxLength
                 if (maxLength && newTagText.length > maxLength) {
                     // error
-                    console.warn("Tag is too long");
+                    console.warn(t('tagWarnTooLong'));
                     return;
                 }
 

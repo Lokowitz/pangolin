@@ -69,10 +69,10 @@ export default function ShareLinksTable({
     async function deleteSharelink(id: string) {
         await api.delete(`/access-token/${id}`).catch((e) => {
             toast({
-                title: "Failed to delete link",
+                title: t('shareErrorDelete'),
                 description: formatAxiosError(
                     e,
-                    "An error occurred deleting link"
+                    t('shareErrorDeleteMessage')
                 )
             });
         });
@@ -81,8 +81,8 @@ export default function ShareLinksTable({
         setRows(newRows);
 
         toast({
-            title: "Link deleted",
-            description: "The link has been deleted"
+            title: t('shareDeleted'),
+            description: t('shareDeletedDescription')
         });
     }
 

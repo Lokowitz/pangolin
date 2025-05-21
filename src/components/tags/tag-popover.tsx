@@ -4,6 +4,7 @@ import { TagInputStyleClassesProps, type Tag as TagType } from "./tag-input";
 import { TagList, TagListProps } from "./tag-list";
 import { Button } from "../ui/button";
 import { cn } from "@app/lib/cn";
+import { useTranslations } from "next-intl";
 
 type TagPopoverProps = {
     children: React.ReactNode;
@@ -40,6 +41,8 @@ export const TagPopover: React.FC<TagPopoverProps> = ({
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [inputFocused, setInputFocused] = useState(false);
     const [sideOffset, setSideOffset] = useState<number>(0);
+
+    const t = useTranslations();
 
     useEffect(() => {
         const handleResize = () => {
@@ -183,10 +186,10 @@ export const TagPopover: React.FC<TagPopoverProps> = ({
             >
                 <div className="space-y-1">
                     <h4 className="text-sm font-medium leading-none">
-                        Entered Tags
+                        {t('tagsEntered')}
                     </h4>
                     <p className="text-sm text-muted-foregrounsd text-left">
-                        These are the tags you&apos;ve entered.
+                        {t('tagsEnteredDescription')}
                     </p>
                 </div>
                 <TagList

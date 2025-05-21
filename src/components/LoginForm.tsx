@@ -40,6 +40,7 @@ import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
 import Image from "next/image";
 import { GenerateOidcUrlResponse } from "@server/routers/idp";
 import { Separator } from "./ui/separator";
+import { useTranslations } from "next-intl";
 
 export type LoginFormIDP = {
     idpId: number;
@@ -91,6 +92,8 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
         }
     });
 
+    const t = useTranslations();
+
     async function onSubmit(values: any) {
         const { email, password } = form.getValues();
         const { code } = mfaForm.getValues();
@@ -106,7 +109,7 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
             .catch((e) => {
                 console.error(e);
                 setError(
-                    formatAxiosError(e, "An error occurred while logging in")
+                    formatAxiosError(e, t('loginError'))
                 );
             });
 
@@ -151,7 +154,7 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
             console.log(res);
 
             if (!res) {
-                setError("An error occurred while logging in");
+                setError(t('loginError'));
                 return;
             }
 
@@ -177,7 +180,7 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
                                 name="email"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Email</FormLabel>
+                                        <FormLabel>{t('email')}</FormLabel>
                                         <FormControl>
                                             <Input {...field} />
                                         </FormControl>
@@ -192,7 +195,7 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
                                     name="password"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Password</FormLabel>
+                                            <FormLabel>{t('password')}</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     type="password"
@@ -209,7 +212,7 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
                                         href={`/auth/reset-password${form.getValues().email ? `?email=${form.getValues().email}` : ""}`}
                                         className="text-sm text-muted-foreground"
                                     >
-                                        Forgot your password?
+                                        {t('passwordForgot')}
                                     </Link>
                                 </div>
                             </div>
@@ -222,11 +225,10 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
                 <>
                     <div className="text-center">
                         <h3 className="text-lg font-medium">
-                            Two-Factor Authentication
+                            {t('otpAuth')}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                            Enter the code from your authenticator app or one of
-                            your single-use backup codes.
+                            {t('otpAuthDescription')}
                         </p>
                     </div>
                     <Form {...mfaForm}>
@@ -302,7 +304,7 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
                         loading={loading}
                         disabled={loading}
                     >
-                        Submit Code
+                        {t('otpAuthSubmit')}
                     </Button>
                 )}
 
@@ -316,7 +318,7 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
                             disabled={loading}
                         >
                             <LockIcon className="w-4 h-4 mr-2" />
-                            Log In
+                            {t('login')}
                         </Button>
 
                         {hasIdp && (
@@ -327,7 +329,7 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
                                     </div>
                                     <div className="relative flex justify-center text-xs uppercase">
                                         <span className="px-2 bg-card text-muted-foreground">
-                                            Or continue with
+                                            {t('idpContinue')}
                                         </span>
                                     </div>
                                 </div>
@@ -360,7 +362,7 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
                             mfaForm.reset();
                         }}
                     >
-                        Back to Log In
+                        {t('otpAuthBack')}
                     </Button>
                 )}
             </div>
