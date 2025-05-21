@@ -1,6 +1,7 @@
 import { Check, Copy } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 type CopyToClipboardProps = {
     text: string;
@@ -21,6 +22,8 @@ const CopyToClipboard = ({ text, displayText, isLink }: CopyToClipboardProps) =>
     };
 
     const displayValue = displayText ?? text;
+
+    const t = useTranslations();
 
     return (
         <div className="flex items-center space-x-2 max-w-full">
@@ -60,7 +63,7 @@ const CopyToClipboard = ({ text, displayText, isLink }: CopyToClipboardProps) =>
                 ) : (
                     <Check className="text-green-500 h-4 w-4" />
                 )}
-                <span className="sr-only">Copy text</span>
+                <span className="sr-only">{t('copyText')}</span>
             </button>
         </div>
     );

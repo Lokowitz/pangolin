@@ -7,6 +7,7 @@ import { cn } from "@app/lib/cn";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@app/components/ui/badge";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
+import { useTranslations } from "next-intl";
 
 export type HorizontalTabs = Array<{
     title: string;
@@ -29,6 +30,7 @@ export function HorizontalTabs({
     const pathname = usePathname();
     const params = useParams();
     const { licenseStatus, isUnlocked } = useLicenseStatusContext();
+    const t = useTranslations();
 
     function hydrateHref(href: string) {
         return href
@@ -86,7 +88,7 @@ export function HorizontalTabs({
                                                 variant="outlinePrimary"
                                                 className="ml-2"
                                             >
-                                                Professional
+                                                {t('licenseBadge')}
                                             </Badge>
                                         )}
                                     </div>

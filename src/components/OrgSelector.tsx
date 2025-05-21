@@ -22,6 +22,7 @@ import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useUserContext } from "@app/hooks/useUserContext";
+import { useTranslations } from "next-intl";
 
 interface OrgSelectorProps {
     orgId?: string;
@@ -33,6 +34,7 @@ export function OrgSelector({ orgId, orgs }: OrgSelectorProps) {
     const [open, setOpen] = useState(false);
     const router = useRouter();
     const { env } = useEnvContext();
+    const t = useTranslations();
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -47,7 +49,7 @@ export function OrgSelector({ orgId, orgs }: OrgSelectorProps) {
                     <div className="flex items-center justify-between w-full">
                         <div className="flex flex-col items-start">
                             <span className="font-bold text-sm">
-                                Organization
+                                {t('org')}
                             </span>
                             <span className="text-sm text-muted-foreground">
                                 {orgId
@@ -56,7 +58,7 @@ export function OrgSelector({ orgId, orgs }: OrgSelectorProps) {
                                               org.orgId ===
                                               orgId
                                       )?.name
-                                    : "None selected"}
+                                    : t('noneSelected')}
                             </span>
                         </div>
                         <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
@@ -65,14 +67,14 @@ export function OrgSelector({ orgId, orgs }: OrgSelectorProps) {
             </PopoverTrigger>
             <PopoverContent className="w-[180px] p-0">
                 <Command>
-                    <CommandInput placeholder="Search..." />
+                    <CommandInput placeholder={t('searchProgress')} />
                     <CommandEmpty>
-                        No organizations found.
+                        {t('orgNotFound2')}
                     </CommandEmpty>
                     {(!env.flags.disableUserCreateOrg ||
                         user.serverAdmin) && (
                         <>
-                            <CommandGroup heading="Create">
+                            <CommandGroup heading={t('create')}>
                                 <CommandList>
                                     <CommandItem
                                         onSelect={(
@@ -84,14 +86,14 @@ export function OrgSelector({ orgId, orgs }: OrgSelectorProps) {
                                         }}
                                     >
                                         <Plus className="mr-2 h-4 w-4" />
-                                        New Organization
+                                        {t('setupNewOrg')}
                                     </CommandItem>
                                 </CommandList>
                             </CommandGroup>
                             <CommandSeparator />
                         </>
                     )}
-                    <CommandGroup heading="Organizations">
+                    <CommandGroup heading={t('orgs')}>
                         <CommandList>
                             {orgs?.map((org) => (
                                 <CommandItem

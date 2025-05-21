@@ -40,6 +40,7 @@ import { formatAxiosError } from "@app/lib/api";
 import CopyTextBox from "@app/components/CopyTextBox";
 import { QRCodeCanvas, QRCodeSVG } from "qrcode.react";
 import { useUserContext } from "@app/hooks/useUserContext";
+import { useTranslations } from "next-intl";
 
 const enableSchema = z.object({
     password: z.string().min(1, { message: "Password is required" })
@@ -82,6 +83,8 @@ export default function Enable2FaForm({ open, setOpen }: Enable2FaProps) {
         }
     });
 
+    const t = useTranslations();
+
     const request2fa = async (values: z.infer<typeof enableSchema>) => {
         setLoading(true);
 
@@ -94,10 +97,10 @@ export default function Enable2FaForm({ open, setOpen }: Enable2FaProps) {
             )
             .catch((e) => {
                 toast({
-                    title: "Unable to enable 2FA",
+                    title: t('otpErrorEnable'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while enabling 2FA"
+                        t('otpErrorEnableDescription')
                     ),
                     variant: "destructive"
                 });
@@ -121,10 +124,10 @@ export default function Enable2FaForm({ open, setOpen }: Enable2FaProps) {
             } as VerifyTotpBody)
             .catch((e) => {
                 toast({
-                    title: "Unable to enable 2FA",
+                    title: t('otpErrorEnable'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while enabling 2FA"
+                        t('otpErrorEnableDescription')
                     ),
                     variant: "destructive"
                 });
@@ -141,14 +144,14 @@ export default function Enable2FaForm({ open, setOpen }: Enable2FaProps) {
 
     const handleVerify = () => {
         if (verificationCode.length !== 6) {
-            setError("Please enter a 6-digit code");
+            setError(t('otpSetupCheckCode'));
             return;
         }
         if (verificationCode === "123456") {
             setSuccess(true);
             setStep(3);
         } else {
-            setError("Invalid code. Please try again.");
+            setError(t('otpSetupCheckCodeRetry'));
         }
     };
 
@@ -176,10 +179,10 @@ export default function Enable2FaForm({ open, setOpen }: Enable2FaProps) {
             <CredenzaContent>
                 <CredenzaHeader>
                     <CredenzaTitle>
-                        Enable Two-factor Authentication
+                        {t('otpSetup')}
                     </CredenzaTitle>
                     <CredenzaDescription>
-                        Secure your account with an extra layer of protection
+                        {t('otpSetupDescription')}
                     </CredenzaDescription>
                 </CredenzaHeader>
                 <CredenzaBody>
@@ -196,7 +199,7 @@ export default function Enable2FaForm({ open, setOpen }: Enable2FaProps) {
                                         name="password"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Password</FormLabel>
+                                                <FormLabel>{t('password')}</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         type="password"
@@ -215,8 +218,7 @@ export default function Enable2FaForm({ open, setOpen }: Enable2FaProps) {
                     {step === 2 && (
                         <div className="space-y-4">
                             <p>
-                                Scan this QR code with your authenticator app or
-                                enter the secret key manually:
+                                {t('otpSetupScanQr')}
                             </p>
                             <div className="h-[250px] mx-auto flex items-center justify-center">
                                 <QRCodeCanvas value={secretUri} size={200} />
@@ -243,7 +245,7 @@ export default function Enable2FaForm({ open, setOpen }: Enable2FaProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>
-                                                        Authenticator Code
+                                                        {t('otpSetupSecretCode')}
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Input
@@ -268,11 +270,10 @@ export default function Enable2FaForm({ open, setOpen }: Enable2FaProps) {
                                 size={48}
                             />
                             <p className="font-semibold text-lg">
-                                Two-Factor Authentication Enabled
+                                {t('otpSetupSuccess')}
                             </p>
                             <p>
-                                Your account is now more secure. Don't forget to
-                                save your backup codes.
+                                {t('otpSetupSuccessStoreBackupCodes')}
                             </p>
 
                             <div className="max-w-md mx-auto">
@@ -298,7 +299,7 @@ export default function Enable2FaForm({ open, setOpen }: Enable2FaProps) {
                                 }
                             }}
                         >
-                            Submit
+                            {t('submit')}
                         </Button>
                     )}
                 </CredenzaFooter>

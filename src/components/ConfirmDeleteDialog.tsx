@@ -43,6 +43,7 @@ import { useOrgContext } from "@app/hooks/useOrgContext";
 import { Description } from "@radix-ui/react-toast";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
+import { useTranslations } from "next-intl";
 
 type InviteUserFormProps = {
     open: boolean;
@@ -67,9 +68,11 @@ export default function InviteUserForm({
 
     const api = createApiClient(useEnvContext());
 
+    const t = useTranslations();
+
     const formSchema = z.object({
         string: z.string().refine((val) => val === string, {
-            message: "Invalid confirmation"
+            message: t('inviteErrorInvalidConfirmation')
         })
     });
 
@@ -129,7 +132,7 @@ export default function InviteUserForm({
                     </CredenzaBody>
                     <CredenzaFooter>
                         <CredenzaClose asChild>
-                            <Button variant="outline">Close</Button>
+                            <Button variant="outline">{t('close')}</Button>
                         </CredenzaClose>
                         <Button
                             type="submit"
