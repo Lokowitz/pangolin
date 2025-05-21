@@ -42,11 +42,6 @@ import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useTranslations } from "next-intl";
 
-const formSchema = z.object({
-    username: z.string(),
-    roleId: z.string().min(1, { message: "Please select a role" })
-});
-
 export default function AccessControlsPage() {
     const { orgUser: user } = userOrgUserContext();
 
@@ -57,6 +52,13 @@ export default function AccessControlsPage() {
     const [loading, setLoading] = useState(false);
     const [roles, setRoles] = useState<{ roleId: number; name: string }[]>([]);
 
+    const t = useTranslations();
+
+    const formSchema = z.object({
+        username: z.string(),
+        roleId: z.string().min(1, { message: t('accessRoleSelectPlease') })
+    });
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -64,8 +66,6 @@ export default function AccessControlsPage() {
             roleId: user.roleId?.toString()
         }
     });
-
-    const t = useTranslations();
 
     useEffect(() => {
         async function fetchRoles() {

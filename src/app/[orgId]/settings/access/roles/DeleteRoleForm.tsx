@@ -47,10 +47,6 @@ type CreateRoleFormProps = {
     afterDelete?: () => void;
 };
 
-const formSchema = z.object({
-    newRoleId: z.string({ message: "New role is required" })
-});
-
 export default function DeleteRoleForm({
     open,
     roleToDelete,
@@ -64,6 +60,10 @@ export default function DeleteRoleForm({
     const [roles, setRoles] = useState<ListRolesResponse["roles"]>([]);
 
     const api = createApiClient(useEnvContext());
+
+    const formSchema = z.object({
+        newRoleId: z.string({ message: t('accessRoleErrorNewRequired') })
+    });
 
     useEffect(() => {
         async function fetchRoles() {

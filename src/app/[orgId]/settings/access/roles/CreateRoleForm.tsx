@@ -39,11 +39,6 @@ type CreateRoleFormProps = {
     afterCreate?: (res: CreateRoleResponse) => Promise<void>;
 };
 
-const formSchema = z.object({
-    name: z.string({ message: "Name is required" }).max(32),
-    description: z.string().max(255).optional()
-});
-
 export default function CreateRoleForm({
     open,
     setOpen,
@@ -51,6 +46,11 @@ export default function CreateRoleForm({
 }: CreateRoleFormProps) {
     const { org } = useOrgContext();
     const t = useTranslations();
+
+    const formSchema = z.object({
+        name: z.string({ message: t('nameRequired') }).max(32),
+        description: z.string().max(255).optional()
+    });
 
     const [loading, setLoading] = useState(false);
 

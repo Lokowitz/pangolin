@@ -60,24 +60,6 @@ interface IdpOption {
     type: string;
 }
 
-const internalFormSchema = z.object({
-    email: z.string().email({ message: "Invalid email address" }),
-    validForHours: z.string().min(1, { message: "Please select a duration" }),
-    roleId: z.string().min(1, { message: "Please select a role" })
-});
-
-const externalFormSchema = z.object({
-    username: z.string().min(1, { message: "Username is required" }),
-    email: z
-        .string()
-        .email({ message: "Invalid email address" })
-        .optional()
-        .or(z.literal("")),
-    name: z.string().optional(),
-    roleId: z.string().min(1, { message: "Please select a role" }),
-    idpId: z.string().min(1, { message: "Please select an identity provider" })
-});
-
 const formatIdpType = (type: string) => {
     switch (type.toLowerCase()) {
         case "oidc":
@@ -103,6 +85,24 @@ export default function Page() {
     const [sendEmail, setSendEmail] = useState(env.email.emailEnabled);
     const [selectedIdp, setSelectedIdp] = useState<IdpOption | null>(null);
     const [dataLoaded, setDataLoaded] = useState(false);
+
+    const internalFormSchema = z.object({
+        email: z.string().email({ message: t('emailInvalid') }),
+        validForHours: z.string().min(1, { message: t('inviteValidityDuration') }),
+        roleId: z.string().min(1, { message: t('accessRoleSelectPlease') })
+    });
+
+    const externalFormSchema = z.object({
+        username: z.string().min(1, { message: t('usernameRequired') }),
+        email: z
+            .string()
+            .email({ message: t('emailInvalid') })
+            .optional()
+            .or(z.literal("")),
+        name: z.string().optional(),
+        roleId: z.string().min(1, { message: t('accessRoleSelectPlease') }),
+        idpId: z.string().min(1, { message: t('idpSelectPlease') })
+    });
 
     const validFor = [
         { hours: 24, name: t('day', {count: 1}) },
