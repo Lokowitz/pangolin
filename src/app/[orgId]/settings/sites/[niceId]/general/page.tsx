@@ -67,10 +67,10 @@ export default function GeneralPage() {
             .catch((e) => {
                 toast({
                     variant: "destructive",
-                    title: "Failed to update site",
+                    title: t('siteErrorUpdate'),
                     description: formatAxiosError(
                         e,
-                        "An error occurred while updating the site."
+                        t('siteErrorUpdateDescription')
                     )
                 });
             });
@@ -78,8 +78,8 @@ export default function GeneralPage() {
         updateSite({ name: data.name });
 
         toast({
-            title: "Site updated",
-            description: "The site has been updated."
+            title: t('siteUpdated'),
+            description: t('siteUpdatedDescription')
         });
 
         setLoading(false);

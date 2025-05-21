@@ -204,7 +204,7 @@ export default function CreateShareLinkForm({
                     validForSeconds: neverExpire ? undefined : timeInSeconds,
                     title:
                         values.title ||
-                        `${values.resourceName || "Resource" + values.resourceId} Share Link`
+                        t('shareLink', {resource: (values.resourceName || "Resource" + values.resourceId)})
                 }
             )
             .catch((e) => {

@@ -41,7 +41,7 @@ export default function UsersTable({ users }: Props) {
     const deleteUser = (id: string) => {
         api.delete(`/user/${id}`)
             .catch((e) => {
-                console.error("Error deleting user", e);
+                console.error(t('userErrorDelete'), e);
                 toast({
                     variant: "destructive",
                     title: t('userErrorDelete'),
