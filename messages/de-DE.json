@@ -458,6 +458,7 @@
     "createdAt": "Erstellt am",
     "proxyErrorInvalidHeader": "Ungültiger benutzerdefinierter Host-Header-Wert. Verwenden Sie das Domänennamensformat oder speichern Sie leer, um den benutzerdefinierten Host-Header zu deaktivieren.",
     "proxyErrorTls": "Ungültiger TLS-Servername. Verwenden Sie das Domänennamensformat oder speichern Sie leer, um den TLS-Servernamen zu entfernen.",
+    "proxyEnableSSL": "Enable SSL (https)",
     "targetErrorFetch": "Fehler beim Abrufen der Ziele",
     "targetErrorFetchDescription": "Beim Abrufen der Ziele ist ein Fehler aufgetreten",
     "siteErrorFetch": "Fehler beim Abrufen der Ressource",
@@ -850,7 +851,7 @@
     "otpEmail": "Einmalpasswort (OTP)",
     "otpEmailSubmit": "OTP absenden",
     "backToEmail": "Zurück zur E-Mail",
-    "noSupportKey": "Server läuft ohne Unterstützer-Schlüssel.<br/>Erwägen Sie, das Projekt zu unterstützen!",
+    "noSupportKey": "Server is running without a supporter key. Consider supporting the project!",
     "accessDenied": "Zugriff verweigert",
     "accessDeniedDescription": "Sie haben keine Berechtigung, auf diese Ressource zuzugreifen. Falls dies ein Fehler ist, kontaktieren Sie bitte den Administrator.",
     "accessTokenError": "Fehler beim Prüfen des Zugriffstokens",
@@ -1059,5 +1060,8 @@
     "copyText": "Text kopieren",
     "copyTextFailed": "Text konnte nicht kopiert werden: ",
     "copyTextClipboard": "In die Zwischenablage kopieren",
-    "inviteErrorInvalidConfirmation": "Ungültige Bestätigung"
+    "inviteErrorInvalidConfirmation": "Ungültige Bestätigung",
+    "passwordRequired": "Password is required",
+    "allowAll": "Allow All",
+    "permissionsAllowAll": "Allow All Permissions"
 }
