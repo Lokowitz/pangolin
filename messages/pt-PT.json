@@ -458,6 +458,7 @@
     "createdAt": "Criado Em",
     "proxyErrorInvalidHeader": "Valor do cabeçalho Host personalizado inválido. Use o formato de nome de domínio ou salve vazio para remover o cabeçalho Host personalizado.",
     "proxyErrorTls": "Nome do Servidor TLS inválido. Use o formato de nome de domínio ou salve vazio para remover o Nome do Servidor TLS.",
+    "proxyEnableSSL": "Enable SSL (https)",
     "targetErrorFetch": "Falha ao buscar alvos",
     "targetErrorFetchDescription": "Ocorreu um erro ao buscar alvos",
     "siteErrorFetch": "Falha ao buscar recurso",
@@ -850,7 +851,7 @@
     "otpEmail": "Palavra-passe Única (OTP)",
     "otpEmailSubmit": "Submeter OTP",
     "backToEmail": "Voltar ao Email",
-    "noSupportKey": "O servidor está a funcionar sem uma chave de suporte.<br/>Considere apoiar o projeto!",
+    "noSupportKey": "Server is running without a supporter key. Consider supporting the project!",
     "accessDenied": "Acesso Negado",
     "accessDeniedDescription": "Não tem permissão para aceder a este recurso. Se isto for um erro, contacte o administrador.",
     "accessTokenError": "Erro ao verificar o token de acesso",
@@ -1059,5 +1060,8 @@
     "copyText": "Copiar texto",
     "copyTextFailed": "Falha ao copiar texto: ",
     "copyTextClipboard": "Copiar para a área de transferência",
-    "inviteErrorInvalidConfirmation": "Confirmação inválida"
+    "inviteErrorInvalidConfirmation": "Confirmação inválida",
+    "passwordRequired": "Password is required",
+    "allowAll": "Allow All",
+    "permissionsAllowAll": "Allow All Permissions"
 }
