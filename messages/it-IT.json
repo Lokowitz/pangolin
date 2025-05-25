@@ -458,7 +458,7 @@
     "createdAt": "Creato Il",
     "proxyErrorInvalidHeader": "Valore dell'intestazione Host personalizzata non valido. Usa il formato nome dominio o salva vuoto per rimuovere l'intestazione Host personalizzata.",
     "proxyErrorTls": "Nome Server TLS non valido. Usa il formato nome dominio o salva vuoto per rimuovere il Nome Server TLS.",
-    "proxyEnableSSL": "Enable SSL (https)",
+    "proxyEnableSSL": "Abilita SSL (https)",
     "targetErrorFetch": "Impossibile recuperare i target",
     "targetErrorFetchDescription": "Si è verificato un errore durante il recupero dei target",
     "siteErrorFetch": "Impossibile recuperare la risorsa",
@@ -851,7 +851,7 @@
     "otpEmail": "Password Usa e Getta (OTP)",
     "otpEmailSubmit": "Invia OTP",
     "backToEmail": "Torna all'Email",
-    "noSupportKey": "Server is running without a supporter key. Consider supporting the project!",
+    "noSupportKey": "Il server è in esecuzione senza una chiave di supporto. Considera di supportare il progetto!",
     "accessDenied": "Accesso Negato",
     "accessDeniedDescription": "Non sei autorizzato ad accedere a questa risorsa. Se ritieni che sia un errore, contatta l'amministratore.",
     "accessTokenError": "Errore nel controllo del token di accesso",
@@ -910,7 +910,7 @@
     "pangolinDashboard": "Cruscotto - Pangolino",
     "noResults": "Nessun risultato trovato.",
     "terabytes": "{count} TB",
-    "gigabytes": "{count} GB",
+    "gigabytes": "{count}GB",
     "megabytes": "{count} MB",
     "tagsEntered": "Tag Inseriti",
     "tagsEnteredDescription": "Questi sono i tag che hai inserito.",
@@ -1061,7 +1061,7 @@
     "copyTextFailed": "Impossibile copiare il testo: ",
     "copyTextClipboard": "Copia negli appunti",
     "inviteErrorInvalidConfirmation": "Conferma non valida",
-    "passwordRequired": "Password is required",
-    "allowAll": "Allow All",
-    "permissionsAllowAll": "Allow All Permissions"
+    "passwordRequired": "La password è obbligatoria",
+    "allowAll": "Consenti Tutto",
+    "permissionsAllowAll": "Consenti Tutti I Permessi"
 }
