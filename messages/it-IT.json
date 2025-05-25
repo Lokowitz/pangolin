@@ -458,6 +458,7 @@
     "createdAt": "Creato Il",
     "proxyErrorInvalidHeader": "Valore dell'intestazione Host personalizzata non valido. Usa il formato nome dominio o salva vuoto per rimuovere l'intestazione Host personalizzata.",
     "proxyErrorTls": "Nome Server TLS non valido. Usa il formato nome dominio o salva vuoto per rimuovere il Nome Server TLS.",
+    "proxyEnableSSL": "Enable SSL (https)",
     "targetErrorFetch": "Impossibile recuperare i target",
     "targetErrorFetchDescription": "Si è verificato un errore durante il recupero dei target",
     "siteErrorFetch": "Impossibile recuperare la risorsa",
@@ -850,7 +851,7 @@
     "otpEmail": "Password Usa e Getta (OTP)",
     "otpEmailSubmit": "Invia OTP",
     "backToEmail": "Torna all'Email",
-    "noSupportKey": "Il server è in esecuzione senza una chiave di supporto.<br/>Considera di supportare il progetto!",
+    "noSupportKey": "Server is running without a supporter key. Consider supporting the project!",
     "accessDenied": "Accesso Negato",
     "accessDeniedDescription": "Non sei autorizzato ad accedere a questa risorsa. Se ritieni che sia un errore, contatta l'amministratore.",
     "accessTokenError": "Errore nel controllo del token di accesso",
@@ -1059,5 +1060,8 @@
     "copyText": "Copia testo",
     "copyTextFailed": "Impossibile copiare il testo: ",
     "copyTextClipboard": "Copia negli appunti",
-    "inviteErrorInvalidConfirmation": "Conferma non valida"
+    "inviteErrorInvalidConfirmation": "Conferma non valida",
+    "passwordRequired": "Password is required",
+    "allowAll": "Allow All",
+    "permissionsAllowAll": "Allow All Permissions"
 }
