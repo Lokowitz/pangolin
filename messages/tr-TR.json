@@ -458,6 +458,7 @@
     "createdAt": "Created At",
     "proxyErrorInvalidHeader": "Invalid custom Host Header value. Use domain name format, or save empty to unset custom Host Header.",
     "proxyErrorTls": "Invalid TLS Server Name. Use domain name format, or save empty to remove the TLS Server Name.",
+    "proxyEnableSSL": "Enable SSL (https)",
     "targetErrorFetch": "Failed to fetch targets",
     "targetErrorFetchDescription": "An error occurred while fetching targets",
     "siteErrorFetch": "Failed to fetch resource",
@@ -850,7 +851,7 @@
     "otpEmail": "One-Time Password (OTP)",
     "otpEmailSubmit": "Submit OTP",
     "backToEmail": "Back to Email",
-    "noSupportKey": "Server is running without a supporter key.<br/>Consider supporting the project!",
+    "noSupportKey": "Server is running without a supporter key. Consider supporting the project!",
     "accessDenied": "Access Denied",
     "accessDeniedDescription": "You're not allowed to access this resource. If this is a mistake, please contact the administrator.",
     "accessTokenError": "Error checking access token",
@@ -1059,5 +1060,8 @@
     "copyText": "Copy text",
     "copyTextFailed": "Failed to copy text: ",
     "copyTextClipboard": "Copy to clipboard",
-    "inviteErrorInvalidConfirmation": "Invalid confirmation"
+    "inviteErrorInvalidConfirmation": "Invalid confirmation",
+    "passwordRequired": "Password is required",
+    "allowAll": "Allow All",
+    "permissionsAllowAll": "Allow All Permissions"
 }
