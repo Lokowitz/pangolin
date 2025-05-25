@@ -458,7 +458,7 @@
     "createdAt": "Erstellt am",
     "proxyErrorInvalidHeader": "Ungültiger benutzerdefinierter Host-Header-Wert. Verwenden Sie das Domänennamensformat oder speichern Sie leer, um den benutzerdefinierten Host-Header zu deaktivieren.",
     "proxyErrorTls": "Ungültiger TLS-Servername. Verwenden Sie das Domänennamensformat oder speichern Sie leer, um den TLS-Servernamen zu entfernen.",
-    "proxyEnableSSL": "Enable SSL (https)",
+    "proxyEnableSSL": "SSL aktivieren (https)",
     "targetErrorFetch": "Fehler beim Abrufen der Ziele",
     "targetErrorFetchDescription": "Beim Abrufen der Ziele ist ein Fehler aufgetreten",
     "siteErrorFetch": "Fehler beim Abrufen der Ressource",
@@ -851,7 +851,7 @@
     "otpEmail": "Einmalpasswort (OTP)",
     "otpEmailSubmit": "OTP absenden",
     "backToEmail": "Zurück zur E-Mail",
-    "noSupportKey": "Server is running without a supporter key. Consider supporting the project!",
+    "noSupportKey": "Server läuft ohne Unterstützungsschlüssel. Erwägen Sie die Unterstützung des Projekts!",
     "accessDenied": "Zugriff verweigert",
     "accessDeniedDescription": "Sie haben keine Berechtigung, auf diese Ressource zuzugreifen. Falls dies ein Fehler ist, kontaktieren Sie bitte den Administrator.",
     "accessTokenError": "Fehler beim Prüfen des Zugriffstokens",
@@ -1034,7 +1034,7 @@
     "navbar": "Navigationsmenü",
     "navbarDescription": "Hauptnavigationsmenü für die Anwendung",
     "navbarDocsLink": "Dokumentation",
-    "commercialEdition": "Commercial Edition",
+    "commercialEdition": "Kommerzielle Edition",
     "otpErrorEnable": "2FA konnte nicht aktiviert werden",
     "otpErrorEnableDescription": "Beim Aktivieren der 2FA ist ein Fehler aufgetreten",
     "otpSetupCheckCode": "Bitte geben Sie einen 6-stelligen Code ein",
@@ -1061,7 +1061,7 @@
     "copyTextFailed": "Text konnte nicht kopiert werden: ",
     "copyTextClipboard": "In die Zwischenablage kopieren",
     "inviteErrorInvalidConfirmation": "Ungültige Bestätigung",
-    "passwordRequired": "Password is required",
-    "allowAll": "Allow All",
-    "permissionsAllowAll": "Allow All Permissions"
+    "passwordRequired": "Passwort ist erforderlich",
+    "allowAll": "Alle erlauben",
+    "permissionsAllowAll": "Alle Berechtigungen erlauben"
 }
