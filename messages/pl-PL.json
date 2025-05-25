@@ -458,7 +458,7 @@
     "createdAt": "Utworzono",
     "proxyErrorInvalidHeader": "Nieprawidłowa wartość niestandardowego nagłówka hosta. Użyj formatu nazwy domeny lub zapisz pusty, aby usunąć niestandardowy nagłówek hosta.",
     "proxyErrorTls": "Nieprawidłowa nazwa serwera TLS. Użyj formatu nazwy domeny lub zapisz pusty, aby usunąć nazwę serwera TLS.",
-    "proxyEnableSSL": "Enable SSL (https)",
+    "proxyEnableSSL": "Włącz SSL (https)",
     "targetErrorFetch": "Nie udało się pobrać celów",
     "targetErrorFetchDescription": "Wystąpił błąd podczas pobierania celów",
     "siteErrorFetch": "Nie udało się pobrać zasobu",
@@ -851,7 +851,7 @@
     "otpEmail": "Hasło jednorazowe (OTP)",
     "otpEmailSubmit": "Wyślij OTP",
     "backToEmail": "Powrót do e-maila",
-    "noSupportKey": "Server is running without a supporter key. Consider supporting the project!",
+    "noSupportKey": "Serwer działa bez klucza wspierającego. Rozważ wsparcie projektu!",
     "accessDenied": "Odmowa dostępu",
     "accessDeniedDescription": "Nie masz uprawnień dostępu do tego zasobu. Jeśli to pomyłka, skontaktuj się z administratorem.",
     "accessTokenError": "Błąd sprawdzania tokena dostępu",
@@ -1061,7 +1061,7 @@
     "copyTextFailed": "Nie udało się skopiować tekstu: ",
     "copyTextClipboard": "Kopiuj do schowka",
     "inviteErrorInvalidConfirmation": "Nieprawidłowe potwierdzenie",
-    "passwordRequired": "Password is required",
-    "allowAll": "Allow All",
-    "permissionsAllowAll": "Allow All Permissions"
+    "passwordRequired": "Hasło jest wymagane",
+    "allowAll": "Zezwól wszystkim",
+    "permissionsAllowAll": "Zezwól na wszystkie uprawnienia"
 }
