@@ -458,6 +458,7 @@
     "createdAt": "Créé le",
     "proxyErrorInvalidHeader": "Valeur d'en-tête Host personnalisée invalide. Utilisez le format de nom de domaine, ou laissez vide pour désactiver l'en-tête Host personnalisé.",
     "proxyErrorTls": "Nom de serveur TLS invalide. Utilisez le format de nom de domaine, ou laissez vide pour supprimer le nom de serveur TLS.",
+    "proxyEnableSSL": "Enable SSL (https)",
     "targetErrorFetch": "Échec de la récupération des cibles",
     "targetErrorFetchDescription": "Une erreur s'est produite lors de la récupération des cibles",
     "siteErrorFetch": "Échec de la récupération de la ressource",
@@ -850,7 +851,7 @@
     "otpEmail": "Mot de passe à usage unique (OTP)",
     "otpEmailSubmit": "Soumettre l'OTP",
     "backToEmail": "Retour à l'e-mail",
-    "noSupportKey": "Le serveur fonctionne sans clé de support.<br/>Envisagez de soutenir le projet !",
+    "noSupportKey": "Server is running without a supporter key. Consider supporting the project!",
     "accessDenied": "Accès refusé",
     "accessDeniedDescription": "Vous n'êtes pas autorisé à accéder à cette ressource. Si c'est une erreur, veuillez contacter l'administrateur.",
     "accessTokenError": "Erreur lors de la vérification du jeton d'accès",
@@ -1059,5 +1060,8 @@
     "copyText": "Copier le texte",
     "copyTextFailed": "Échec de la copie du texte : ",
     "copyTextClipboard": "Copier dans le presse-papiers",
-    "inviteErrorInvalidConfirmation": "Confirmation invalide"
+    "inviteErrorInvalidConfirmation": "Confirmation invalide",
+    "passwordRequired": "Password is required",
+    "allowAll": "Allow All",
+    "permissionsAllowAll": "Allow All Permissions"
 }
