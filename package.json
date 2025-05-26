@@ -58,7 +58,7 @@
         "cookies": "^0.9.1",
         "cors": "2.8.5",
         "crypto-js": "^4.2.0",
-        "drizzle-orm": "0.38.3",
+        "drizzle-orm": "0.43.1",
         "eslint": "9.17.0",
         "eslint-config-next": "15.3.2",
         "express": "4.21.2",
