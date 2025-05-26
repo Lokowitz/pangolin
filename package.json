@@ -48,7 +48,7 @@
         "@tanstack/react-table": "8.20.6",
         "arctic": "^3.6.0",
         "axios": "1.8.4",
-        "better-sqlite3": "11.7.0",
+        "better-sqlite3": "11.10.0",
         "canvas-confetti": "1.9.3",
         "class-variance-authority": "0.7.1",
         "clsx": "2.1.1",
