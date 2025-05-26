@@ -126,7 +126,7 @@
         "react-email": "4.0.6",
         "tailwindcss": "^4.1.4",
         "tsc-alias": "1.8.16",
-        "tsx": "4.19.3",
+        "tsx": "4.19.4",
         "typescript": "^5",
         "yargs": "17.7.2"
     },
