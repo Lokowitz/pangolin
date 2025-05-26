@@ -120,7 +120,7 @@
         "@types/ws": "8.5.13",
         "@types/yargs": "17.0.33",
         "drizzle-kit": "0.31.1",
-        "esbuild": "0.25.2",
+        "esbuild": "0.25.4",
         "esbuild-node-externals": "1.18.0",
         "postcss": "^8",
         "react-email": "4.0.6",
