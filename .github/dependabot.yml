@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: "npm" # oder "yarn", falls das Projekt Yarn verwendet
+    directory: "/" # Wurzelverzeichnis des Projekts
+    schedule:
+      interval: "daily"
+    groups:
+      major-updates:
+        update-types:
+          - "major"
+      minor-and-patch-updates:
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "docker"
+    directory: "/" # Wurzelverzeichnis des Projekts
+    schedule:
+      interval: "daily"
+    groups:
+      major-updates:
+        update-types:
+          - "major"
+      minor-and-patch-updates:
+        update-types:
+          - "minor"
+          - "patch"
