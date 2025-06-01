@@ -78,6 +78,8 @@ export default function CreateSiteForm({
         privateKey: string;
     } | null>(null);
 
+    const t = useTranslations();
+
     const createSiteFormSchema = z.object({
         name: z
             .string()
@@ -114,8 +116,6 @@ export default function CreateSiteForm({
 
     const nameField = form.watch("name");
     const methodField = form.watch("method");
-
-    const t = useTranslations();
 
     useEffect(() => {
         const nameIsValid = nameField?.length >= 2 && nameField?.length <= 30;

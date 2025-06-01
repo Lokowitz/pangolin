@@ -928,6 +928,8 @@ function isIPInSubnet(subnet: string, ip: string): boolean {
     const [subnetIP, maskBits] = subnet.split("/");
     const mask = parseInt(maskBits);
 
+    const t = useTranslations();
+
     if (mask < 0 || mask > 32) {
         throw new Error(t('subnetMaskErrorInvalid'));
     }
@@ -947,7 +949,7 @@ function ipToNumber(ip: string): number {
     // Validate IP address format
     const parts = ip.split(".");
     const t = useTranslations();
-    
+
     if (parts.length !== 4) {
         throw new Error(t('ipAddressErrorInvalidFormat'));
     }
