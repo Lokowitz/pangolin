@@ -1063,5 +1063,17 @@
     "inviteErrorInvalidConfirmation": "Ungültige Bestätigung",
     "passwordRequired": "Passwort ist erforderlich",
     "allowAll": "Alle erlauben",
-    "permissionsAllowAll": "Alle Berechtigungen erlauben"
+    "permissionsAllowAll": "Alle Berechtigungen erlauben",
+    "githubUsernameRequired": "GitHub-Benutzername ist erforderlich",
+    "supportKeyRequired": "Unterstützer-Schlüssel ist erforderlich",
+    "passwordRequirementsChars": "Das Passwort muss mindestens 8 Zeichen lang sein",
+    "language": "Sprache",
+    "verificationCodeRequired": "Code ist erforderlich",
+    "userErrorNoUpdate": "Kein Benutzer zum Aktualisieren",
+    "siteErrorNoUpdate": "Keine Site zum Aktualisieren",
+    "resourceErrorNoUpdate": "Keine Ressource zum Aktualisieren",
+    "authErrorNoUpdate": "Keine Auth-Informationen zum Aktualisieren",
+    "orgErrorNoUpdate": "Keine Organisation zum Aktualisieren",
+    "orgErrorNoProvided": "Keine Organisation angegeben",
+    "apiKeysErrorNoUpdate": "Kein API-Schlüssel zum Aktualisieren"
 }

@@ -1063,5 +1063,17 @@
     "inviteErrorInvalidConfirmation": "Invalid confirmation",
     "passwordRequired": "Password is required",
     "allowAll": "Allow All",
-    "permissionsAllowAll": "Allow All Permissions"
+    "permissionsAllowAll": "Allow All Permissions",
+    "githubUsernameRequired": "GitHub username is required",
+    "supportKeyRequired": "Supporter key is required",
+    "passwordRequirementsChars": "Password must be at least 8 characters",
+    "language": "Language",
+    "verificationCodeRequired": "Code is required",
+    "userErrorNoUpdate": "No user to update",
+    "siteErrorNoUpdate": "No site to update",
+    "resourceErrorNoUpdate": "No resource to update",
+    "authErrorNoUpdate": "No auth info to update",
+    "orgErrorNoUpdate": "No org to update",
+    "orgErrorNoProvided": "No org provided",
+    "apiKeysErrorNoUpdate": "No API key to update"
 }

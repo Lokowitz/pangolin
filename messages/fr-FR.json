@@ -1063,5 +1063,17 @@
     "inviteErrorInvalidConfirmation": "Confirmation invalide",
     "passwordRequired": "Le mot de passe est requis",
     "allowAll": "Tout autoriser",
-    "permissionsAllowAll": "Autoriser toutes les autorisations"
+    "permissionsAllowAll": "Autoriser toutes les autorisations",
+    "githubUsernameRequired": "Le nom d'utilisateur GitHub est requis",
+    "supportKeyRequired": "La clé de supporter est requise",
+    "passwordRequirementsChars": "Le mot de passe doit comporter au moins 8 caractères",
+    "language": "Langue",
+    "verificationCodeRequired": "Le code est requis",
+    "userErrorNoUpdate": "Pas d'utilisateur à mettre à jour",
+    "siteErrorNoUpdate": "Pas de site à mettre à jour",
+    "resourceErrorNoUpdate": "Pas de ressource à mettre à jour",
+    "authErrorNoUpdate": "Pas d'informations d'authentification à mettre à jour",
+    "orgErrorNoUpdate": "Pas d'organisation à mettre à jour",
+    "orgErrorNoProvided": "Aucune organisation fournie",
+    "apiKeysErrorNoUpdate": "Pas de clé API à mettre à jour"
 }

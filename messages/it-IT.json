@@ -1063,5 +1063,17 @@
     "inviteErrorInvalidConfirmation": "Conferma non valida",
     "passwordRequired": "La password è obbligatoria",
     "allowAll": "Consenti Tutto",
-    "permissionsAllowAll": "Consenti Tutti I Permessi"
+    "permissionsAllowAll": "Consenti Tutti I Permessi",
+    "githubUsernameRequired": "È richiesto l'username GitHub",
+    "supportKeyRequired": "È richiesta la chiave di supporto",
+    "passwordRequirementsChars": "La password deve essere di almeno 8 caratteri",
+    "language": "Lingua",
+    "verificationCodeRequired": "È richiesto un codice",
+    "userErrorNoUpdate": "Nessun utente da aggiornare",
+    "siteErrorNoUpdate": "Nessun sito da aggiornare",
+    "resourceErrorNoUpdate": "Nessuna risorsa da aggiornare",
+    "authErrorNoUpdate": "Nessuna informazione di autenticazione da aggiornare",
+    "orgErrorNoUpdate": "Nessuna organizzazione da aggiornare",
+    "orgErrorNoProvided": "Nessuna organizzazione fornita",
+    "apiKeysErrorNoUpdate": "Nessuna chiave API da aggiornare"
 }

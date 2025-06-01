@@ -1063,5 +1063,17 @@
     "inviteErrorInvalidConfirmation": "Confirmação inválida",
     "passwordRequired": "A senha é obrigatória",
     "allowAll": "Permitir todos",
-    "permissionsAllowAll": "Permitir Todas as Permissões"
+    "permissionsAllowAll": "Permitir Todas as Permissões",
+    "githubUsernameRequired": "O nome de utilizador GitHub é obrigatório",
+    "supportKeyRequired": "A chave de apoiante é obrigatória",
+    "passwordRequirementsChars": "A palavra-passe deve ter pelo menos 8 caracteres",
+    "language": "Idioma",
+    "verificationCodeRequired": "O código é obrigatório",
+    "userErrorNoUpdate": "Não existe utilizador para atualizar",
+    "siteErrorNoUpdate": "Não existe site para atualizar",
+    "resourceErrorNoUpdate": "Não existe recurso para atualizar",
+    "authErrorNoUpdate": "Não existem informações de autenticação para atualizar",
+    "orgErrorNoUpdate": "Não existe organização para atualizar",
+    "orgErrorNoProvided": "Nenhuma organização fornecida",
+    "apiKeysErrorNoUpdate": "Não existe chave API para atualizar"
 }

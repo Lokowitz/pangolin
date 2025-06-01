@@ -1063,5 +1063,17 @@
     "inviteErrorInvalidConfirmation": "Nieprawidłowe potwierdzenie",
     "passwordRequired": "Hasło jest wymagane",
     "allowAll": "Zezwól wszystkim",
-    "permissionsAllowAll": "Zezwól na wszystkie uprawnienia"
+    "permissionsAllowAll": "Zezwól na wszystkie uprawnienia",
+    "githubUsernameRequired": "Nazwa użytkownika GitHub jest wymagana",
+    "supportKeyRequired": "Klucz wspierający jest wymagany",
+    "passwordRequirementsChars": "Hasło musi mieć co najmniej 8 znaków",
+    "language": "Język",
+    "verificationCodeRequired": "Kod jest wymagany",
+    "userErrorNoUpdate": "Brak użytkownika do aktualizacji",
+    "siteErrorNoUpdate": "Brak witryny do aktualizacji",
+    "resourceErrorNoUpdate": "Brak zasobu do aktualizacji",
+    "authErrorNoUpdate": "Brak danych uwierzytelniania do aktualizacji",
+    "orgErrorNoUpdate": "Brak organizacji do aktualizacji",
+    "orgErrorNoProvided": "Nie podano organizacji",
+    "apiKeysErrorNoUpdate": "Brak klucza API do aktualizacji"
 }
