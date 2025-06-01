@@ -3,6 +3,7 @@
 import SiteContext from "@app/contexts/siteContext";
 import { GetSiteResponse } from "@server/routers/site/getSite";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface SiteProviderProps {
     children: React.ReactNode;
@@ -15,9 +16,11 @@ export function SiteProvider({
 }: SiteProviderProps) {
     const [site, setSite] = useState<GetSiteResponse>(serverSite);
 
+    const t = useTranslations();
+
     const updateSite = (updatedSite: Partial<GetSiteResponse>) => {
         if (!site) {
-            throw new Error("No site to update");
+            throw new Error(t('siteErrorNoUpdate'));
         }
         setSite((prev) => {
             if (!prev) {

@@ -3,6 +3,7 @@
 import OrgContext from "@app/contexts/orgContext";
 import { GetOrgResponse } from "@server/routers/org";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface OrgProviderProps {
     children: React.ReactNode;
@@ -12,13 +13,15 @@ interface OrgProviderProps {
 export function OrgProvider({ children, org: serverOrg }: OrgProviderProps) {
     const [org, setOrg] = useState<GetOrgResponse | null>(serverOrg);
 
+    const t = useTranslations();
+
     if (!org) {
-        throw new Error("No org provided");
+        throw new Error(t('orgErrorNoProvided'));
     }
 
     const updateOrg = (updatedOrg: Partial<GetOrgResponse>) => {
         if (!org) {
-            throw new Error("No org to update");
+            throw new Error(t('orgErrorNoUpdate'));
         }
 
         setOrg((prev) => {

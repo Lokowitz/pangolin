@@ -3,6 +3,7 @@
 import UserContext from "@app/contexts/userContext";
 import { GetUserResponse } from "@server/routers/user";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface UserProviderProps {
     children: React.ReactNode;
@@ -12,9 +13,11 @@ interface UserProviderProps {
 export function UserProvider({ children, user: u }: UserProviderProps) {
     const [user, setUser] = useState<GetUserResponse>(u);
 
+    const t = useTranslations();
+
     const updateUser = (updatedUser: Partial<GetUserResponse>) => {
         if (!user) {
-            throw new Error("No user to update");
+            throw new Error(t('userErrorNoUpdate'));
         }
         setUser((prev) => {
             if (!prev) {
