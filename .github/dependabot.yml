@@ -5,52 +5,20 @@ updates:
     schedule:
       interval: "daily"
     groups:
-      prod-dependencies:
-        patterns:
-          - "*"
-        exclude-patterns:
-          - "@dotenvx/*"
-          - "@esbuild-plugins/*"
-          - "@tailwindcss/postcss"
-          - "@types/*"
-          - "drizzle-kit"
-          - "esbuild"
-          - "esbuild-node-externals"
-          - "postcss"
-          - "react-email"
-          - "tailwindcss"
-          - "tsc-alias"
-          - "tsx"
-          - "typescript"
-          - "yargs"
+      dev-dependencies:
+        dependency-type: "development"
         update-types:
           - "minor"
           - "patch"
-      dev-dependencies:
-        patterns:
-          - "@dotenvx/*"
-          - "@esbuild-plugins/*"
-          - "@tailwindcss/postcss"
-          - "@types/*"
-          - "drizzle-kit"
-          - "esbuild"
-          - "esbuild-node-externals"
-          - "postcss"
-          - "react-email"
-          - "tailwindcss"
-          - "tsc-alias"
-          - "tsx"
-          - "typescript"
-          - "yargs"
+      prod-dependencies:
+        dependency-type: "production"
         update-types:
           - "minor"
           - "patch"
       major-updates:
-        patterns:
-          - "*"
         update-types:
           - "major"
-          
+
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
