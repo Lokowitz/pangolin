@@ -22,7 +22,7 @@
     "dependencies": {
         "@asteasolutions/zod-to-openapi": "^7.3.2",
         "@hookform/resolvers": "3.9.1",
-        "@node-rs/argon2": "2.0.2",
+        "@node-rs/argon2": "^2.0.2",
         "@oslojs/crypto": "1.0.1",
         "@oslojs/encoding": "1.1.0",
         "@radix-ui/react-avatar": "1.1.10",
@@ -48,7 +48,7 @@
         "@tanstack/react-table": "8.21.3",
         "arctic": "^3.7.0",
         "axios": "1.9.0",
-        "better-sqlite3": "11.10.0",
+        "better-sqlite3": "11.7.0",
         "canvas-confetti": "1.9.3",
         "class-variance-authority": "0.7.1",
         "clsx": "2.1.1",
