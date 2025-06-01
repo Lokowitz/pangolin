@@ -100,7 +100,7 @@
         "zod-validation-error": "3.4.1"
     },
     "devDependencies": {
-        "@dotenvx/dotenvx": "1.32.0",
+        "@dotenvx/dotenvx": "1.44.1",
         "@esbuild-plugins/tsconfig-paths": "0.1.2",
         "@tailwindcss/postcss": "^4.1.8",
         "@types/better-sqlite3": "7.6.12",
@@ -119,7 +119,7 @@
         "@types/swagger-ui-express": "^4.1.8",
         "@types/ws": "8.18.1",
         "@types/yargs": "17.0.33",
-        "drizzle-kit": "0.30.6",
+        "drizzle-kit": "0.31.1",
         "esbuild": "0.25.5",
         "esbuild-node-externals": "1.18.0",
         "postcss": "^8",
