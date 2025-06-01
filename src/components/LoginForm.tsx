@@ -53,17 +53,6 @@ type LoginFormProps = {
     idps?: LoginFormIDP[];
 };
 
-const formSchema = z.object({
-    email: z.string().email({ message: "Invalid email address" }),
-    password: z
-        .string()
-        .min(8, { message: "Password must be at least 8 characters" })
-});
-
-const mfaSchema = z.object({
-    code: z.string().length(6, { message: "Invalid code" })
-});
-
 export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
     const router = useRouter();
 
@@ -76,6 +65,19 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
     const hasIdp = idps && idps.length > 0;
 
     const [mfaRequested, setMfaRequested] = useState(false);
+
+    const t = useTranslations();
+
+    const formSchema = z.object({
+        email: z.string().email({ message: t('emailInvalid') }),
+        password: z
+            .string()
+            .min(8, { message: t('passwordRequirementsChars') })
+    });
+
+    const mfaSchema = z.object({
+        code: z.string().length(6, { message: t('pincodeInvalid') })
+    });
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -91,8 +93,6 @@ export default function LoginForm({ redirect, onLogin, idps }: LoginFormProps) {
             code: ""
         }
     });
-
-    const t = useTranslations();
 
     async function onSubmit(values: any) {
         const { email, password } = form.getValues();

@@ -34,11 +34,6 @@ import { useUserContext } from "@app/hooks/useUserContext";
 import { CheckCircle2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-const disableSchema = z.object({
-    password: z.string().min(1, { message: "Password is required" }),
-    code: z.string().min(1, { message: "Code is required" })
-});
-
 type Disable2FaProps = {
     open: boolean;
     setOpen: (val: boolean) => void;
@@ -53,6 +48,13 @@ export default function Disable2FaForm({ open, setOpen }: Disable2FaProps) {
 
     const api = createApiClient(useEnvContext());
 
+    const t = useTranslations();
+
+    const disableSchema = z.object({
+        password: z.string().min(1, { message: t('passwordRequired') }),
+        code: z.string().min(1, { message: t('verificationCodeRequired') })
+    });
+
     const disableForm = useForm<z.infer<typeof disableSchema>>({
         resolver: zodResolver(disableSchema),
         defaultValues: {
@@ -60,8 +62,6 @@ export default function Disable2FaForm({ open, setOpen }: Disable2FaProps) {
             code: ""
         }
     });
-
-    const t = useTranslations();
 
     const request2fa = async (values: z.infer<typeof disableSchema>) => {
         setLoading(true);
