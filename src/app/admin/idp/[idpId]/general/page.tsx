@@ -232,7 +232,6 @@ export default function GeneralPage() {
                                             defaultChecked={form.getValues(
                                                 "autoProvision"
                                             )}
-                                            disabled={!isUnlocked()}
                                             onCheckedChange={(checked) => {
                                                 form.setValue(
                                                     "autoProvision",
@@ -240,14 +239,6 @@ export default function GeneralPage() {
                                                 );
                                             }}
                                         />
-                                        {!isUnlocked() && (
-                                            <Badge
-                                                variant="outlinePrimary"
-                                                className="ml-2"
-                                            >
-                                                Professional
-                                            </Badge>
-                                        )}
                                     </div>
                                     <span className="text-sm text-muted-foreground">
                                         When enabled, users will be

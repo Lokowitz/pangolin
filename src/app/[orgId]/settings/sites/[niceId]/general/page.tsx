@@ -31,10 +31,12 @@ import { formatAxiosError } from "@app/lib/api";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useState } from "react";
+import { SwitchInput } from "@app/components/SwitchInput";
 import { useTranslations } from 'next-intl';
 
 const GeneralFormSchema = z.object({
-    name: z.string().nonempty("Name is required")
+    name: z.string().nonempty("Name is required"),
+    dockerSocketEnabled: z.boolean().optional()
 });
 
 type GeneralFormValues = z.infer<typeof GeneralFormSchema>;
@@ -52,7 +54,8 @@ export default function GeneralPage() {
     const form = useForm<GeneralFormValues>({
         resolver: zodResolver(GeneralFormSchema),
         defaultValues: {
-            name: site?.name
+            name: site?.name,
+            dockerSocketEnabled: site?.dockerSocketEnabled ?? false
         },
         mode: "onChange"
     });
@@ -62,7 +65,8 @@ export default function GeneralPage() {
 
         await api
             .post(`/site/${site?.siteId}`, {
-                name: data.name
+                name: data.name,
+                dockerSocketEnabled: data.dockerSocketEnabled
             })
             .catch((e) => {
                 toast({
@@ -72,7 +76,10 @@ export default function GeneralPage() {
                 });
             });
 
-        updateSite({ name: data.name });
+        updateSite({
+            name: data.name,
+            dockerSocketEnabled: data.dockerSocketEnabled
+        });
 
         toast({
             title: t('siteUpdated'),
@@ -101,7 +108,7 @@ export default function GeneralPage() {
                         <Form {...form}>
                             <form
                                 onSubmit={form.handleSubmit(onSubmit)}
-                                className="space-y-4"
+                                className="space-y-6"
                                 id="general-settings-form"
                             >
                                 <FormField
@@ -116,6 +123,31 @@ export default function GeneralPage() {
                                             <FormMessage />
                                             <FormDescription>
                                                 {t('siteNameDescription')}
+                                            </FormDescription>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="dockerSocketEnabled"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <SwitchInput
+                                                    id="docker-socket-enabled"
+                                                    label="Enable Docker Socket"
+                                                    defaultChecked={field.value}
+                                                    onCheckedChange={
+                                                        field.onChange
+                                                    }
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                            <FormDescription>
+                                                Enable Docker Socket discovery
+                                                for populating container
+                                                information, useful in resource
+                                                targets.
                                             </FormDescription>
                                         </FormItem>
                                     )}

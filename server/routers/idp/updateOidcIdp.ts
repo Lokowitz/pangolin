@@ -100,10 +100,6 @@ export async function updateOidcIdp(
             defaultOrgMapping
         } = parsedBody.data;
 
-        if (!(await license.isUnlocked())) {
-            autoProvision = false;
-        }
-
         // Check if IDP exists and is of type OIDC
         const [existingIdp] = await db
             .select()

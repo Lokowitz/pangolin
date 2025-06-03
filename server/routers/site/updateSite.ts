@@ -19,6 +19,7 @@ const updateSiteParamsSchema = z
 const updateSiteBodySchema = z
     .object({
         name: z.string().min(1).max(255).optional(),
+        dockerSocketEnabled: z.boolean().optional(),
         // subdomain: z
         //     .string()
         //     .min(1)

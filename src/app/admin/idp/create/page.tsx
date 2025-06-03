@@ -192,7 +192,6 @@ export default function Page() {
                                             defaultChecked={form.getValues(
                                                 "autoProvision"
                                             )}
-                                            disabled={!isUnlocked()}
                                             onCheckedChange={(checked) => {
                                                 form.setValue(
                                                     "autoProvision",
@@ -200,14 +199,6 @@ export default function Page() {
                                                 );
                                             }}
                                         />
-                                        {!isUnlocked() && (
-                                            <Badge
-                                                variant="outlinePrimary"
-                                                className="ml-2"
-                                            >
-                                                Professional
-                                            </Badge>
-                                        )}
                                     </div>
                                     <span className="text-sm text-muted-foreground">
                                         When enabled, users will be
@@ -421,7 +412,7 @@ export default function Page() {
                                                         <Input {...field} />
                                                     </FormControl>
                                                     <FormDescription>
-                                                        The JMESPath to the user
+                                                        The path to the user
                                                         identifier in the ID
                                                         token
                                                     </FormDescription>
@@ -442,7 +433,7 @@ export default function Page() {
                                                         <Input {...field} />
                                                     </FormControl>
                                                     <FormDescription>
-                                                        The JMESPath to the
+                                                        The path to the
                                                         user's email in the ID
                                                         token
                                                     </FormDescription>
@@ -463,7 +454,7 @@ export default function Page() {
                                                         <Input {...field} />
                                                     </FormControl>
                                                     <FormDescription>
-                                                        The JMESPath to the
+                                                        The path to the
                                                         user's name in the ID
                                                         token
                                                     </FormDescription>

@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -377,9 +372,7 @@ export default function PoliciesPage() {
                                                     <Input {...field} />
                                                 </FormControl>
                                                 <FormDescription>
-                                                    JMESPath to extract role
-                                                    information from the ID
-                                                    token. The result of this
+                                                    The result of this
                                                     expression must return the
                                                     role name as defined in the
                                                     organization as a string.
@@ -401,13 +394,10 @@ export default function PoliciesPage() {
                                                     <Input {...field} />
                                                 </FormControl>
                                                 <FormDescription>
-                                                    JMESPath to extract
-                                                    organization information
-                                                    from the ID token. This
-                                                    expression must return thr
-                                                    org ID or true for the user
-                                                    to be allowed to access the
-                                                    organization.
+                                                    This expression must return
+                                                    thr org ID or true for the
+                                                    user to be allowed to access
+                                                    the organization.
                                                 </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
@@ -578,8 +568,6 @@ export default function PoliciesPage() {
                                                 <Input {...field} />
                                             </FormControl>
                                             <FormDescription>
-                                                JMESPath to extract role
-                                                information from the ID token.
                                                 The result of this expression
                                                 must return the role name as
                                                 defined in the organization as a
@@ -603,8 +591,6 @@ export default function PoliciesPage() {
                                                 <Input {...field} />
                                             </FormControl>
                                             <FormDescription>
-                                                JMESPath to extract organization
-                                                information from the ID token.
                                                 This expression must return the
                                                 org ID or true for the user to
                                                 be allowed to access the

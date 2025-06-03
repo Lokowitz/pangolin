@@ -41,7 +41,10 @@ export const sites = sqliteTable("sites", {
     megabytesOut: integer("bytesOut"),
     lastBandwidthUpdate: text("lastBandwidthUpdate"),
     type: text("type").notNull(), // "newt" or "wireguard"
-    online: integer("online", { mode: "boolean" }).notNull().default(false)
+    online: integer("online", { mode: "boolean" }).notNull().default(false),
+    dockerSocketEnabled: integer("dockerSocketEnabled", { mode: "boolean" })
+        .notNull()
+        .default(true)
 });
 
 export const resources = sqliteTable("resources", {

@@ -1,8 +1,6 @@
 "use client";
 
-import {
-    ColumnDef,
-} from "@tanstack/react-table";
+import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@app/components/ui/data-table";
 import { useTranslations } from 'next-intl';
 
@@ -29,6 +27,10 @@ export function ResourcesDataTable<TData, TValue>({
             searchColumn="name"
             onAdd={createResource}
             addButtonText={t('resourceAdd')}
+            defaultSort={{
+                id: "name",
+                desc: false
+            }}
         />
     );
 }

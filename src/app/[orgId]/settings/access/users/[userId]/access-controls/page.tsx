@@ -42,7 +42,7 @@ import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 
 const formSchema = z.object({
-    email: z.string().email({ message: "Please enter a valid email" }),
+    username: z.string(),
     roleId: z.string().min(1, { message: "Please select a role" })
 });
 
@@ -59,7 +59,7 @@ export default function AccessControlsPage() {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            email: user.email!,
+            username: user.username!,
             roleId: user.roleId?.toString()
         }
     });

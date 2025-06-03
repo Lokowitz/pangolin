@@ -1,8 +1,3 @@
-// This file is licensed under the Fossorial Commercial License.
-// Unauthorized use, copying, modification, or distribution is strictly prohibited.
-//
-// Copyright (c) 2025 Fossorial LLC. All rights reserved.
-
 import { useState } from "react";
 import { Button } from "@app/components/ui/button";
 import { MinusCircle, PlusCircle } from "lucide-react";
@@ -107,35 +102,6 @@ export function SitePriceCalculator({
                         </div>
 
                         <div className="border-t pt-4">
-                            {mode === "license" && (
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium">
-                                        License fee:
-                                    </span>
-                                    <span className="font-medium">
-                                        ${licenseFlatRate.toFixed(2)}
-                                    </span>
-                                </div>
-                            )}
-                            <div className="flex justify-between items-center mt-2">
-                                <span className="text-sm font-medium">
-                                    Price per site:
-                                </span>
-                                <span className="font-medium">
-                                    ${pricePerSite.toFixed(2)}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center mt-2">
-                                <span className="text-sm font-medium">
-                                    Number of sites:
-                                </span>
-                                <span className="font-medium">{siteCount}</span>
-                            </div>
-                            <div className="flex justify-between items-center mt-4 text-lg font-bold">
-                                <span>Total:</span>
-                                <span>${totalCost.toFixed(2)} / mo</span>
-                            </div>
-
                             <p className="text-muted-foreground text-sm mt-2 text-center">
                                 For the most up-to-date pricing and discounts,
                                 please visit the{" "}
@@ -157,7 +123,7 @@ export function SitePriceCalculator({
                         <Button variant="outline">Cancel</Button>
                     </CredenzaClose>
                     <Button onClick={continueToPayment}>
-                        Continue to Payment
+                        See Purchase Portal
                     </Button>
                 </CredenzaFooter>
             </CredenzaContent>

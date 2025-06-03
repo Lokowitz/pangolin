@@ -9,7 +9,7 @@
 
 </div>
 
-<h3 align="center">Tunneled Mesh Reverse Proxy Server with Access Control</h3>
+<h3 align="center">Tunneled Reverse Proxy Server with Access Control</h3>
 <div align="center">
 
 _Your own self-hosted zero trust tunnel._
@@ -83,7 +83,7 @@ _Resources page of Pangolin dashboard (dark mode) showing multiple resources ava
 
 ### Modular Design
 
-- Extend functionality with existing [Traefik](https://github.com/traefik/traefik) plugins, such as [CrowdSec](https://plugins.traefik.io/plugins/6335346ca4caa9ddeffda116/crowdsec-bouncer-traefik-plugin) and [Geoblock](github.com/PascalMinder/geoblock).
+- Extend functionality with existing [Traefik](https://github.com/traefik/traefik) plugins, such as [CrowdSec](https://plugins.traefik.io/plugins/6335346ca4caa9ddeffda116/crowdsec-bouncer-traefik-plugin) and [Geoblock](https://github.com/PascalMinder/geoblock).
     - **Automatically install and configure Crowdsec via Pangolin's installer script.**
 - Attach as many sites to the central server as you wish.
 
@@ -96,19 +96,19 @@ _Resources page of Pangolin dashboard (dark mode) showing multiple resources ava
     - Deploy the Docker Compose stack onto a VPS hosted on a cloud platform like RackNerd, Amazon EC2, DigitalOcean Droplet, or similar. There are many cheap VPS hosting options available to suit your needs.
 
 > [!TIP]
-> Many of our users have had a great experience with [RackNerd](https://my.racknerd.com/aff.php?aff=13788). Depending on promotions, you can likely get a **VPS with 1 vCPU, 1GB RAM, and ~20GB SSD for just around $12/year**. That's a great deal!
+> Many of our users have had a great experience with [RackNerd](https://my.racknerd.com/aff.php?aff=13788). Depending on promotions, you can get a [**VPS with 1 vCPU, 1GB RAM, and ~20GB SSD for just around $12/year**](https://my.racknerd.com/aff.php?aff=13788&pid=912). That's a great deal!
 > We are part of the [RackNerd](https://my.racknerd.com/aff.php?aff=13788) affiliate program, so if you purchase through [our link](https://my.racknerd.com/aff.php?aff=13788), we receive a small commission which helps us maintain the project and keep it free for everyone.
 
-2. **Domain Configuration**:
+1. **Domain Configuration**:
 
     - Point your domain name to the VPS and configure Pangolin with your preferred settings.
 
-3. **Connect Private Sites**:
+2. **Connect Private Sites**:
 
     - Install Newt or use another WireGuard client on private sites.
     - Automatically establish a connection from these sites to the central server.
 
-4. **Expose Resources**:
+3. **Expose Resources**:
 
     - Add resources to the central server and configure access control rules.
     - Access these resources securely from anywhere.

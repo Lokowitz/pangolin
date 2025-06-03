@@ -29,8 +29,7 @@ import {
     getUserOrgs,
     verifyUserIsServerAdmin,
     verifyIsLoggedInUser,
-    verifyApiKeyAccess,
-    verifyValidLicense
+    verifyApiKeyAccess
 } from "@server/middlewares";
 import { verifyUserHasAction } from "../middlewares/verifyUserHasAction";
 import { ActionsEnum } from "@server/auth/actions";
@@ -123,6 +122,37 @@ authenticated.delete(
     verifySiteAccess,
     verifyUserHasAction(ActionsEnum.deleteSite),
     site.deleteSite
+);
+
+authenticated.get(
+    "/site/:siteId/docker/status",
+    verifySiteAccess,
+    verifyUserHasAction(ActionsEnum.getSite),
+    site.dockerStatus
+);
+authenticated.get(
+    "/site/:siteId/docker/online",
+    verifySiteAccess,
+    verifyUserHasAction(ActionsEnum.getSite),
+    site.dockerOnline
+);
+authenticated.post(
+    "/site/:siteId/docker/check",
+    verifySiteAccess,
+    verifyUserHasAction(ActionsEnum.getSite),
+    site.checkDockerSocket
+);
+authenticated.post(
+    "/site/:siteId/docker/trigger",
+    verifySiteAccess,
+    verifyUserHasAction(ActionsEnum.getSite),
+    site.triggerFetchContainers
+);
+authenticated.get(
+    "/site/:siteId/docker/containers",
+    verifySiteAccess,
+    verifyUserHasAction(ActionsEnum.getSite),
+    site.listContainers
 );
 
 authenticated.put(
@@ -531,28 +561,24 @@ authenticated.get("/idp/:idpId", verifyUserIsServerAdmin, idp.getIdp);
 
 authenticated.put(
     "/idp/:idpId/org/:orgId",
-    verifyValidLicense,
     verifyUserIsServerAdmin,
     idp.createIdpOrgPolicy
 );
 
 authenticated.post(
     "/idp/:idpId/org/:orgId",
-    verifyValidLicense,
     verifyUserIsServerAdmin,
     idp.updateIdpOrgPolicy
 );
 
 authenticated.delete(
     "/idp/:idpId/org/:orgId",
-    verifyValidLicense,
     verifyUserIsServerAdmin,
     idp.deleteIdpOrgPolicy
 );
 
 authenticated.get(
     "/idp/:idpId/org",
-    verifyValidLicense,
     verifyUserIsServerAdmin,
     idp.listIdpOrgPolicies
 );
@@ -586,49 +612,42 @@ authenticated.post(
 
 authenticated.get(
     `/api-key/:apiKeyId`,
-    verifyValidLicense,
     verifyUserIsServerAdmin,
     apiKeys.getApiKey
 );
 
 authenticated.put(
     `/api-key`,
-    verifyValidLicense,
     verifyUserIsServerAdmin,
     apiKeys.createRootApiKey
 );
 
 authenticated.delete(
     `/api-key/:apiKeyId`,
-    verifyValidLicense,
     verifyUserIsServerAdmin,
     apiKeys.deleteApiKey
 );
 
 authenticated.get(
     `/api-keys`,
-    verifyValidLicense,
     verifyUserIsServerAdmin,
     apiKeys.listRootApiKeys
 );
 
 authenticated.get(
     `/api-key/:apiKeyId/actions`,
-    verifyValidLicense,
     verifyUserIsServerAdmin,
     apiKeys.listApiKeyActions
 );
 
 authenticated.post(
     `/api-key/:apiKeyId/actions`,
-    verifyValidLicense,
     verifyUserIsServerAdmin,
     apiKeys.setApiKeyActions
 );
 
 authenticated.get(
     `/org/:orgId/api-keys`,
-    verifyValidLicense,
     verifyOrgAccess,
     verifyUserHasAction(ActionsEnum.listApiKeys),
     apiKeys.listOrgApiKeys
@@ -636,7 +655,6 @@ authenticated.get(
 
 authenticated.post(
     `/org/:orgId/api-key/:apiKeyId/actions`,
-    verifyValidLicense,
     verifyOrgAccess,
     verifyApiKeyAccess,
     verifyUserHasAction(ActionsEnum.setApiKeyActions),
@@ -645,7 +663,6 @@ authenticated.post(
 
 authenticated.get(
     `/org/:orgId/api-key/:apiKeyId/actions`,
-    verifyValidLicense,
     verifyOrgAccess,
     verifyApiKeyAccess,
     verifyUserHasAction(ActionsEnum.listApiKeyActions),
@@ -654,7 +671,6 @@ authenticated.get(
 
 authenticated.put(
     `/org/:orgId/api-key`,
-    verifyValidLicense,
     verifyOrgAccess,
     verifyUserHasAction(ActionsEnum.createApiKey),
     apiKeys.createOrgApiKey
@@ -662,7 +678,6 @@ authenticated.put(
 
 authenticated.delete(
     `/org/:orgId/api-key/:apiKeyId`,
-    verifyValidLicense,
     verifyOrgAccess,
     verifyApiKeyAccess,
     verifyUserHasAction(ActionsEnum.deleteApiKey),
@@ -671,7 +686,6 @@ authenticated.delete(
 
 authenticated.get(
     `/org/:orgId/api-key/:apiKeyId`,
-    verifyValidLicense,
     verifyOrgAccess,
     verifyApiKeyAccess,
     verifyUserHasAction(ActionsEnum.getApiKey),

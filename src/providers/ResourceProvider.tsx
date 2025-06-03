@@ -3,18 +3,21 @@
 import ResourceContext from "@app/contexts/resourceContext";
 import { GetResourceAuthInfoResponse } from "@server/routers/resource";
 import { GetResourceResponse } from "@server/routers/resource/getResource";
+import { GetSiteResponse } from "@server/routers/site";
 import { useState } from "react";
 
 interface ResourceProviderProps {
     children: React.ReactNode;
     resource: GetResourceResponse;
+    site: GetSiteResponse | null;
     authInfo: GetResourceAuthInfoResponse;
 }
 
 export function ResourceProvider({
     children,
+    site,
     resource: serverResource,
-    authInfo: serverAuthInfo,
+    authInfo: serverAuthInfo
 }: ResourceProviderProps) {
     const [resource, setResource] =
         useState<GetResourceResponse>(serverResource);
@@ -34,7 +37,7 @@ export function ResourceProvider({
 
             return {
                 ...prev,
-                ...updatedResource,
+                ...updatedResource
             };
         });
     };
@@ -53,14 +56,14 @@ export function ResourceProvider({
 
             return {
                 ...prev,
-                ...updatedAuthInfo,
+                ...updatedAuthInfo
             };
         });
     };
 
     return (
         <ResourceContext.Provider
-            value={{ resource, updateResource, authInfo, updateAuthInfo }}
+            value={{ resource, updateResource, site, authInfo, updateAuthInfo }}
         >
             {children}
         </ResourceContext.Provider>

@@ -193,7 +193,7 @@ export default function SupporterStatus() {
                             contribution allows us to commit more time to
                             maintain and add new features to the application for
                             everyone. We will never use this to paywall
-                            features. This is separate from the Professional
+                            features. This is separate from any Commercial
                             Edition.
                         </p>
 

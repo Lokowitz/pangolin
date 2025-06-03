@@ -12,6 +12,7 @@ import { IsSupporterKeyVisibleResponse } from "@server/routers/supporterKey";
 import LicenseStatusProvider from "@app/providers/LicenseStatusProvider";
 import { GetLicenseStatusResponse } from "@server/routers/license";
 import LicenseViolation from "./components/LicenseViolation";
+import { cache } from "react";
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale } from 'next-intl/server';
 
@@ -43,10 +44,12 @@ export default async function RootLayout({
     supporterData.visible = res.data.data.visible;
     supporterData.tier = res.data.data.tier;
 
-    const licenseStatusRes =
-        await priv.get<AxiosResponse<GetLicenseStatusResponse>>(
-            "/license/status"
-        );
+    const licenseStatusRes = await cache(
+        async () =>
+            await priv.get<AxiosResponse<GetLicenseStatusResponse>>(
+                "/license/status"
+            )
+    )();
     const licenseStatus = licenseStatusRes.data.data;
 
     return (

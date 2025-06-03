@@ -271,7 +271,7 @@ PersistentKeepalive = 5`
             - NEWT_ID=${siteDefaults?.newtId}
             - NEWT_SECRET=${siteDefaults?.newtSecret}`;
 
-    const newtConfigDockerRun = `docker run -it fosrl/newt --id ${siteDefaults?.newtId} --secret ${siteDefaults?.newtSecret} --endpoint ${env.app.dashboardUrl}`;
+    const newtConfigDockerRun = `docker run -dit fosrl/newt --id ${siteDefaults?.newtId} --secret ${siteDefaults?.newtSecret} --endpoint ${env.app.dashboardUrl}`;
 
     return loadingPage ? (
         <LoaderPlaceholder height="300px" />

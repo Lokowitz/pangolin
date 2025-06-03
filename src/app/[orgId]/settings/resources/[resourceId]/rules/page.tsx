@@ -65,7 +65,6 @@ import {
     InfoSections,
     InfoSectionTitle
 } from "@app/components/InfoSection";
-import { Separator } from "@app/components/ui/separator";
 import { InfoPopup } from "@app/components/ui/info-popup";
 import {
     isValidCIDR,

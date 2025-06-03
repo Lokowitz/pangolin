@@ -6,7 +6,7 @@ import { createNextServer } from "./nextServer";
 import { createInternalServer } from "./internalServer";
 import { ApiKey, ApiKeyOrg, Session, User, UserOrg } from "./db/schemas";
 import { createIntegrationApiServer } from "./integrationApiServer";
-import license from "./license/license.js";
+import config from "@server/lib/config";
 
 async function startServers() {
     await runSetupFunctions();
@@ -17,7 +17,7 @@ async function startServers() {
     const nextServer = await createNextServer();
 
     let integrationServer;
-    if (await license.isUnlocked()) {
+    if (config.getRawConfig().flags?.enable_integration_api) {
         integrationServer = createIntegrationApiServer();
     }
 

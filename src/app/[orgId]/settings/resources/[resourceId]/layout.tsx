@@ -13,15 +13,7 @@ import { GetOrgResponse } from "@server/routers/org";
 import OrgProvider from "@app/providers/OrgProvider";
 import { cache } from "react";
 import ResourceInfoBox from "./ResourceInfoBox";
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator
-} from "@app/components/ui/breadcrumb";
-import Link from "next/link";
+import { GetSiteResponse } from "@server/routers/site";
 import { getTranslations } from 'next-intl/server';
 
 interface ResourceLayoutProps {
@@ -37,6 +29,7 @@ export default async function ResourceLayout(props: ResourceLayoutProps) {
 
     let authInfo = null;
     let resource = null;
+    let site = null;
     try {
         const res = await internal.get<AxiosResponse<GetResourceResponse>>(
             `/resource/${params.resourceId}`,
@@ -49,6 +42,19 @@ export default async function ResourceLayout(props: ResourceLayoutProps) {
 
     if (!resource) {
         redirect(`/${params.orgId}/settings/resources`);
+    }
+
+    // Fetch site info
+    if (resource.siteId) {
+        try {
+            const res = await internal.get<AxiosResponse<GetSiteResponse>>(
+                `/site/${resource.siteId}`,
+                await authCookieHeader()
+            );
+            site = res.data.data;
+        } catch {
+            redirect(`/${params.orgId}/settings/resources`);
+        }
     }
 
     try {
@@ -112,7 +118,11 @@ export default async function ResourceLayout(props: ResourceLayoutProps) {
             />
 
             <OrgProvider org={org}>
-                <ResourceProvider resource={resource} authInfo={authInfo}>
+                <ResourceProvider
+                    site={site}
+                    resource={resource}
+                    authInfo={authInfo}
+                >
                     <div className="space-y-6">
                         <ResourceInfoBox />
                         <HorizontalTabs items={navItems}>
