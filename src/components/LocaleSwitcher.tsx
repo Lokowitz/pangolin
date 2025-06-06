@@ -35,6 +35,10 @@ export default function LocaleSwitcher() {
         {
             value: 'tr-TR',
             label: 'Türkçe'
+        },
+        {
+            value: 'zh-CN',
+            label: '中国人'
         }
       ]}
     />

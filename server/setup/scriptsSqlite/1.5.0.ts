@@ -65,7 +65,6 @@ export default async function migration() {
         console.log(
             `Unable to migrate config file. Error: ${e}`
         );
-        throw e;
     }
 
     console.log(`${version} migration complete`);

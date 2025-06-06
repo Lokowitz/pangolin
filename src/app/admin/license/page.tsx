@@ -287,15 +287,15 @@ export default function LicensePage() {
                                             <div className="space-y-1 leading-none">
                                                 <FormLabel>
                                                     {t('licenseAgreement')}
-                                                    <br />
-                                                    <Link
-                                                        href="https://fossorial.io/license.html"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-primary hover:underline"
-                                                    >
-                                                        {t('fossorialLicense')}
-                                                    </Link>
+                                                    {/* <br /> */}
+                                                    {/* <Link */}
+                                                    {/*     href="https://fossorial.io/license.html" */}
+                                                    {/*     target="_blank" */}
+                                                    {/*     rel="noopener noreferrer" */}
+                                                    {/*     className="text-primary hover:underline" */}
+                                                    {/* > */}
+                                                    {/* {t('fossorialLicense')} */}
+                                                    {/* </Link> */}
                                                 </FormLabel>
                                                 <FormMessage />
                                             </div>
@@ -484,32 +484,32 @@ export default function LicensePage() {
                                 </div>
                             )}
                         </div>
-                        <SettingsSectionFooter>
-                            {!licenseStatus?.isHostLicensed ? (
-                                <>
-                                    <Button
-                                        onClick={() => {
-                                            setPurchaseMode("license");
-                                            setIsPurchaseModalOpen(true);
-                                        }}
-                                    >
-                                        {t('licensePurchase')}
-                                    </Button>
-                                </>
-                            ) : (
-                                <>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            setPurchaseMode("additional-sites");
-                                            setIsPurchaseModalOpen(true);
-                                        }}
-                                    >
-                                        {t('licensePurchaseSites')}
-                                    </Button>
-                                </>
-                            )}
-                        </SettingsSectionFooter>
+                        {/* <SettingsSectionFooter> */}
+                        {/*     {!licenseStatus?.isHostLicensed ? ( */}
+                        {/*         <> */}
+                        {/*             <Button */}
+                        {/*                 onClick={() => { */}
+                        {/*                     setPurchaseMode("license"); */}
+                        {/*                     setIsPurchaseModalOpen(true); */}
+                        {/*                 }} */}
+                        {/*             > */}
+                        {/*                 {t('licensePurchase')} */}
+                        {/*             </Button> */}
+                        {/*         </> */}
+                        {/*     ) : ( */}
+                        {/*         <> */}
+                        {/*             <Button */}
+                        {/*                 variant="outline" */}
+                        {/*                 onClick={() => { */}
+                        {/*                     setPurchaseMode("additional-sites"); */}
+                        {/*                     setIsPurchaseModalOpen(true); */}
+                        {/*                 }} */}
+                        {/*             > */}
+                        {/*                 {t('licensePurchaseSites')} */}
+                        {/*             </Button> */}
+                        {/*         </> */}
+                        {/*     )} */}
+                        {/* </SettingsSectionFooter> */}
                     </SettingsSection>
                 </SettingsSectionGrid>
                 <LicenseKeysDataTable

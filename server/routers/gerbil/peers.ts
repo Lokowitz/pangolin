@@ -24,7 +24,7 @@ export async function addPeer(exitNodeId: number, peer: {
             }
         });
 
-        logger.info('Peer added successfully:', response.data.status);
+        logger.info('Peer added successfully:', { peer: response.data.status });
         return response.data;
     } catch (error) {
         if (axios.isAxiosError(error)) {

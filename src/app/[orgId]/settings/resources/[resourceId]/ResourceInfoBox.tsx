@@ -33,7 +33,7 @@ export default function ResourceInfoBox({}: ResourceInfoBoxType) {
                 {t('resourceInfo')}
             </AlertTitle>
             <AlertDescription className="mt-4">
-                <InfoSections cols={isEnabled ? 5 : 4}>
+                <InfoSections cols={4}>
                     {resource.http ? (
                         <>
                             <InfoSection>

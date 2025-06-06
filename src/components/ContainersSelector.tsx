@@ -9,23 +9,15 @@ import {
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger
-} from "@/components/ui/dialog";
-import {
-    Drawer,
-    DrawerClose,
-    DrawerContent,
-    DrawerDescription,
-    DrawerFooter,
-    DrawerHeader,
-    DrawerTitle,
-    DrawerTrigger
-} from "@/components/ui/drawer";
+    Credenza,
+    CredenzaBody,
+    CredenzaClose,
+    CredenzaContent,
+    CredenzaDescription,
+    CredenzaFooter,
+    CredenzaHeader,
+    CredenzaTitle
+} from "@/components/Credenza";
 import {
     Table,
     TableBody,
@@ -53,7 +45,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, RefreshCw, Filter, Columns } from "lucide-react";
 import { GetSiteResponse, Container } from "@server/routers/site";
 import { useDockerSocket } from "@app/hooks/useDockerSocket";
-import { useMediaQuery } from "@app/hooks/useMediaQuery";
+import { FaDocker } from "react-icons/fa";
 
 // Type definitions based on the JSON structure
 
@@ -67,13 +59,11 @@ export const ContainersSelector: FC<ContainerSelectorProps> = ({
     onContainerSelect
 }) => {
     const [open, setOpen] = useState(false);
-    const isDesktop = useMediaQuery("(min-width: 768px)");
-    
-    const { isAvailable, containers, fetchContainers } = useDockerSocket(
-       site 
-    );
+
+    const { isAvailable, containers, fetchContainers } = useDockerSocket(site);
 
     useEffect(() => {
+        console.log("DockerSocket isAvailable:", isAvailable);
         if (isAvailable) {
             fetchContainers();
         }
@@ -90,76 +80,41 @@ export const ContainersSelector: FC<ContainerSelectorProps> = ({
         setOpen(false);
     };
 
-    if (isDesktop) {
-        return (
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                    <Button
-                        type="button"
-                        variant="squareOutline"
-                        size="icon"
-                        className="absolute top-[35%] right-0"
-                    >
-                        <span className="scale-125">🐋</span>
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-[75vw] max-h-[75vh] flex flex-col">
-                    <DialogHeader>
-                        <DialogTitle>
-                            Containers in <b>{site.name}</b>
-                        </DialogTitle>
-                        <DialogDescription>
-                            Select any container (w/ port) to use as target for
-                            your resource
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex-1 overflow-hidden min-h-0">
-                        <DockerContainersTable
-                            containers={containers}
-                            onContainerSelect={handleContainerSelect}
-                            onRefresh={() => fetchContainers()}
-                        />
-                    </div>
-                </DialogContent>
-            </Dialog>
-        );
-    }
-
     return (
-        <Drawer open={open} onOpenChange={setOpen}>
-            <DrawerTrigger asChild>
-                <Button
-                    type="button"
-                    variant="squareOutline"
-                    size="icon"
-                    className="absolute top-[35%] right-0"
-                >
-                    <span className="scale-125">🐋</span>
-                </Button>
-            </DrawerTrigger>
-            <DrawerContent>
-                <DrawerHeader className="text-left">
-                    <DrawerTitle>
-                        Containers in <b>{site.name}</b>
-                    </DrawerTitle>
-                    <DrawerDescription>
-                        Select any container to use as target for your resource
-                    </DrawerDescription>
-                </DrawerHeader>
-                <div className="px-4">
-                    <DockerContainersTable
-                        containers={containers}
-                        onContainerSelect={handleContainerSelect}
-                        onRefresh={fetchContainers}
-                    />
-                </div>
-                <DrawerFooter className="pt-2">
-                    <DrawerClose asChild>
-                        <Button variant="outline">Cancel</Button>
-                    </DrawerClose>
-                </DrawerFooter>
-            </DrawerContent>
-        </Drawer>
+        <>
+            <a
+                type="button"
+                className="text-sm text-primary hover:underline cursor-pointer"
+                onClick={() => setOpen(true)}
+            >
+                View Docker Containers
+            </a>
+            <Credenza open={open} onOpenChange={setOpen}>
+                <CredenzaContent className="max-w-[75vw] max-h-[75vh] flex flex-col">
+                    <CredenzaHeader>
+                        <CredenzaTitle>Containers in {site.name}</CredenzaTitle>
+                        <CredenzaDescription>
+                            Select any container to use as a hostname for this
+                            target. Click a port to use select a port.
+                        </CredenzaDescription>
+                    </CredenzaHeader>
+                    <CredenzaBody>
+                        <div className="flex-1 overflow-hidden min-h-0">
+                            <DockerContainersTable
+                                containers={containers}
+                                onContainerSelect={handleContainerSelect}
+                                onRefresh={() => fetchContainers()}
+                            />
+                        </div>
+                    </CredenzaBody>
+                    <CredenzaFooter>
+                        <CredenzaClose asChild>
+                            <Button variant="outline">Close</Button>
+                        </CredenzaClose>
+                    </CredenzaFooter>
+                </CredenzaContent>
+            </Credenza>
+        </>
     );
 };
 
@@ -446,7 +401,7 @@ const DockerContainersTable: FC<{
 
     if (initialFilters.length === 0) {
         return (
-            <div className="border rounded-md max-h-[500px] overflow-hidden flex flex-col">
+            <div className="rounded-md max-h-[500px] overflow-hidden flex flex-col">
                 <div className="flex-1 flex items-center justify-center py-8">
                     <div className="text-center text-muted-foreground space-y-3">
                         {(hideContainersWithoutPorts ||
@@ -497,8 +452,8 @@ const DockerContainersTable: FC<{
     }
 
     return (
-        <div className="border rounded-md max-h-[500px] overflow-hidden flex flex-col">
-            <div className="p-3 border-b bg-background space-y-3">
+        <div className="rounded-md max-h-[500px] overflow-hidden flex flex-col">
+            <div className="p-1 space-y-3">
                 <div className="flex items-center gap-2">
                     <div className="relative flex-1">
                         <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -639,14 +594,11 @@ const DockerContainersTable: FC<{
             </div>
             <div className="overflow-auto relative flex-1">
                 <Table sticky>
-                    <TableHeader sticky className="bg-background border-b">
+                    <TableHeader sticky className="border-b">
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
-                                    <TableHead
-                                        key={header.id}
-                                        className="bg-background"
-                                    >
+                                    <TableHead key={header.id}>
                                         {header.isPlaceholder
                                             ? null
                                             : flexRender(

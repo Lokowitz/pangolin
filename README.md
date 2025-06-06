@@ -1,15 +1,13 @@
 <div align="center">
-    <h2 align="center"><a href="https://fossorial.io"><img alt="pangolin" src="public/logo//word_mark.png" width="400" /></a></h2>
-
-[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square)](https://docs.fossorial.io/)
-[![Docker](https://img.shields.io/docker/pulls/fosrl/pangolin?style=flat-square)](https://hub.docker.com/r/fosrl/pangolin)
-![Stars](https://img.shields.io/github/stars/fosrl/pangolin?style=flat-square)
-[![Discord](https://img.shields.io/discord/1325658630518865980?logo=discord&style=flat-square)](https://discord.gg/HCJR8Xhme4)
-[![Youtube](https://img.shields.io/badge/YouTube-red?logo=youtube&logoColor=white&style=flat-square)](https://www.youtube.com/@fossorial-app)
-
+    <h2>
+      <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="public/logo/word_mark_white.png">
+          <img alt="Pangolin Logo" src="public/logo/word_mark_black.png" width="250">
+        </picture>
+    </h2>
 </div>
 
-<h3 align="center">Tunneled Reverse Proxy Server with Access Control</h3>
+<h4 align="center">Tunneled Reverse Proxy Server with Access Control</h4>
 <div align="center">
 
 _Your own self-hosted zero trust tunnel._
@@ -30,6 +28,12 @@ _Your own self-hosted zero trust tunnel._
         Contact Us
       </a>
   </h5>
+
+[![Docker](https://img.shields.io/docker/pulls/fosrl/pangolin?style=flat-square)](https://hub.docker.com/r/fosrl/pangolin)
+![Stars](https://img.shields.io/github/stars/fosrl/pangolin?style=flat-square)
+[![Discord](https://img.shields.io/discord/1325658630518865980?logo=discord&style=flat-square)](https://discord.gg/HCJR8Xhme4)
+[![Youtube](https://img.shields.io/badge/YouTube-red?logo=youtube&logoColor=white&style=flat-square)](https://www.youtube.com/@fossorial-app)
+
 </div>
 
 Pangolin is a self-hosted tunneled reverse proxy server with identity and access control, designed to securely expose private resources on distributed networks. Acting as a central hub, it connects isolated networks — even those behind restrictive firewalls — through encrypted tunnels, enabling easy access to remote services without opening ports.

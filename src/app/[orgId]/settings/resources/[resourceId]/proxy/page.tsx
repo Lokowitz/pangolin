@@ -60,7 +60,8 @@ import {
     SettingsSectionDescription,
     SettingsSectionBody,
     SettingsSectionFooter,
-    SettingsSectionForm
+    SettingsSectionForm,
+    SettingsSectionGrid
 } from "@app/components/Settings";
 import { SwitchInput } from "@app/components/SwitchInput";
 import { useRouter } from "next/navigation";
@@ -73,6 +74,7 @@ import {
     CollapsibleTrigger
 } from "@app/components/ui/collapsible";
 import { ContainersSelector } from "@app/components/ContainersSelector";
+import { FaDocker } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 
 const addTargetSchema = z.object({
@@ -770,8 +772,7 @@ export default function ReverseProxyTargets(props: {
                                             <FormControl>
                                                 <Input id="ip" {...field} />
                                             </FormControl>
-                                            <FormMessage />
-                                            {site && site.type == 'newt' && (
+                                            {site && site.type == "newt" && (
                                                 <ContainersSelector
                                                     site={site}
                                                     onContainerSelect={(
@@ -791,6 +792,7 @@ export default function ReverseProxyTargets(props: {
                                                     }}
                                                 />
                                             )}
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
@@ -885,57 +887,175 @@ export default function ReverseProxyTargets(props: {
             </SettingsSection>
 
             {resource.http && (
-                <SettingsSection>
-                    <SettingsSectionHeader>
-                        <SettingsSectionTitle>
-                            {t('proxyAdditional')}
-                        </SettingsSectionTitle>
-                        <SettingsSectionDescription>
-                            {t('proxyAdditionalDescription')}
-                        </SettingsSectionDescription>
-                    </SettingsSectionHeader>
-                    <SettingsSectionBody>
-                        <SettingsSectionForm>
-                            <Form {...proxySettingsForm}>
-                                <form
-                                    onSubmit={proxySettingsForm.handleSubmit(
-                                        saveProxySettings
-                                    )}
-                                    className="space-y-4"
-                                    id="proxy-settings-form"
-                                >
-                                    <FormField
-                                        control={proxySettingsForm.control}
-                                        name="setHostHeader"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    {t('proxyCustomHeader')}
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Input {...field} />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    {t('proxyCustomHeaderDescription')}
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
+                <SettingsSectionGrid cols={2}>
+                    <SettingsSection>
+                        <SettingsSectionHeader>
+                            <SettingsSectionTitle>
+                                Secure Connection Configuration
+                            </SettingsSectionTitle>
+                            <SettingsSectionDescription>
+                                Configure SSL/TLS settings for your resource
+                            </SettingsSectionDescription>
+                        </SettingsSectionHeader>
+                        <SettingsSectionBody>
+                            <SettingsSectionForm>
+                                <Form {...tlsSettingsForm}>
+                                    <form
+                                        onSubmit={tlsSettingsForm.handleSubmit(
+                                            saveTlsSettings
                                         )}
-                                    />
-                                </form>
-                            </Form>
-                        </SettingsSectionForm>
-                    </SettingsSectionBody>
-                    <SettingsSectionFooter>
-                        <Button
-                            type="submit"
-                            loading={proxySettingsLoading}
-                            form="proxy-settings-form"
-                        >
-                            {t('proxyAdditionalSubmit')}
-                        </Button>
-                    </SettingsSectionFooter>
-                </SettingsSection>
+                                        className="space-y-4"
+                                        id="tls-settings-form"
+                                    >
+                                        <FormField
+                                            control={tlsSettingsForm.control}
+                                            name="ssl"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <SwitchInput
+                                                            id="ssl-toggle"
+                                                            label="Enable SSL (https)"
+                                                            defaultChecked={
+                                                                field.value
+                                                            }
+                                                            onCheckedChange={(
+                                                                val
+                                                            ) => {
+                                                                field.onChange(
+                                                                    val
+                                                                );
+                                                            }}
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <Collapsible
+                                            open={isAdvancedOpen}
+                                            onOpenChange={setIsAdvancedOpen}
+                                            className="space-y-2"
+                                        >
+                                            <div className="flex items-center justify-between space-x-4">
+                                                <CollapsibleTrigger asChild>
+                                                    <Button
+                                                        variant="text"
+                                                        size="sm"
+                                                        className="p-0 flex items-center justify-start gap-2 w-full"
+                                                    >
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Advanced TLS
+                                                            Settings
+                                                        </p>
+                                                        <div>
+                                                            <ChevronsUpDown className="h-4 w-4" />
+                                                            <span className="sr-only">
+                                                                Toggle
+                                                            </span>
+                                                        </div>
+                                                    </Button>
+                                                </CollapsibleTrigger>
+                                            </div>
+                                            <CollapsibleContent className="space-y-2">
+                                                <FormField
+                                                    control={
+                                                        tlsSettingsForm.control
+                                                    }
+                                                    name="tlsServerName"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>
+                                                                TLS Server Name
+                                                                (SNI)
+                                                            </FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    {...field}
+                                                                />
+                                                            </FormControl>
+                                                            <FormDescription>
+                                                                The TLS Server
+                                                                Name to use for
+                                                                SNI. Leave empty
+                                                                to use the
+                                                                default.
+                                                            </FormDescription>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </CollapsibleContent>
+                                        </Collapsible>
+                                    </form>
+                                </Form>
+                            </SettingsSectionForm>
+                        </SettingsSectionBody>
+                        <SettingsSectionFooter>
+                            <Button
+                                type="submit"
+                                loading={httpsTlsLoading}
+                                form="tls-settings-form"
+                            >
+                                Save Settings
+                            </Button>
+                        </SettingsSectionFooter>
+                    </SettingsSection>
+                    <SettingsSection>
+                        <SettingsSectionHeader>
+                            <SettingsSectionTitle>
+                                Additional Proxy Settings
+                            </SettingsSectionTitle>
+                            <SettingsSectionDescription>
+                                Configure how your resource handles proxy
+                                settings
+                            </SettingsSectionDescription>
+                        </SettingsSectionHeader>
+                        <SettingsSectionBody>
+                            <SettingsSectionForm>
+                                <Form {...proxySettingsForm}>
+                                    <form
+                                        onSubmit={proxySettingsForm.handleSubmit(
+                                            saveProxySettings
+                                        )}
+                                        className="space-y-4"
+                                        id="proxy-settings-form"
+                                    >
+                                        <FormField
+                                            control={proxySettingsForm.control}
+                                            name="setHostHeader"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        Custom Host Header
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input {...field} />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        The host header to set
+                                                        when proxying requests.
+                                                        Leave empty to use the
+                                                        default.
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </form>
+                                </Form>
+                            </SettingsSectionForm>
+                        </SettingsSectionBody>
+                        <SettingsSectionFooter>
+                            <Button
+                                type="submit"
+                                loading={proxySettingsLoading}
+                                form="proxy-settings-form"
+                            >
+                                Save Settings
+                            </Button>
+                        </SettingsSectionFooter>
+                    </SettingsSection>
+                </SettingsSectionGrid>
             )}
         </SettingsContainer>
     );
