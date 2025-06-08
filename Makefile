@@ -21,4 +21,4 @@ test:
 	docker run -it -p 3000:3000 -p 3001:3001 -p 3002:3002 -v ./config:/app/config fosrl/pangolin:latest
 
 clean:
-	docker rmi pangolin
+	docker rmi fosrl/pangolin
