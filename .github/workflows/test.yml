@@ -11,7 +11,7 @@ jobs:
         with:
           node-version: '20'
       - run: cp config/config.example.yml config/config.yml
-      - run: npm i
+      - run: npm ci
       - run: npm run db:sqlite:generate
       - run: npm run db:sqlite:push
       - run: npm run dev
