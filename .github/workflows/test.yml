@@ -15,3 +15,16 @@ jobs:
       - run: npm run db:sqlite:generate
       - run: npm run db:sqlite:push
       - run: npm run dev
+
+      - name: Auf App-Verfügbarkeit warten
+        run: |
+          for i in {1..30}; do
+            if curl --silent --fail http://localhost:3000; then
+              echo "Anwendung läuft"
+              exit 0
+            fi
+            echo "Warte auf Anwendung... Versuch $i"
+            sleep 5
+          done
+          echo "Anwendung konnte nicht gestartet werden"
+          exit 1
