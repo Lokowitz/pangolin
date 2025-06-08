@@ -10,6 +10,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '20'
+      - run: cp config/config.example.yml config.config.yml
       - run: npm ci
-      - run: npm db:sqlite:generate
-      - run: npm db:sqlite:push
+      - run: npm run db:sqlite:generate
+      - run: npm run db:sqlite:push
+      - run: npm run dev
