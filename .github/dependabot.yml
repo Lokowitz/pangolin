@@ -33,6 +33,3 @@ updates:
       minor-updates:
         update-types:
           - "minor"
-      major-updates:
-        update-types:
-          - "major"
