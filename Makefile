@@ -1,6 +1,8 @@
+.PHONY: build build-release build-arm build-x86 test clean
+
 build-release:
 	@if [ -z "$(tag)" ]; then \
-		echo "Error: tag is required. Usage: make build-all tag=<tag>"; \
+		echo "Error: tag is required. Usage: make build-release tag=<tag>"; \
 		exit 1; \
 	fi
 	docker buildx build --platform linux/arm64,linux/amd64 -t fosrl/pangolin:latest -f Dockerfile --push .
