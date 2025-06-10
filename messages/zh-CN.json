@@ -1075,5 +1075,19 @@
     "authErrorNoUpdate": "没有要更新的身份验证信息",
     "orgErrorNoUpdate": "没有要更新的组织",
     "orgErrorNoProvided": "未提供组织",
-    "apiKeysErrorNoUpdate": "没有要更新的 API 密钥"
+    "apiKeysErrorNoUpdate": "没有要更新的 API 密钥",
+    "sidebarOverview": "概览",
+    "sidebarHome": "首页",
+    "sidebarSites": "站点",
+    "sidebarResources": "资源",
+    "sidebarAccessControl": "访问控制",
+    "sidebarUsers": "用户",
+    "sidebarInvitations": "邀请",
+    "sidebarRoles": "角色",
+    "sidebarShareableLinks": "分享链接",
+    "sidebarApiKeys": "API密钥",
+    "sidebarSettings": "设置",
+    "sidebarAllUsers": "所有用户",
+    "sidebarIdentityProviders": "身份提供商",
+    "sidebarLicense": "证书"
 }
