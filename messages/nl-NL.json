@@ -1075,5 +1075,19 @@
     "authErrorNoUpdate": "Geen authenticatie informatie om bij te werken",
     "orgErrorNoUpdate": "Geen org om bij te werken",
     "orgErrorNoProvided": "Geen org opgegeven",
-    "apiKeysErrorNoUpdate": "Geen API-sleutel om bij te werken"
+    "apiKeysErrorNoUpdate": "Geen API-sleutel om bij te werken",
+    "sidebarOverview": "Overview",
+    "sidebarHome": "Home",
+    "sidebarSites": "Sites",
+    "sidebarResources": "Resources",
+    "sidebarAccessControl": "Access Control",
+    "sidebarUsers": "Users",
+    "sidebarInvitations": "Invitations",
+    "sidebarRoles": "Roles",
+    "sidebarShareableLinks": "Shareable Links",
+    "sidebarApiKeys": "API Keys",
+    "sidebarSettings": "Settings",
+    "sidebarAllUsers": "All Users",
+    "sidebarIdentityProviders": "Identity Providers",
+    "sidebarLicense": "License"
 }
