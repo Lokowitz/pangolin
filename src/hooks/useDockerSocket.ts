@@ -21,7 +21,8 @@ export function useDockerSocket(site: Site) {
 
     const api = createApiClient(useEnvContext());
 
-    const { dockerSocketEnabled: isEnabled = true } = site || {};
+    const { dockerSocketEnabled: rawIsEnabled = true, type: siteType } = site || {};
+    const isEnabled = rawIsEnabled && siteType === "newt";
     const { isAvailable = false, socketPath } = dockerSocket || {};
 
     const checkDockerSocket = useCallback(async () => {

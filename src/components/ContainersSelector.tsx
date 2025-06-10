@@ -95,7 +95,7 @@ export const ContainersSelector: FC<ContainerSelectorProps> = ({
                         <CredenzaTitle>Containers in {site.name}</CredenzaTitle>
                         <CredenzaDescription>
                             Select any container to use as a hostname for this
-                            target. Click a port to use select a port.
+                            target. Click a port to use a port.
                         </CredenzaDescription>
                     </CredenzaHeader>
                     <CredenzaBody>
@@ -346,16 +346,19 @@ const DockerContainersTable: FC<{
         {
             id: "actions",
             header: "Actions",
-            cell: ({ row }) => (
-                <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => onContainerSelect(row.original)}
-                    disabled={row.original.state !== "running"}
-                >
-                    Select
-                </Button>
-            )
+            cell: ({ row }) => {
+                const ports = getExposedPorts(row.original);
+                return (
+                    <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => onContainerSelect(row.original, ports[0])}
+                        disabled={row.original.state !== "running"}
+                    >
+                        Select
+                    </Button>
+                );
+            }
         }
     ];
 
