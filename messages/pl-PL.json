@@ -1075,5 +1075,19 @@
     "authErrorNoUpdate": "Brak danych uwierzytelniania do aktualizacji",
     "orgErrorNoUpdate": "Brak organizacji do aktualizacji",
     "orgErrorNoProvided": "Nie podano organizacji",
-    "apiKeysErrorNoUpdate": "Brak klucza API do aktualizacji"
+    "apiKeysErrorNoUpdate": "Brak klucza API do aktualizacji",
+    "sidebarOverview": "Overview",
+    "sidebarHome": "Home",
+    "sidebarSites": "Sites",
+    "sidebarResources": "Resources",
+    "sidebarAccessControl": "Access Control",
+    "sidebarUsers": "Users",
+    "sidebarInvitations": "Invitations",
+    "sidebarRoles": "Roles",
+    "sidebarShareableLinks": "Shareable Links",
+    "sidebarApiKeys": "API Keys",
+    "sidebarSettings": "Settings",
+    "sidebarAllUsers": "All Users",
+    "sidebarIdentityProviders": "Identity Providers",
+    "sidebarLicense": "License"
 }
