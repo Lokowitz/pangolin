@@ -40,5 +40,3 @@ updates:
       interval: "weekly"
     groups:
       github-actions:
-        update-types:
-          - "*"
