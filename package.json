@@ -110,7 +110,7 @@
     "devDependencies": {
         "@dotenvx/dotenvx": "1.45.1",
         "@esbuild-plugins/tsconfig-paths": "0.1.2",
-        "@tailwindcss/postcss": "^4.1.10",
+        "@tailwindcss/postcss": "^4.1.11",
         "@types/better-sqlite3": "7.6.12",
         "@types/cookie-parser": "1.4.9",
         "@types/cors": "2.8.19",
@@ -127,7 +127,7 @@
         "@types/swagger-ui-express": "^4.1.8",
         "@types/ws": "8.18.1",
         "@types/yargs": "17.0.33",
-        "drizzle-kit": "0.31.2",
+        "drizzle-kit": "0.31.4",
         "esbuild": "0.25.5",
         "esbuild-node-externals": "1.18.0",
         "postcss": "^8",
