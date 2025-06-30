@@ -6,6 +6,11 @@ import yaml from "js-yaml";
 
 const version = "1.6.0";
 
+/**
+ * Performs migration tasks for version 1.6.0, including updating user emails and usernames to lowercase in the database and modifying the configuration file to set `server.trust_proxy` to 1 if applicable.
+ *
+ * Updates all entries in the 'user' table to ensure email and username fields are lowercase. Locates and updates the configuration YAML file to explicitly set the `server.trust_proxy` property to 1 if it is present and truthy. Logs progress and errors throughout the process.
+ */
 export default async function migration() {
     console.log(`Running setup script ${version}...`);
 

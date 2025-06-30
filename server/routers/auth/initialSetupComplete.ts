@@ -10,6 +10,11 @@ export type InitialSetupCompleteResponse = {
     complete: boolean;
 };
 
+/**
+ * Express middleware that checks if the initial server setup is complete by verifying the existence of a server admin user.
+ *
+ * Responds with a JSON object containing a `complete` boolean indicating whether a user with server admin privileges exists.
+ */
 export async function initialSetupComplete(
     req: Request,
     res: Response,

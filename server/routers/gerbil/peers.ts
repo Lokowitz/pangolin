@@ -4,6 +4,15 @@ import { db } from "@server/db";
 import { exitNodes } from '@server/db';
 import { eq } from 'drizzle-orm';
 
+/**
+ * Adds a peer to the specified exit node by sending a request to the exit node's HTTP API.
+ *
+ * Throws an error if the exit node does not exist, is not reachable, or if communication with the Gerbil API fails.
+ *
+ * @param exitNodeId - The unique identifier of the exit node
+ * @param peer - The peer object containing a public key and allowed IPs to be added
+ * @returns The response data from the exit node's API after adding the peer
+ */
 export async function addPeer(exitNodeId: number, peer: {
     publicKey: string;
     allowedIps: string[];
@@ -34,6 +43,15 @@ export async function addPeer(exitNodeId: number, peer: {
     }
 }
 
+/**
+ * Removes a peer from the specified exit node by sending a DELETE request to the exit node's API.
+ *
+ * Throws an error if the exit node does not exist, is unreachable, or if communication with the Gerbil API fails.
+ *
+ * @param exitNodeId - The unique identifier of the exit node
+ * @param publicKey - The public key of the peer to be removed
+ * @returns The response data from the exit node's API
+ */
 export async function deletePeer(exitNodeId: number, publicKey: string) {
     const [exitNode] = await db.select().from(exitNodes).where(eq(exitNodes.exitNodeId, exitNodeId)).limit(1);
     if (!exitNode) {

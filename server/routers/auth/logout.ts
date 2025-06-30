@@ -10,6 +10,13 @@ import {
 import { verifySession } from "@server/auth/sessions/verifySession";
 import config from "@server/lib/config";
 
+/**
+ * Handles user logout by invalidating the current session and clearing the session cookie.
+ *
+ * If the user is not logged in or the session is invalid, responds with a 400 Bad Request error.
+ * On successful logout, clears the session token cookie and returns a success response.
+ * If an unexpected error occurs, passes a 500 Internal Server Error to the next middleware.
+ */
 export async function logout(
     req: Request,
     res: Response,

@@ -6,6 +6,11 @@ import path from "path";
 
 const version = "1.6.0";
 
+/**
+ * Performs migration tasks for version 1.6.0, updating the database and configuration file.
+ *
+ * Converts all user emails and usernames in the SQLite database to lowercase, and updates the configuration YAML file to set `server.trust_proxy` to 1 if it is present and truthy. Logs progress and errors throughout the process.
+ */
 export default async function migration() {
     console.log(`Running setup script ${version}...`);
 

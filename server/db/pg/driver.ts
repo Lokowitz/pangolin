@@ -2,6 +2,13 @@ import { drizzle as DrizzlePostgres } from "drizzle-orm/node-postgres";
 import { readConfigFile } from "@server/lib/readConfigFile";
 import { withReplicas } from "drizzle-orm/pg-core";
 
+/**
+ * Initializes and returns a Drizzle ORM database instance configured with primary and replica PostgreSQL connections.
+ *
+ * Reads configuration from a file, validates the presence of required PostgreSQL settings, and creates a primary database connection. If replica connections are specified, they are added; otherwise, the primary connection is used as the sole replica. Throws an error if required configuration is missing.
+ * 
+ * @returns A database instance with primary and replica connections configured.
+ */
 function createDb() {
     const config = readConfigFile();
 

@@ -11,6 +11,14 @@ interface DataTableProps<TData, TValue> {
     data: TData[];
 }
 
+/**
+ * Renders a data table for invitations with localized title and search placeholder.
+ *
+ * Displays the provided columns and data using the `DataTable` component, with internationalized strings for the table title and search input. The search functionality is configured to filter by the "email" column.
+ *
+ * @param columns - The column definitions for the table
+ * @param data - The data to display in the table
+ */
 export function InvitationsDataTable<TData, TValue>({
     columns,
     data

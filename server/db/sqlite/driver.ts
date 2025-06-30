@@ -11,6 +11,11 @@ export const exists = await checkFileExists(location);
 
 bootstrapVolume();
 
+/**
+ * Creates and returns a Drizzle ORM SQLite database instance using the configured schema.
+ *
+ * @returns A Drizzle ORM database instance connected to the SQLite file at the specified location
+ */
 function createDb() {
     const sqlite = new Database(location);
     return DrizzleSqlite(sqlite, { schema });

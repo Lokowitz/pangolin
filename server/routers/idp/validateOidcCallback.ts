@@ -50,6 +50,13 @@ export type ValidateOidcUrlCallbackResponse = {
     redirectUrl: string;
 };
 
+/**
+ * Handles the OIDC callback by validating the request, verifying state, exchanging the authorization code for tokens, extracting user information, and provisioning or updating the user and their organization roles as needed.
+ *
+ * If the associated Identity Provider (IdP) is configured for auto-provisioning, the user is created or updated and their organization memberships and roles are synchronized based on ID token claims and IdP-org mappings. Otherwise, only pre-provisioned users are allowed to log in.
+ *
+ * On successful authentication, creates a session, sets a session cookie, and responds with the post-authentication redirect URL. Returns appropriate HTTP errors for validation failures, state mismatches, missing user identifiers, or other issues.
+ */
 export async function validateOidcCallback(
     req: Request,
     res: Response,

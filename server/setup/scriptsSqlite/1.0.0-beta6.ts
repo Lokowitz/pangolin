@@ -2,6 +2,11 @@ import { configFilePath1, configFilePath2 } from "@server/lib/consts";
 import fs from "fs";
 import yaml from "js-yaml";
 
+/**
+ * Updates the server configuration in an existing YAML config file by adding a CORS section.
+ *
+ * Searches for a configuration file (`config.yml` or `config.yaml`), validates its structure, and adds a `cors` property to the `server` section with predefined origins, methods, headers, and credentials. If no config file is found or the structure is invalid, an error is thrown. Logs progress and errors to the console.
+ */
 export default async function migration() {
     console.log("Running setup script 1.0.0-beta.6...");
 

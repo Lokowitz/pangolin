@@ -109,6 +109,11 @@ export const setAdminCredentials: CommandModule<{}, SetAdminCredentialsArgs> = {
     }
 };
 
+/**
+ * Invalidates all active sessions for the specified user by deleting their session records and associated resource sessions.
+ *
+ * @param userId - The ID of the user whose sessions will be invalidated
+ */
 export async function invalidateAllSessions(userId: string): Promise<void> {
     try {
         await db.transaction(async (trx) => {
@@ -135,6 +140,12 @@ const random: RandomReader = {
     }
 };
 
+/**
+ * Generates a random alphanumeric string of the specified length using lowercase letters and digits.
+ *
+ * @param length - The desired length of the generated string
+ * @returns A random string composed of lowercase letters and digits
+ */
 export function generateId(length: number): string {
     const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
     return generateRandomString(random, alphabet, length);

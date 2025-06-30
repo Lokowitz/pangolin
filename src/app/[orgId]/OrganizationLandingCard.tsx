@@ -34,6 +34,14 @@ type OrganizationLandingCardProps = {
     };
 };
 
+/**
+ * Displays an overview card for an organization, including statistics, user role, and a settings link for admins.
+ *
+ * Renders the organization's name, key statistics (sites, resources, users) with icons, the current user's access role, and a button to organization settings if the user is an admin. All labels are localized.
+ *
+ * @param props - Contains the organization's overview data, including statistics, user role, admin/owner status, and organization ID.
+ * @returns A React component rendering the organization's overview card.
+ */
 export default function OrganizationLandingCard(
     props: OrganizationLandingCardProps
 ) {

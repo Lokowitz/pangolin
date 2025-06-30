@@ -17,6 +17,13 @@ import helmet from "helmet";
 const dev = config.isDev;
 const externalPort = config.getRawConfig().server.external_port;
 
+/**
+ * Initializes and starts an Express-based API server with middleware, routing, and WebSocket support.
+ *
+ * The server is configured based on environment and application settings, including CORS, security middleware, rate limiting, and API route mounting. WebSocket upgrade handling is also integrated. Returns the created HTTP server instance.
+ *
+ * @returns The HTTP server instance running the configured API and WebSocket endpoints.
+ */
 export function createApiServer() {
     const apiServer = express();
 

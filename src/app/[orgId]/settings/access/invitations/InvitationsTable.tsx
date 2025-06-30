@@ -31,6 +31,11 @@ type InvitationsTableProps = {
     invitations: InvitationRow[];
 };
 
+/**
+ * Displays a table of invitation records with options to regenerate or remove invitations.
+ *
+ * Renders invitation data with interactive controls for managing invitations, including modals for confirmation and regeneration, and provides user feedback through toasts.
+ */
 export default function InvitationsTable({
     invitations: i
 }: InvitationsTableProps) {

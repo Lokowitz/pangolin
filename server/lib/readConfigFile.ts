@@ -210,6 +210,13 @@ export const configSchema = z.object({
         .optional()
 });
 
+/**
+ * Loads and returns the server configuration from a YAML file.
+ *
+ * Attempts to read the configuration from the primary file path; if not found, tries a secondary path. Throws an error if neither file exists or if loading fails.
+ *
+ * @returns The parsed configuration object from the YAML file.
+ */
 export function readConfigFile() {
     const loadConfig = (configPath: string) => {
         try {

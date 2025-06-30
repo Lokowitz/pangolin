@@ -51,6 +51,7 @@ type Config struct {
 	Secret                string
 }
 
+// main orchestrates the interactive installation and setup process for the system, handling Docker installation, configuration collection, container management, and optional CrowdSec integration.
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -169,6 +170,7 @@ func main() {
 	fmt.Printf("\nTo complete the initial setup, please visit:\nhttps://%s/auth/initial-setup\n", config.DashboardDomain)
 }
 
+// readString prompts the user for input and returns the entered string or a default value if input is empty.
 func readString(reader *bufio.Reader, prompt string, defaultValue string) string {
 	if defaultValue != "" {
 		fmt.Printf("%s (default: %s): ", prompt, defaultValue)
@@ -222,6 +224,10 @@ func readInt(reader *bufio.Reader, prompt string, defaultValue int) int {
 	return value
 }
 
+// collectUserInput interactively gathers configuration settings from the user via prompts.
+// It collects base domain, dashboard domain, Let's Encrypt email, Gerbil usage, and optional SMTP email settings.
+// Exits the program if required fields are missing.
+// Returns a Config struct populated with the user's input.
 func collectUserInput(reader *bufio.Reader) Config {
 	config := Config{}
 
@@ -261,6 +267,9 @@ func collectUserInput(reader *bufio.Reader) Config {
 	return config
 }
 
+// createConfigFiles generates configuration files and directories from embedded templates based on the provided Config.
+// It filters files according to whether CrowdSec integration is enabled and parses templates with the configuration data.
+// Returns an error if any file or directory operation fails.
 func createConfigFiles(config Config) error {
 	os.MkdirAll("config", 0755)
 	os.MkdirAll("config/letsencrypt", 0755)
@@ -338,6 +347,8 @@ func createConfigFiles(config Config) error {
 	return nil
 }
 
+// installDocker installs Docker and its dependencies on supported Linux distributions and architectures.
+// It detects the current distribution and architecture, runs the appropriate installation commands, and returns an error if the platform is unsupported or if installation fails.
 func installDocker() error {
 	// Detect Linux distribution
 	cmd := exec.Command("cat", "/etc/os-release")
@@ -500,7 +511,8 @@ func isDockerRunning() bool {
 	return true
 }
 
-// executeDockerComposeCommandWithArgs executes the appropriate docker command with arguments supplied
+// executeDockerComposeCommandWithArgs runs the appropriate Docker Compose command with the given arguments, supporting both the new `docker compose` and legacy `docker-compose` syntax.
+// Returns an error if neither command is available or if execution fails.
 func executeDockerComposeCommandWithArgs(args ...string) error {
 	var cmd *exec.Cmd
 	var useNewStyle bool
@@ -553,7 +565,8 @@ func startContainers() error {
 	return nil
 }
 
-// stopContainers stops the containers using the appropriate command.
+// stopContainers stops and removes Docker containers using the compose down command.
+// Returns an error if the operation fails.
 func stopContainers() error {
 	fmt.Println("Stopping containers...")
 
@@ -564,7 +577,8 @@ func stopContainers() error {
 	return nil
 }
 
-// restartContainer restarts a specific container using the appropriate command.
+// restartContainer restarts the specified Docker container using the compose command.
+// Returns an error if the container could not be restarted.
 func restartContainer(container string) error {
 	fmt.Println("Restarting containers...")
 

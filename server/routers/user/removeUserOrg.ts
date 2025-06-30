@@ -28,6 +28,11 @@ registry.registerPath({
     responses: {}
 });
 
+/**
+ * Removes a user from an organization, including all their associated resources and sites within that organization.
+ *
+ * Validates the request parameters, ensures the user is not an owner, and deletes all relevant associations in a database transaction. Responds with a success message or passes appropriate HTTP errors to the next middleware.
+ */
 export async function removeUserOrg(
     req: Request,
     res: Response,

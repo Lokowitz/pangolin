@@ -22,6 +22,11 @@ export type SetServerAdminBody = z.infer<typeof bodySchema>;
 
 export type SetServerAdminResponse = null;
 
+/**
+ * Handles the creation of a server admin user with validated credentials.
+ *
+ * Validates the request body, ensures no server admin exists, hashes the password, and inserts a new server admin user into the database. Responds with a success message or passes errors to the next middleware.
+ */
 export async function setServerAdmin(
     req: Request,
     res: Response,

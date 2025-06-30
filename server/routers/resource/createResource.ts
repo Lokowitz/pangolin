@@ -314,6 +314,11 @@ async function createHttpResource(
     });
 }
 
+/**
+ * Creates a new raw (non-HTTP) resource for a given organization and site.
+ *
+ * Validates the request body, ensures no duplicate resource exists with the same protocol and proxy port, and creates the resource within a database transaction. Associates the resource with the organization's admin role and, if applicable, the current user. Returns a success response with the created resource or an appropriate error if creation fails.
+ */
 async function createRawResource(
     route: {
         req: Request;
