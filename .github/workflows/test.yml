@@ -48,5 +48,8 @@ jobs:
           echo "App failed to start"
           exit 1
 
-      - name: Build Docker image
+      - name: Build Docker image sqlite
         run: make build
+
+      - name: Build Docker image pg
+        run: make build-pg
