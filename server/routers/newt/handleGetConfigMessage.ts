@@ -2,10 +2,11 @@ import { z } from "zod";
 import { MessageHandler } from "../ws";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
-import { db } from "@server/db";
+import { db, ExitNode, exitNodes } from "@server/db";
 import { clients, clientSites, Newt, sites } from "@server/db";
 import { eq } from "drizzle-orm";
 import { updatePeer } from "../olm/peers";
+import axios from "axios";
 
 const inputSchema = z.object({
     publicKey: z.string(),
@@ -54,7 +55,7 @@ export const handleGetConfigMessage: MessageHandler = async (context) => {
         logger.warn("handleGetConfigMessage: Site not found");
         return;
     }
-    
+
     // we need to wait for hole punch success
     if (!existingSite.endpoint) {
         logger.warn(`Site ${existingSite.siteId} has no endpoint, skipping`);
@@ -87,6 +88,48 @@ export const handleGetConfigMessage: MessageHandler = async (context) => {
         return;
     }
 
+    let exitNode: ExitNode | undefined;
+    if (site.exitNodeId) {
+        [exitNode] = await db
+            .select()
+            .from(exitNodes)
+            .where(eq(exitNodes.exitNodeId, site.exitNodeId))
+            .limit(1);
+        if (exitNode.reachableAt) {
+            try {
+                const response = await axios.post(
+                    `${exitNode.reachableAt}/update-proxy-mapping`,
+                    {
+                        oldDestination: {
+                            destinationIP: existingSite.subnet?.split("/")[0],
+                            destinationPort: existingSite.listenPort
+                        },
+                        newDestination: {
+                            destinationIP: site.subnet?.split("/")[0],
+                            destinationPort: site.listenPort
+                        }
+                    },
+                    {
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
+
+                logger.info("Destinations updated:", {
+                    peer: response.data.status
+                });
+            } catch (error) {
+                if (axios.isAxiosError(error)) {
+                    throw new Error(
+                        `Error communicating with Gerbil. Make sure Pangolin can reach the Gerbil HTTP API: ${error.response?.status}`
+                    );
+                }
+                throw error;
+            }
+        }
+    }
+
     // Get all clients connected to this site
     const clientsRes = await db
         .select()
@@ -107,33 +150,58 @@ export const handleGetConfigMessage: MessageHandler = async (context) => {
                 if (!client.clients.endpoint) {
                     return false;
                 }
-                if (!client.clients.online) {
-                    return false;
-                }
-
                 return true;
             })
             .map(async (client) => {
                 // Add or update this peer on the olm if it is connected
                 try {
-                    if (site.endpoint && site.publicKey) {
-                        await updatePeer(client.clients.clientId, {
-                            siteId: site.siteId,
-                            endpoint: site.endpoint,
-                            publicKey: site.publicKey,
-                            serverIP: site.address,
-                            serverPort: site.listenPort
-                        });
+                    if (!site.publicKey) {
+                        logger.warn(
+                            `Site ${site.siteId} has no public key, skipping`
+                        );
+                        return null;
                     }
+                    let endpoint = site.endpoint;
+                    if (client.clientSites.isRelayed) {
+                        if (!site.exitNodeId) {
+                            logger.warn(
+                                `Site ${site.siteId} has no exit node, skipping`
+                            );
+                            return null;
+                        }
+
+                        if (!exitNode) {
+                            logger.warn(
+                                `Exit node not found for site ${site.siteId}`
+                            );
+                            return null;
+                        }
+                        endpoint = `${exitNode.endpoint}:21820`;
+                    }
+
+                    if (!endpoint) {
+                        logger.warn(
+                            `Site ${site.siteId} has no endpoint, skipping`
+                        );
+                        return null;
+                    }
+
+                    await updatePeer(client.clients.clientId, {
+                        siteId: site.siteId,
+                        endpoint: endpoint,
+                        publicKey: site.publicKey,
+                        serverIP: site.address,
+                        serverPort: site.listenPort
+                    });
                 } catch (error) {
                     logger.error(
-                        `Failed to add/update peer ${client.clients.pubKey} to newt ${newt.newtId}: ${error}`
+                        `Failed to add/update peer ${client.clients.pubKey} to olm ${newt.newtId}: ${error}`
                     );
                 }
 
                 return {
                     publicKey: client.clients.pubKey!,
-                    allowedIps: [`${client.clients.subnet.split('/')[0]}/32`], // we want to only allow from that client
+                    allowedIps: [`${client.clients.subnet.split("/")[0]}/32`], // we want to only allow from that client
                     endpoint: client.clientSites.isRelayed
                         ? ""
                         : client.clients.endpoint! // if its relayed it should be localhost

@@ -45,7 +45,6 @@ export async function updateHolePunch(
 
         const { olmId, newtId, ip, port, timestamp, token } = parsedParams.data;
 
-        
         let currentSiteId: number | undefined;
         let destinations: PeerDestination[] = [];
         
@@ -174,28 +173,29 @@ export async function updateHolePunch(
             }
 
             // Find all clients that connect to this site
-            const sitesClientPairs = await db
-                .select()
-                .from(clientSites)
-                .where(eq(clientSites.siteId, newt.siteId));
+            // const sitesClientPairs = await db
+            //     .select()
+            //     .from(clientSites)
+            //     .where(eq(clientSites.siteId, newt.siteId));
             
+            // THE NEWT IS NOT SENDING RAW WG TO THE GERBIL SO IDK IF WE REALLY NEED THIS - REMOVING
             // Get client details for each client
-            for (const pair of sitesClientPairs) {
-                const [client] = await db
-                    .select()
-                    .from(clients)
-                    .where(eq(clients.clientId, pair.clientId));
+            // for (const pair of sitesClientPairs) {
+            //     const [client] = await db
+            //         .select()
+            //         .from(clients)
+            //         .where(eq(clients.clientId, pair.clientId));
                 
-                if (client && client.endpoint) {
-                    const [host, portStr] = client.endpoint.split(':');
-                    if (host && portStr) {
-                        destinations.push({
-                            destinationIP: host,
-                            destinationPort: parseInt(portStr, 10)
-                        });
-                    }
-                }
-            }
+            //     if (client && client.endpoint) {
+            //         const [host, portStr] = client.endpoint.split(':');
+            //         if (host && portStr) {
+            //             destinations.push({
+            //                 destinationIP: host,
+            //                 destinationPort: parseInt(portStr, 10)
+            //             });
+            //         }
+            //     }
+            // }
             
             // If this is a newt/site, also add other sites in the same org
         //     if (updatedSite.orgId) {

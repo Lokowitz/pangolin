@@ -5,7 +5,8 @@ import {
     boolean,
     integer,
     bigint,
-    real
+    real,
+    text
 } from "drizzle-orm/pg-core";
 import { InferSelectModel } from "drizzle-orm";
 
@@ -135,6 +136,8 @@ export const users = pgTable("user", {
     twoFactorSecret: varchar("twoFactorSecret"),
     emailVerified: boolean("emailVerified").notNull().default(false),
     dateCreated: varchar("dateCreated").notNull(),
+    termsAcceptedTimestamp: varchar("termsAcceptedTimestamp"),
+    termsVersion: varchar("termsVersion"),
     serverAdmin: boolean("serverAdmin").notNull().default(false)
 });
 
@@ -504,8 +507,8 @@ export const clients = pgTable("clients", {
     name: varchar("name").notNull(),
     pubKey: varchar("pubKey"),
     subnet: varchar("subnet").notNull(),
-    megabytesIn: integer("bytesIn"),
-    megabytesOut: integer("bytesOut"),
+    megabytesIn: real("bytesIn"),
+    megabytesOut: real("bytesOut"),
     lastBandwidthUpdate: varchar("lastBandwidthUpdate"),
     lastPing: varchar("lastPing"),
     type: varchar("type").notNull(), // "olm"
@@ -539,7 +542,7 @@ export const olmSessions = pgTable("clientSession", {
     olmId: varchar("olmId")
         .notNull()
         .references(() => olms.olmId, { onDelete: "cascade" }),
-    expiresAt: integer("expiresAt").notNull()
+    expiresAt: bigint("expiresAt", { mode: "number" }).notNull(),
 });
 
 export const userClients = pgTable("userClients", {

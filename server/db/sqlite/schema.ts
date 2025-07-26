@@ -154,6 +154,8 @@ export const users = sqliteTable("user", {
         .notNull()
         .default(false),
     dateCreated: text("dateCreated").notNull(),
+    termsAcceptedTimestamp: text("termsAcceptedTimestamp"),
+    termsVersion: text("termsVersion"),
     serverAdmin: integer("serverAdmin", { mode: "boolean" })
         .notNull()
         .default(false)

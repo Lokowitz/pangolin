@@ -382,7 +382,7 @@ export default function DomainPicker({
                     <Alert>
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
-                            {t("domainPickerNoMatchingDomains", { userInput })}
+                            {t("domainPickerNoMatchingDomains")}
                         </AlertDescription>
                     </Alert>
                 )}

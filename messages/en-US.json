@@ -1196,7 +1196,7 @@
     "sidebarExpand": "Expand",
     "newtUpdateAvailable": "Update Available",
     "newtUpdateAvailableInfo": "A new version of Newt is available. Please update to the latest version for the best experience.",
-    "domainPickerEnterDomain": "Enter your domain",
+    "domainPickerEnterDomain": "Domain",
     "domainPickerPlaceholder": "myapp.example.com, api.v1.mydomain.com, or just myapp",
     "domainPickerDescription": "Enter the full domain of the resource to see available options.",
     "domainPickerDescriptionSaas": "Enter a full domain, subdomain, or just a name to see available options",
@@ -1206,7 +1206,7 @@
     "domainPickerSortAsc": "A-Z",
     "domainPickerSortDesc": "Z-A",
     "domainPickerCheckingAvailability": "Checking availability...",
-    "domainPickerNoMatchingDomains": "No matching domains found for \"{userInput}\". Try a different domain or check your organization's domain settings.",
+    "domainPickerNoMatchingDomains": "No matching domains found. Try a different domain or check your organization's domain settings.",
     "domainPickerOrganizationDomains": "Organization Domains",
     "domainPickerProvidedDomains": "Provided Domains",
     "domainPickerSubdomain": "Subdomain: {subdomain}",
@@ -1274,5 +1274,11 @@
     "createDomainDnsPropagation": "DNS Propagation",
     "createDomainDnsPropagationDescription": "DNS changes may take some time to propagate across the internet. This can take anywhere from a few minutes to 48 hours, depending on your DNS provider and TTL settings.",
     "resourcePortRequired": "Port number is required for non-HTTP resources",
-    "resourcePortNotAllowed": "Port number should not be set for HTTP resources"
+    "resourcePortNotAllowed": "Port number should not be set for HTTP resources",
+    "signUpTerms": {
+        "IAgreeToThe": "I agree to the",
+        "termsOfService": "terms of service",
+        "and": "and",
+        "privacyPolicy": "privacy policy"
+    }
 }
