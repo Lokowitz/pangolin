@@ -22,7 +22,7 @@ updates:
         update-types:
           - "minor"
 
-    - package-ecosystem: "gomod"
+  - package-ecosystem: "gomod"
     directory: "/install"
     schedule:
       interval: "daily"
