@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import createHttpError from "http-errors";
 import HttpCode from "@server/types/HttpCode";
 import { fromError } from "zod-validation-error";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { User, securityKeys, users, webauthnChallenge } from "@server/db";
 import { eq, and, lt } from "drizzle-orm";
@@ -105,28 +105,28 @@ async function clearChallenge(sessionId: string) {
     await db.delete(webauthnChallenge).where(eq(webauthnChallenge.sessionId, sessionId));
 }
 
-export const registerSecurityKeyBody = z.object({
+export const registerSecurityKeyBody = z.strictObject({
     name: z.string().min(1),
     password: z.string().min(1),
     code: z.string().optional()
-}).strict();
+});
 
-export const verifyRegistrationBody = z.object({
+export const verifyRegistrationBody = z.strictObject({
     credential: z.any()
-}).strict();
+});
 
-export const startAuthenticationBody = z.object({
-    email: z.string().email().optional()
-}).strict();
+export const startAuthenticationBody = z.strictObject({
+    email: z.email().optional()
+});
 
-export const verifyAuthenticationBody = z.object({
+export const verifyAuthenticationBody = z.strictObject({
     credential: z.any()
-}).strict();
+});
 
-export const deleteSecurityKeyBody = z.object({
+export const deleteSecurityKeyBody = z.strictObject({
     password: z.string().min(1),
     code: z.string().optional()
-}).strict();
+});
 
 export async function startRegistration(
     req: Request,

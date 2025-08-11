@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { clients, clientSites } from "@server/db";
 import { eq, and } from "drizzle-orm";
@@ -11,12 +11,10 @@ import stoi from "@server/lib/stoi";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const getClientSchema = z
-    .object({
-        clientId: z.string().transform(stoi).pipe(z.number().int().positive()),
+const getClientSchema = z.strictObject({
+        clientId: z.string().transform(stoi).pipe(z.int().positive()),
         orgId: z.string()
-    })
-    .strict();
+    });
 
 async function query(clientId: number, orgId: string) {
     // Get the client

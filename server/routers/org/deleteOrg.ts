@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db, domains, orgDomains, resources } from "@server/db";
 import { newts, newtSessions, orgs, sites, userActions } from "@server/db";
 import { eq, and, inArray, sql } from "drizzle-orm";
@@ -13,11 +13,9 @@ import { sendToClient } from "../ws";
 import { deletePeer } from "../gerbil/peers";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const deleteOrgSchema = z
-    .object({
+const deleteOrgSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 export type DeleteOrgResponse = {};
 

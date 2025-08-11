@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import {
     resourcePassword,
@@ -13,14 +13,12 @@ import createHttpError from "http-errors";
 import { fromError } from "zod-validation-error";
 import logger from "@server/logger";
 
-const getResourceAuthInfoSchema = z
-    .object({
+const getResourceAuthInfoSchema = z.strictObject({
         resourceId: z
             .string()
             .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+            .pipe(z.int().positive())
+    });
 
 export type GetResourceAuthInfoResponse = {
     resourceId: number;

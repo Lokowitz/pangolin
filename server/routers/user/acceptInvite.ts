@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db, UserOrg } from "@server/db";
 import { roles, userInvites, userOrgs, users } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -11,12 +11,10 @@ import { fromError } from "zod-validation-error";
 import { checkValidInvite } from "@server/auth/checkValidInvite";
 import { verifySession } from "@server/auth/sessions/verifySession";
 
-const acceptInviteBodySchema = z
-    .object({
+const acceptInviteBodySchema = z.strictObject({
         token: z.string(),
         inviteId: z.string()
-    })
-    .strict();
+    });
 
 export type AcceptInviteResponse = {
     accepted: boolean;

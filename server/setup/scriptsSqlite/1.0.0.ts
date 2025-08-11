@@ -2,7 +2,7 @@ import { APP_PATH } from "@server/lib/consts";
 import fs from "fs";
 import yaml from "js-yaml";
 import path from "path";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromZodError } from "zod-validation-error";
 
 const version = "1.0.0";

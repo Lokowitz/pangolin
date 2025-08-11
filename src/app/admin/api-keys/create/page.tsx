@@ -18,7 +18,7 @@ import {
     FormMessage
 } from "@app/components/ui/form";
 import HeaderTitle from "@app/components/SettingsSectionTitle";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";

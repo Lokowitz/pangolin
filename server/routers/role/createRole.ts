@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { orgs, Role, roleActions, roles } from "@server/db";
 import response from "@server/lib/response";
@@ -11,18 +11,14 @@ import { ActionsEnum } from "@server/auth/actions";
 import { eq, and } from "drizzle-orm";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const createRoleParamsSchema = z
-    .object({
+const createRoleParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const createRoleSchema = z
-    .object({
+const createRoleSchema = z.strictObject({
         name: z.string().min(1).max(255),
         description: z.string().optional()
-    })
-    .strict();
+    });
 
 export const defaultRoleAllowedActions: ActionsEnum[] = [
     ActionsEnum.getOrg,

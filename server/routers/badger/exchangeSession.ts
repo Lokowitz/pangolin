@@ -1,7 +1,7 @@
 import HttpCode from "@server/types/HttpCode";
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import logger from "@server/logger";
 import { resourceAccessToken, resources, sessions } from "@server/db";

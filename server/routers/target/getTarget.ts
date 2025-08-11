@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { targets } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -10,11 +10,9 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const getTargetSchema = z
-    .object({
-        targetId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const getTargetSchema = z.strictObject({
+        targetId: z.string().transform(Number).pipe(z.int().positive())
+    });
 
 registry.registerPath({
     method: "get",

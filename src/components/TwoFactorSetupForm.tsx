@@ -15,7 +15,7 @@ import {
     VerifyTotpBody,
     VerifyTotpResponse
 } from "@server/routers/auth";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {

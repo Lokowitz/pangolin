@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { userActions, users } from "@server/db";
 import response from "@server/lib/response";
@@ -9,13 +9,11 @@ import logger from "@server/logger";
 import { eq } from "drizzle-orm";
 import { fromError } from "zod-validation-error";
 
-const addUserActionSchema = z
-    .object({
+const addUserActionSchema = z.strictObject({
         userId: z.string(),
         actionId: z.string(),
         orgId: z.string()
-    })
-    .strict();
+    });
 
 export async function addUserAction(
     req: Request,

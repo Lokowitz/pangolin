@@ -22,7 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AxiosResponse } from "axios";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { z } from "zod/v4";
 import CopyTextBox from "@app/components/CopyTextBox";
 import {
     Credenza,

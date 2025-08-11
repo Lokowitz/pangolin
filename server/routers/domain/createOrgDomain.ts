@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db, Domain, domains, OrgDomains, orgDomains } from "@server/db";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
@@ -13,18 +13,14 @@ import { isValidDomain } from "@server/lib/validators";
 import { build } from "@server/build";
 import config from "@server/lib/config";
 
-const paramsSchema = z
-    .object({
+const paramsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const bodySchema = z
-    .object({
+const bodySchema = z.strictObject({
         type: z.enum(["ns", "cname", "wildcard"]),
         baseDomain: subdomainSchema
-    })
-    .strict();
+    });
 
 export type CreateDomainResponse = {
     domainId: string;

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { apiKeyOrg, apiKeys } from "@server/db";
 import { and, eq } from "drizzle-orm";

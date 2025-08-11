@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { roleActions } from "@server/db";
 import { and, eq } from "drizzle-orm";
@@ -9,17 +9,13 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const removeRoleActionParamsSchema = z
-    .object({
-        roleId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const removeRoleActionParamsSchema = z.strictObject({
+        roleId: z.string().transform(Number).pipe(z.int().positive())
+    });
 
-const removeRoleActionSchema = z
-    .object({
+const removeRoleActionSchema = z.strictObject({
         actionId: z.string()
-    })
-    .strict();
+    });
 
 export async function removeRoleAction(
     req: Request,

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import createHttpError from "http-errors";
 import HttpCode from "@server/types/HttpCode";
 import { fromError } from "zod-validation-error";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { User, users } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -18,13 +18,11 @@ import { invalidateAllSessions } from "@server/auth/sessions/app";
 import { passwordSchema } from "@server/auth/passwordSchema";
 import { UserType } from "@server/types/UserTypes";
 
-export const changePasswordBody = z
-    .object({
+export const changePasswordBody = z.strictObject({
         oldPassword: z.string(),
         newPassword: passwordSchema,
         code: z.string().optional()
-    })
-    .strict();
+    });
 
 export type ChangePasswordBody = z.infer<typeof changePasswordBody>;
 

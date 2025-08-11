@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { db } from "@server/db";
 import HttpCode from "@server/types/HttpCode";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { apiKeyOrg, apiKeys } from "@server/db";
 import { fromError } from "zod-validation-error";
 import createHttpError from "http-errors";

@@ -1,4 +1,4 @@
-import z from "zod";
+import z from "zod/v4";
 
 export function isValidCIDR(cidr: string): boolean {
     return z.string().cidr().safeParse(cidr).success;

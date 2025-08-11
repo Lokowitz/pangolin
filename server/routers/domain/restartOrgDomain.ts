@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db, domains } from "@server/db";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
@@ -8,12 +8,10 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { and, eq } from "drizzle-orm";
 
-const paramsSchema = z
-    .object({
+const paramsSchema = z.strictObject({
         domainId: z.string(),
         orgId: z.string()
-    })
-    .strict();
+    });
 
 export type RestartOrgDomainResponse = {
     success: boolean;

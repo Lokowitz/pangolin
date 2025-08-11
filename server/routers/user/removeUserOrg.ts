@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db, resources, sites, UserOrg } from "@server/db";
 import { userOrgs, userResources, users, userSites } from "@server/db";
 import { and, eq, exists } from "drizzle-orm";
@@ -10,12 +10,10 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const removeUserSchema = z
-    .object({
+const removeUserSchema = z.strictObject({
         userId: z.string(),
         orgId: z.string()
-    })
-    .strict();
+    });
 
 registry.registerPath({
     method: "delete",

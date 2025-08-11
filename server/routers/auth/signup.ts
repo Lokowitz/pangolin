@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { db, users } from "@server/db";
 import HttpCode from "@server/types/HttpCode";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import createHttpError from "http-errors";
 import response from "@server/lib/response";
@@ -24,7 +24,7 @@ import { UserType } from "@server/types/UserTypes";
 import { build } from "@server/build";
 
 export const signupBodySchema = z.object({
-    email: z.string().toLowerCase().email(),
+    email: z.email().toLowerCase(),
     password: passwordSchema,
     inviteToken: z.string().optional(),
     inviteId: z.string().optional(),

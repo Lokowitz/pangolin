@@ -5,7 +5,7 @@ import HttpCode from "@server/types/HttpCode";
 import response from "@server/lib/response";
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import { eq, and } from "drizzle-orm";
 import { OpenAPITags, registry } from "@server/openApi";
@@ -14,15 +14,15 @@ const querySchema = z.object({
     limit: z
         .string()
         .optional()
-        .default("1000")
+        .prefault("1000")
         .transform(Number)
-        .pipe(z.number().int().positive()),
+        .pipe(z.int().positive()),
     offset: z
         .string()
         .optional()
-        .default("0")
+        .prefault("0")
         .transform(Number)
-        .pipe(z.number().int().nonnegative())
+        .pipe(z.int().nonnegative())
 });
 
 const paramsSchema = z.object({

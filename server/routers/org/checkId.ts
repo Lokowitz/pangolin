@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { orgs } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -9,11 +9,9 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const getOrgSchema = z
-    .object({
+const getOrgSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 export async function checkId(
     req: Request,

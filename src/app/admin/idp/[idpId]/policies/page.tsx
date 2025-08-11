@@ -28,7 +28,7 @@ import {
 } from "@app/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
 import { InfoIcon, ExternalLink, CheckIcon } from "lucide-react";
 import PolicyTable, { PolicyRow } from "./PolicyTable";

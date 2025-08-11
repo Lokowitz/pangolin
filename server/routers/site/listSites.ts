@@ -6,7 +6,7 @@ import response from "@server/lib/response";
 import { and, count, eq, inArray, or, sql } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 import NodeCache from "node-cache";
@@ -46,25 +46,23 @@ async function getLatestNewtVersion(): Promise<string | null> {
     }
 }
 
-const listSitesParamsSchema = z
-    .object({
+const listSitesParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 const listSitesSchema = z.object({
     limit: z
         .string()
         .optional()
-        .default("1000")
+        .prefault("1000")
         .transform(Number)
-        .pipe(z.number().int().positive()),
+        .pipe(z.int().positive()),
     offset: z
         .string()
         .optional()
-        .default("0")
+        .prefault("0")
         .transform(Number)
-        .pipe(z.number().int().nonnegative())
+        .pipe(z.int().nonnegative())
 });
 
 function querySites(orgId: string, accessibleSiteIds: number[]) {

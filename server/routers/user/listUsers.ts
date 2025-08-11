@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { idp, roles, userOrgs, users } from "@server/db";
 import response from "@server/lib/response";
@@ -11,28 +11,24 @@ import { fromZodError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 import { eq } from "drizzle-orm";
 
-const listUsersParamsSchema = z
-    .object({
+const listUsersParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const listUsersSchema = z
-    .object({
+const listUsersSchema = z.strictObject({
         limit: z
             .string()
             .optional()
-            .default("1000")
+            .prefault("1000")
             .transform(Number)
-            .pipe(z.number().int().nonnegative()),
+            .pipe(z.int().nonnegative()),
         offset: z
             .string()
             .optional()
-            .default("0")
+            .prefault("0")
             .transform(Number)
-            .pipe(z.number().int().nonnegative())
-    })
-    .strict();
+            .pipe(z.int().nonnegative())
+    });
 
 async function queryUsers(orgId: string, limit: number, offset: number) {
     return await db

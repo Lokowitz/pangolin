@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { orgs } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -10,19 +10,15 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const updateOrgParamsSchema = z
-    .object({
+const updateOrgParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const updateOrgBodySchema = z
-    .object({
+const updateOrgBodySchema = z.strictObject({
         name: z.string().min(1).max(255).optional()
     })
-    .strict()
     .refine((data) => Object.keys(data).length > 0, {
-        message: "At least one field must be provided for update"
+        error: "At least one field must be provided for update"
     });
 
 registry.registerPath({

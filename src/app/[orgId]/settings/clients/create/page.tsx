@@ -20,7 +20,7 @@ import {
     FormMessage
 } from "@app/components/ui/form";
 import HeaderTitle from "@app/components/SettingsSectionTitle";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { createElement, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -100,9 +100,11 @@ export default function Page() {
             .refine((val) => val.length > 0, {
                 message: t("siteRequired")
             }),
-        subnet: z.string().ip().min(1, {
-            message: t("subnetRequired")
-        })
+        subnet: z.union([z.ipv4().min(1, {
+                                message: t("subnetRequired")
+                            }), z.ipv6().min(1, {
+                                message: t("subnetRequired")
+                            })])
     });
 
     type CreateClientFormValues = z.infer<typeof createClientFormSchema>;

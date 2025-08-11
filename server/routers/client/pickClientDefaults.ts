@@ -5,7 +5,7 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { generateId } from "@server/auth/sessions/app";
 import { getNextAvailableClientSubnet } from "@server/lib/ip";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
@@ -15,11 +15,9 @@ export type PickClientDefaultsResponse = {
     subnet: string;
 };
 
-const pickClientDefaultsSchema = z
-    .object({
+const pickClientDefaultsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 registry.registerPath({
     method: "get",

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { MessageHandler } from "../ws";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
@@ -17,7 +17,7 @@ import axios from "axios";
 
 const inputSchema = z.object({
     publicKey: z.string(),
-    port: z.number().int().positive()
+    port: z.int().positive()
 });
 
 type Input = z.infer<typeof inputSchema>;

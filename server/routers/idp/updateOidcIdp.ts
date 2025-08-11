@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
@@ -19,8 +19,7 @@ const paramsSchema = z
     })
     .strict();
 
-const bodySchema = z
-    .object({
+const bodySchema = z.strictObject({
         name: z.string().optional(),
         clientId: z.string().optional(),
         clientSecret: z.string().optional(),
@@ -33,8 +32,7 @@ const bodySchema = z
         autoProvision: z.boolean().optional(),
         defaultRoleMapping: z.string().optional(),
         defaultOrgMapping: z.string().optional()
-    })
-    .strict();
+    });
 
 export type UpdateIdpResponse = {
     idpId: number;

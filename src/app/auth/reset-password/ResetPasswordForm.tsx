@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,7 +47,7 @@ import { cleanRedirect } from "@app/lib/cleanRedirect";
 import { useTranslations } from "next-intl";
 
 const requestSchema = z.object({
-    email: z.string().email()
+    email: z.email()
 });
 
 export type ResetPasswordFormProps = {
@@ -88,7 +88,7 @@ export default function ResetPasswordForm({
 
     const formSchema = z
         .object({
-            email: z.string().email({ message: t('emailInvalid') }),
+            email: z.email(),
             token: z.string().min(8, { message: t('tokenInvalid') }),
             password: passwordSchema,
             confirmPassword: passwordSchema

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import HttpCode from "@server/types/HttpCode";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import createHttpError from "http-errors";
 import { generateId } from "@server/auth/sessions/app";
@@ -14,7 +14,7 @@ import { UserType } from "@server/types/UserTypes";
 import moment from "moment";
 
 export const bodySchema = z.object({
-    email: z.string().toLowerCase().email(),
+    email: z.email().toLowerCase(),
     password: passwordSchema
 });
 

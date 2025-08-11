@@ -3,7 +3,7 @@ import HttpCode from "@server/types/HttpCode";
 import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { response as sendResponse } from "@server/lib";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import { db } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -12,11 +12,9 @@ import license, { LicenseStatus } from "@server/license/license";
 import { encrypt } from "@server/lib/crypto";
 import config from "@server/lib/config";
 
-const paramsSchema = z
-    .object({
+const paramsSchema = z.strictObject({
         licenseKey: z.string().min(1).max(255)
-    })
-    .strict();
+    });
 
 export type DeleteLicenseKeyResponse = LicenseStatus;
 

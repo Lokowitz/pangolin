@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { roleSites, sites } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -9,11 +9,9 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const listRoleSitesSchema = z
-    .object({
-        roleId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const listRoleSitesSchema = z.strictObject({
+        roleId: z.string().transform(Number).pipe(z.int().positive())
+    });
 
 export async function listRoleSites(
     req: Request,

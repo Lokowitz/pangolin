@@ -10,7 +10,7 @@ import response from "@server/lib/response";
 import { eq, and } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import { verifyTotpCode } from "@server/auth/totp";
 import config from "@server/lib/config";
@@ -19,13 +19,11 @@ import { verifyPassword } from "@server/auth/password";
 import { verifySession } from "@server/auth/sessions/verifySession";
 import { UserType } from "@server/types/UserTypes";
 
-export const loginBodySchema = z
-    .object({
-        email: z.string().toLowerCase().email(),
+export const loginBodySchema = z.strictObject({
+        email: z.email().toLowerCase(),
         password: z.string(),
         code: z.string().optional()
-    })
-    .strict();
+    });
 
 export type LoginBody = z.infer<typeof loginBodySchema>;
 

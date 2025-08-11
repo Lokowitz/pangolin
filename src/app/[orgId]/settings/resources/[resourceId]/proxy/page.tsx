@@ -16,7 +16,7 @@ import { AxiosResponse } from "axios";
 import { ListTargetsResponse } from "@server/routers/target/listTargets";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { z } from "zod/v4";
 import {
     Form,
     FormControl,

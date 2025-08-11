@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { idpOrg } from "@server/db";
 import response from "@server/lib/response";
@@ -14,22 +14,20 @@ const paramsSchema = z.object({
     idpId: z.coerce.number()
 });
 
-const querySchema = z
-    .object({
+const querySchema = z.strictObject({
         limit: z
             .string()
             .optional()
-            .default("1000")
+            .prefault("1000")
             .transform(Number)
-            .pipe(z.number().int().nonnegative()),
+            .pipe(z.int().nonnegative()),
         offset: z
             .string()
             .optional()
-            .default("0")
+            .prefault("0")
             .transform(Number)
-            .pipe(z.number().int().nonnegative())
-    })
-    .strict();
+            .pipe(z.int().nonnegative())
+    });
 
 async function query(idpId: number, limit: number, offset: number) {
     const res = await db

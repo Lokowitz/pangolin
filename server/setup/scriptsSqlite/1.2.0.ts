@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 import fs from "fs";
 import yaml from "js-yaml";
 import path from "path";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromZodError } from "zod-validation-error";
 
 const version = "1.2.0";
