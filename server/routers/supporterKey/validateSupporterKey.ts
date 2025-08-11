@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import HttpCode from "@server/types/HttpCode";
 import createHttpError from "http-errors";
 import logger from "@server/logger";
@@ -11,12 +11,10 @@ import { db } from "@server/db";
 import { eq } from "drizzle-orm";
 import config from "@server/lib/config";
 
-const validateSupporterKeySchema = z
-    .object({
+const validateSupporterKeySchema = z.strictObject({
         githubUsername: z.string().nonempty(),
         key: z.string().nonempty()
-    })
-    .strict();
+    });
 
 export type ValidateSupporterKeyResponse = {
     valid: boolean;

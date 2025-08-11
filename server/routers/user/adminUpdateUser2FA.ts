@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { users, userOrgs } from "@server/db";
 import { eq, and } from "drizzle-orm";
@@ -10,17 +10,13 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const updateUser2FAParamsSchema = z
-    .object({
+const updateUser2FAParamsSchema = z.strictObject({
         userId: z.string()
-    })
-    .strict();
+    });
 
-const updateUser2FABodySchema = z
-    .object({
+const updateUser2FABodySchema = z.strictObject({
         twoFactorSetupRequested: z.boolean()
-    })
-    .strict();
+    });
 
 export type UpdateUser2FAResponse = {
     userId: string;

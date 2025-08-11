@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { resources, roleResources, roleSites } from "@server/db";
 import { and, eq } from "drizzle-orm";
@@ -9,17 +9,13 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const removeRoleSiteParamsSchema = z
-    .object({
-        roleId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const removeRoleSiteParamsSchema = z.strictObject({
+        roleId: z.string().transform(Number).pipe(z.int().positive())
+    });
 
-const removeRoleSiteSchema = z
-    .object({
-        siteId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const removeRoleSiteSchema = z.strictObject({
+        siteId: z.string().transform(Number).pipe(z.int().positive())
+    });
 
 export async function removeRoleSite(
     req: Request,

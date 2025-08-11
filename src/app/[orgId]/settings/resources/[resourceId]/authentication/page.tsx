@@ -13,7 +13,7 @@ import {
     ListResourceUsersResponse
 } from "@server/routers/resource";
 import { Button } from "@app/components/ui/button";
-import { set, z } from "zod";
+import { set, z } from "zod/v4";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -691,9 +691,7 @@ export default function ResourceAuthenticationPage() {
                                                             validateTag={(
                                                                 tag
                                                             ) => {
-                                                                return z
-                                                                    .string()
-                                                                    .email()
+                                                                return z.email()
                                                                     .or(
                                                                         z
                                                                             .string()

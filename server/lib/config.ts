@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { __DIRNAME, APP_VERSION } from "@server/lib/consts";
 import { db } from "@server/db";
 import { SupporterKey, supporterKey } from "@server/db";

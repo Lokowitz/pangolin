@@ -11,7 +11,7 @@ import { generateId } from "@server/auth/sessions/app";
 import config from "@server/lib/config";
 import { OpenAPITags, registry } from "@server/openApi";
 import { fromError } from "zod-validation-error";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export type PickSiteDefaultsResponse = {
     exitNodeId: number;
@@ -40,11 +40,9 @@ registry.registerPath({
     responses: {}
 });
 
-const pickSiteDefaultsSchema = z
-    .object({
+const pickSiteDefaultsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 export async function pickSiteDefaults(
     req: Request,

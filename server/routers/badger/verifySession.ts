@@ -31,7 +31,7 @@ import { and, eq } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
 import NodeCache from "node-cache";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 
 // We'll see if this speeds anything up
@@ -40,10 +40,10 @@ const cache = new NodeCache({
 });
 
 const verifyResourceSessionSchema = z.object({
-    sessions: z.record(z.string()).optional(),
-    headers: z.record(z.string()).optional(),
-    query: z.record(z.string()).optional(),
-    originalRequestURL: z.string().url(),
+    sessions: z.record(z.string(), z.string()).optional(),
+    headers: z.record(z.string(), z.string()).optional(),
+    query: z.record(z.string(), z.string()).optional(),
+    originalRequestURL: z.url(),
     scheme: z.string(),
     host: z.string(),
     path: z.string(),

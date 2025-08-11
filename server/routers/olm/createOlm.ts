@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { db } from "@server/db";
 import { hash } from "@node-rs/argon2";
 import HttpCode from "@server/types/HttpCode";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { newts } from "@server/db";
 import createHttpError from "http-errors";
 import response from "@server/lib/response";
@@ -23,12 +23,10 @@ export type CreateNewtResponse = {
     secret: string;
 };
 
-const createNewtSchema = z
-    .object({
+const createNewtSchema = z.strictObject({
         newtId: z.string(),
         secret: z.string()
-    })
-    .strict();
+    });
 
 export async function createNewt(
     req: Request,

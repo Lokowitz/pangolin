@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { newts, newtSessions, sites } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -12,11 +12,9 @@ import { fromError } from "zod-validation-error";
 import { sendToClient } from "../ws";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const deleteSiteSchema = z
-    .object({
-        siteId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const deleteSiteSchema = z.strictObject({
+        siteId: z.string().transform(Number).pipe(z.int().positive())
+    });
 
 registry.registerPath({
     method: "delete",

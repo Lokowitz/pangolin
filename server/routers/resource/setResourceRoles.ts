@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { apiKeys, roleResources, roles } from "@server/db";
 import response from "@server/lib/response";
@@ -10,20 +10,16 @@ import { fromError } from "zod-validation-error";
 import { eq, and, ne } from "drizzle-orm";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const setResourceRolesBodySchema = z
-    .object({
-        roleIds: z.array(z.number().int().positive())
-    })
-    .strict();
+const setResourceRolesBodySchema = z.strictObject({
+        roleIds: z.array(z.int().positive())
+    });
 
-const setResourceRolesParamsSchema = z
-    .object({
+const setResourceRolesParamsSchema = z.strictObject({
         resourceId: z
             .string()
             .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+            .pipe(z.int().positive())
+    });
 
 registry.registerPath({
     method: "post",

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { resources, userResources, userSites } from "@server/db";
 import { and, eq } from "drizzle-orm";
@@ -9,17 +9,13 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const removeUserSiteParamsSchema = z
-    .object({
+const removeUserSiteParamsSchema = z.strictObject({
         userId: z.string()
-    })
-    .strict();
+    });
 
-const removeUserSiteSchema = z
-    .object({
-        siteId: z.number().int().positive()
-    })
-    .strict();
+const removeUserSiteSchema = z.strictObject({
+        siteId: z.int().positive()
+    });
 
 export async function removeUserSite(
     req: Request,

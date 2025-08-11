@@ -15,7 +15,7 @@ import response from "@server/lib/response";
 import { eq } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import logger from "@server/logger";
 import { createDate, TimeSpan } from "oslo";
@@ -24,22 +24,18 @@ import { encodeHexLowerCase } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
 import { OpenAPITags, registry } from "@server/openApi";
 
-export const generateAccessTokenBodySchema = z
-    .object({
-        validForSeconds: z.number().int().positive().optional(), // seconds
+export const generateAccessTokenBodySchema = z.strictObject({
+        validForSeconds: z.int().positive().optional(), // seconds
         title: z.string().optional(),
         description: z.string().optional()
-    })
-    .strict();
+    });
 
-export const generateAccssTokenParamsSchema = z
-    .object({
+export const generateAccssTokenParamsSchema = z.strictObject({
         resourceId: z
             .string()
             .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+            .pipe(z.int().positive())
+    });
 
 export type GenerateAccessTokenResponse = Omit<
     ResourceAccessToken,

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import createHttpError from "http-errors";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import HttpCode from "@server/types/HttpCode";
 import { response } from "@server/lib";
@@ -11,11 +11,9 @@ import { isWithinExpirationDate } from "oslo";
 import config from "@server/lib/config";
 import logger from "@server/logger";
 
-export const verifyEmailBody = z
-    .object({
+export const verifyEmailBody = z.strictObject({
         code: z.string()
-    })
-    .strict();
+    });
 
 export type VerifyEmailBody = z.infer<typeof verifyEmailBody>;
 

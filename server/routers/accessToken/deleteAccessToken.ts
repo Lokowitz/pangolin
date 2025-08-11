@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
 import createHttpError from "http-errors";
@@ -10,11 +10,9 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@server/db";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const deleteAccessTokenParamsSchema = z
-    .object({
+const deleteAccessTokenParamsSchema = z.strictObject({
         accessTokenId: z.string()
-    })
-    .strict();
+    });
 
 registry.registerPath({
     method: "delete",

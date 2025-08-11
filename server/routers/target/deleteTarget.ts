@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { newts, resources, sites, targets } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -13,11 +13,9 @@ import { removeTargets } from "../newt/targets";
 import { getAllowedIps } from "./helpers";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const deleteTargetSchema = z
-    .object({
-        targetId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const deleteTargetSchema = z.strictObject({
+        targetId: z.string().transform(Number).pipe(z.int().positive())
+    });
 
 registry.registerPath({
     method: "delete",

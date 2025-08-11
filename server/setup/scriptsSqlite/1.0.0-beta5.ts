@@ -2,7 +2,7 @@ import { APP_PATH, configFilePath1, configFilePath2 } from "@server/lib/consts";
 import fs from "fs";
 import yaml from "js-yaml";
 import path from "path";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromZodError } from "zod-validation-error";
 
 export default async function migration() {

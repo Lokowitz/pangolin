@@ -19,7 +19,7 @@ import {
     FormMessage
 } from "@app/components/ui/form";
 import HeaderTitle from "@app/components/SettingsSectionTitle";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -80,8 +80,8 @@ const httpResourceFormSchema = z.object({
 
 const tcpUdpResourceFormSchema = z.object({
     protocol: z.string(),
-    proxyPort: z.number().int().min(1).max(65535),
-    enableProxy: z.boolean().default(false)
+    proxyPort: z.int().min(1).max(65535),
+    enableProxy: z.boolean().prefault(false)
 });
 
 type BaseResourceFormValues = z.infer<typeof baseResourceFormSchema>;

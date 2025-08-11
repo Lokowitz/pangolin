@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,7 +74,7 @@ export default function VerifyEmailForm({
     }
 
     const FormSchema = z.object({
-        email: z.string().email({ message: t("emailInvalid") }),
+        email: z.email(),
         pin: z.string().min(8, {
             message: t("verificationCodeLengthRequirements")
         })

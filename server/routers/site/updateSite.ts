@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { sites } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -11,14 +11,11 @@ import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 import { isValidCIDR } from "@server/lib/validators";
 
-const updateSiteParamsSchema = z
-    .object({
-        siteId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const updateSiteParamsSchema = z.strictObject({
+        siteId: z.string().transform(Number).pipe(z.int().positive())
+    });
 
-const updateSiteBodySchema = z
-    .object({
+const updateSiteBodySchema = z.strictObject({
         name: z.string().min(1).max(255).optional(),
         dockerSocketEnabled: z.boolean().optional(),
         remoteSubnets: z
@@ -36,9 +33,8 @@ const updateSiteBodySchema = z
         // megabytesIn: z.number().int().nonnegative().optional(),
         // megabytesOut: z.number().int().nonnegative().optional(),
     })
-    .strict()
     .refine((data) => Object.keys(data).length > 0, {
-        message: "At least one field must be provided for update"
+        error: "At least one field must be provided for update"
     });
 
 registry.registerPath({

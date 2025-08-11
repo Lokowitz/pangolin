@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { resources, userResources, userSites } from "@server/db";
 import response from "@server/lib/response";
@@ -9,12 +9,10 @@ import logger from "@server/logger";
 import { eq } from "drizzle-orm";
 import { fromError } from "zod-validation-error";
 
-const addUserSiteSchema = z
-    .object({
+const addUserSiteSchema = z.strictObject({
         userId: z.string(),
-        siteId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+        siteId: z.string().transform(Number).pipe(z.int().positive())
+    });
 
 export async function addUserSite(
     req: Request,

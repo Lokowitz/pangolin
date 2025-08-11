@@ -6,7 +6,7 @@ import response from "@server/lib/response";
 import { eq } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import {
     createOlmSession,

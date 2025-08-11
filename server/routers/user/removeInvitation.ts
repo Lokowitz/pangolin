@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { userInvites } from "@server/db";
 import { eq, and } from "drizzle-orm";
@@ -9,12 +9,10 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const removeInvitationParamsSchema = z
-    .object({
+const removeInvitationParamsSchema = z.strictObject({
         orgId: z.string(),
         inviteId: z.string()
-    })
-    .strict();
+    });
 
 export async function removeInvitation(
     req: Request,

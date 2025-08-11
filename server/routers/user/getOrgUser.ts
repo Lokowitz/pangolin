@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { roles, userOrgs, users } from "@server/db";
 import { and, eq } from "drizzle-orm";
@@ -38,12 +38,10 @@ export type GetOrgUserResponse = NonNullable<
     Awaited<ReturnType<typeof queryUser>>
 >;
 
-const getOrgUserParamsSchema = z
-    .object({
+const getOrgUserParamsSchema = z.strictObject({
         userId: z.string(),
         orgId: z.string()
-    })
-    .strict();
+    });
 
 registry.registerPath({
     method: "get",

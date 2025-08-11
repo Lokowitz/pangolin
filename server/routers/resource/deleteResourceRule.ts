@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { resourceRules, resources } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -10,15 +10,13 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const deleteResourceRuleSchema = z
-    .object({
-        ruleId: z.string().transform(Number).pipe(z.number().int().positive()),
+const deleteResourceRuleSchema = z.strictObject({
+        ruleId: z.string().transform(Number).pipe(z.int().positive()),
         resourceId: z
             .string()
             .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+            .pipe(z.int().positive())
+    });
 
 registry.registerPath({
     method: "delete",

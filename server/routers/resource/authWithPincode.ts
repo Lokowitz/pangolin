@@ -6,27 +6,23 @@ import response from "@server/lib/response";
 import { eq } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import { createResourceSession } from "@server/auth/sessions/resource";
 import logger from "@server/logger";
 import { verifyPassword } from "@server/auth/password";
 import config from "@server/lib/config";
 
-export const authWithPincodeBodySchema = z
-    .object({
+export const authWithPincodeBodySchema = z.strictObject({
         pincode: z.string()
-    })
-    .strict();
+    });
 
-export const authWithPincodeParamsSchema = z
-    .object({
+export const authWithPincodeParamsSchema = z.strictObject({
         resourceId: z
             .string()
             .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+            .pipe(z.int().positive())
+    });
 
 export type AuthWithPincodeResponse = {
     session?: string;

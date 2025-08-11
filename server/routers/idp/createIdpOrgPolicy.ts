@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
@@ -11,19 +11,15 @@ import config from "@server/lib/config";
 import { eq, and } from "drizzle-orm";
 import { idp, idpOrg } from "@server/db";
 
-const paramsSchema = z
-    .object({
+const paramsSchema = z.strictObject({
         idpId: z.coerce.number(),
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const bodySchema = z
-    .object({
+const bodySchema = z.strictObject({
         roleMapping: z.string().optional(),
         orgMapping: z.string().optional()
-    })
-    .strict();
+    });
 
 export type CreateIdpOrgPolicyResponse = {};
 

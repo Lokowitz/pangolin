@@ -1,7 +1,7 @@
 import config from "@server/lib/config";
 import { Request, Response, NextFunction } from "express";
 import createHttpError from "http-errors";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import HttpCode from "@server/types/HttpCode";
 import { response } from "@server/lib";
@@ -17,17 +17,13 @@ import ConfirmPasswordReset from "@server/emails/templates/NotifyResetPassword";
 import { sendEmail } from "@server/emails";
 import { passwordSchema } from "@server/auth/passwordSchema";
 
-export const resetPasswordBody = z
-    .object({
-        email: z
-            .string()
-            .toLowerCase()
-            .email(),
+export const resetPasswordBody = z.strictObject({
+        email: z.email()
+                    .toLowerCase(),
         token: z.string(), // reset secret code
         newPassword: passwordSchema,
         code: z.string().optional() // 2fa code
-    })
-    .strict();
+    });
 
 export type ResetPasswordBody = z.infer<typeof resetPasswordBody>;
 

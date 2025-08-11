@@ -5,33 +5,31 @@ import response from "@server/lib/response";
 import { eq, sql } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import logger from "@server/logger";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const listTargetsParamsSchema = z
-    .object({
+const listTargetsParamsSchema = z.strictObject({
         resourceId: z
             .string()
             .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+            .pipe(z.int().positive())
+    });
 
 const listTargetsSchema = z.object({
     limit: z
         .string()
         .optional()
-        .default("1000")
+        .prefault("1000")
         .transform(Number)
-        .pipe(z.number().int().positive()),
+        .pipe(z.int().positive()),
     offset: z
         .string()
         .optional()
-        .default("0")
+        .prefault("0")
         .transform(Number)
-        .pipe(z.number().int().nonnegative())
+        .pipe(z.int().nonnegative())
 });
 
 function queryTargets(resourceId: number) {

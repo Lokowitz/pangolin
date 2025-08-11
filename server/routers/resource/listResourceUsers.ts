@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { idp, userResources, users } from "@server/db"; // Assuming these are the correct tables
 import { eq } from "drizzle-orm";
@@ -10,14 +10,12 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const listResourceUsersSchema = z
-    .object({
+const listResourceUsersSchema = z.strictObject({
         resourceId: z
             .string()
             .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+            .pipe(z.int().positive())
+    });
 
 async function queryUsers(resourceId: number) {
     return await db

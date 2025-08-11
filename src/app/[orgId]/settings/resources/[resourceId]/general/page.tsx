@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { formatAxiosError } from "@app/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -126,7 +126,7 @@ export default function GeneralForm() {
             subdomain: z.string().optional(),
             name: z.string().min(1).max(255),
             domainId: z.string().optional(),
-            proxyPort: z.number().int().min(1).max(65535).optional(),
+            proxyPort: z.int().min(1).max(65535).optional(),
             enableProxy: z.boolean().optional()
         })
         .refine(

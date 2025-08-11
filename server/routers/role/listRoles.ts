@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { roles, orgs } from "@server/db";
 import response from "@server/lib/response";
@@ -11,25 +11,23 @@ import { fromError } from "zod-validation-error";
 import stoi from "@server/lib/stoi";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const listRolesParamsSchema = z
-    .object({
+const listRolesParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 const listRolesSchema = z.object({
     limit: z
         .string()
         .optional()
-        .default("1000")
+        .prefault("1000")
         .transform(Number)
-        .pipe(z.number().int().nonnegative()),
+        .pipe(z.int().nonnegative()),
     offset: z
         .string()
         .optional()
-        .default("0")
+        .prefault("0")
         .transform(Number)
-        .pipe(z.number().int().nonnegative())
+        .pipe(z.int().nonnegative())
 });
 
 async function queryRoles(orgId: string, limit: number, offset: number) {

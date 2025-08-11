@@ -22,7 +22,7 @@ import { InviteUserResponse } from "@server/routers/user";
 import { AxiosResponse } from "axios";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { ListRolesResponse } from "@server/routers/role";
 import { userOrgUserContext } from "@app/hooks/useOrgUserContext";
 import { useParams } from "next/navigation";

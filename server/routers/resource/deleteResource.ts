@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { newts, resources, sites, targets } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -14,14 +14,12 @@ import { getAllowedIps } from "../target/helpers";
 import { OpenAPITags, registry } from "@server/openApi";
 
 // Define Zod schema for request parameters validation
-const deleteResourceSchema = z
-    .object({
+const deleteResourceSchema = z.strictObject({
         resourceId: z
             .string()
             .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+            .pipe(z.int().positive())
+    });
 
 registry.registerPath({
     method: "delete",

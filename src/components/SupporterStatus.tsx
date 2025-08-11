@@ -26,7 +26,7 @@ import {
     CredenzaHeader,
     CredenzaTitle
 } from "./Credenza";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -74,8 +74,12 @@ export default function SupporterStatus({ isCollapsed = false }: SupporterStatus
     const formSchema = z.object({
         githubUsername: z
             .string()
-            .nonempty({ message: "GitHub username is required" }),
-        key: z.string().nonempty({ message: "Supporter key is required" })
+            .nonempty({
+                error: "GitHub username is required"
+            }),
+        key: z.string().nonempty({
+            error: "Supporter key is required"
+        })
     });
 
     const form = useForm<z.infer<typeof formSchema>>({

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { createApiClient } from "@app/lib/api";
 import { formatAxiosError } from "@app/lib/api";
 import { toast } from "@app/hooks/useToast";

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { newts, resources, sites, Target, targets } from "@server/db";
 import response from "@server/lib/response";
@@ -15,23 +15,19 @@ import { pickPort } from "./helpers";
 import { isTargetValid } from "@server/lib/validators";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const createTargetParamsSchema = z
-    .object({
+const createTargetParamsSchema = z.strictObject({
         resourceId: z
             .string()
             .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+            .pipe(z.int().positive())
+    });
 
-const createTargetSchema = z
-    .object({
+const createTargetSchema = z.strictObject({
         ip: z.string().refine(isTargetValid),
         method: z.string().optional().nullable(),
-        port: z.number().int().min(1).max(65535),
-        enabled: z.boolean().default(true)
-    })
-    .strict();
+        port: z.int().min(1).max(65535),
+        enabled: z.boolean().prefault(true)
+    });
 
 export type CreateTargetResponse = Target;
 

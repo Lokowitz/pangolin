@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { sites, resources, targets, exitNodes } from "@server/db";
 import { db } from "@server/db";
 import { eq, isNotNull, and } from "drizzle-orm";

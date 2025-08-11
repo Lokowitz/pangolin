@@ -1,16 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import createHttpError from "http-errors";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { fromError } from "zod-validation-error";
 import HttpCode from "@server/types/HttpCode";
 import { response } from "@server/lib";
 import { validateResourceSessionToken } from "@server/auth/sessions/resource";
 import logger from "@server/logger";
 
-export const params = z.object({
+export const params = z.strictObject({
     token: z.string(),
-    resourceId: z.string().transform(Number).pipe(z.number().int().positive()),
-}).strict();
+    resourceId: z.string().transform(Number).pipe(z.int().positive()),
+});
 
 export type CheckResourceSessionParams = z.infer<typeof params>;
 

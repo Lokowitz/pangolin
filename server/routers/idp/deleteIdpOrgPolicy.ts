@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
@@ -10,12 +10,10 @@ import { idp, idpOrg } from "@server/db";
 import { eq, and } from "drizzle-orm";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const paramsSchema = z
-    .object({
+const paramsSchema = z.strictObject({
         idpId: z.coerce.number(),
         orgId: z.string()
-    })
-    .strict();
+    });
 
 registry.registerPath({
     method: "delete",

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { idp, users } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -9,11 +9,9 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const adminGetUserSchema = z
-    .object({
+const adminGetUserSchema = z.strictObject({
         userId: z.string().min(1)
-    })
-    .strict();
+    });
 
 registry.registerPath({
     method: "get",

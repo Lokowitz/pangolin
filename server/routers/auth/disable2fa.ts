@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import createHttpError from "http-errors";
 import HttpCode from "@server/types/HttpCode";
 import { fromError } from "zod-validation-error";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { User, users } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -16,12 +16,10 @@ import config from "@server/lib/config";
 import { unauthorized } from "@server/auth/unauthorizedResponse";
 import { UserType } from "@server/types/UserTypes";
 
-export const disable2faBody = z
-    .object({
+export const disable2faBody = z.strictObject({
         password: z.string(),
         code: z.string().optional()
-    })
-    .strict();
+    });
 
 export type Disable2faBody = z.infer<typeof disable2faBody>;
 

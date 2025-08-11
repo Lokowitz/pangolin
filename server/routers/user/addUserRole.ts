@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { userOrgs, roles } from "@server/db";
 import { eq, and } from "drizzle-orm";
@@ -11,12 +11,10 @@ import { fromError } from "zod-validation-error";
 import stoi from "@server/lib/stoi";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const addUserRoleParamsSchema = z
-    .object({
+const addUserRoleParamsSchema = z.strictObject({
         userId: z.string(),
         roleId: z.string().transform(stoi).pipe(z.number())
-    })
-    .strict();
+    });
 
 export type AddUserRoleResponse = z.infer<typeof addUserRoleParamsSchema>;
 

@@ -13,7 +13,7 @@ import {
 import { AxiosResponse } from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { z } from "zod/v4";
 import {
     Form,
     FormControl,
@@ -408,9 +408,7 @@ export default function ResourceRules(props: {
                     className="w-[75px]"
                     type="number"
                     onBlur={(e) => {
-                        const parsed = z.coerce
-                            .number()
-                            .int()
+                        const parsed = z.int()
                             .optional()
                             .safeParse(e.target.value);
 

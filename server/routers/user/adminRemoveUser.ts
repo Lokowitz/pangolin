@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { db } from "@server/db";
 import { users } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -9,11 +9,9 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const removeUserSchema = z
-    .object({
+const removeUserSchema = z.strictObject({
         userId: z.string()
-    })
-    .strict();
+    });
 
 export async function adminRemoveUser(
     req: Request,

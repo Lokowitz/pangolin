@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { clients, db } from "@server/db";
 import { roles, userSites, sites, roleSites, Site, orgs } from "@server/db";
 import response from "@server/lib/response";
@@ -18,16 +18,13 @@ import { isValidIP } from "@server/lib/validators";
 import { isIpInCidr } from "@server/lib/ip";
 import config from "@server/lib/config";
 
-const createSiteParamsSchema = z
-    .object({
+const createSiteParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const createSiteSchema = z
-    .object({
+const createSiteSchema = z.strictObject({
         name: z.string().min(1).max(255),
-        exitNodeId: z.number().int().positive().optional(),
+        exitNodeId: z.int().positive().optional(),
         // subdomain: z
         //     .string()
         //     .min(1)
@@ -41,7 +38,6 @@ const createSiteSchema = z
         address: z.string().optional(),
         type: z.enum(["newt", "wireguard", "local"])
     })
-    .strict()
     .refine((data) => {
         if (data.type === "local") {
             return !config.getRawConfig().flags?.disable_local_sites;
