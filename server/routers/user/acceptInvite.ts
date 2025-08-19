@@ -11,12 +11,10 @@ import { fromError } from "zod-validation-error";
 import { checkValidInvite } from "@server/auth/checkValidInvite";
 import { verifySession } from "@server/auth/sessions/verifySession";
 
-const acceptInviteBodySchema = z
-    .object({
+const acceptInviteBodySchema = z.strictObject({
         token: z.string(),
         inviteId: z.string()
-    })
-    .strict();
+    });
 
 export type AcceptInviteResponse = {
     accepted: boolean;

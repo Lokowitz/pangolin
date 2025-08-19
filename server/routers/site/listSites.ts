@@ -46,25 +46,23 @@ async function getLatestNewtVersion(): Promise<string | null> {
     }
 }
 
-const listSitesParamsSchema = z
-    .object({
+const listSitesParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 const listSitesSchema = z.object({
     limit: z
         .string()
         .optional()
-        .default("1000")
+        .prefault("1000")
         .transform(Number)
-        .pipe(z.number().int().positive()),
+        .pipe(z.int().positive()),
     offset: z
         .string()
         .optional()
-        .default("0")
+        .prefault("0")
         .transform(Number)
-        .pipe(z.number().int().nonnegative())
+        .pipe(z.int().nonnegative())
 });
 
 function querySites(orgId: string, accessibleSiteIds: number[]) {

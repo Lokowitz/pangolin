@@ -19,20 +19,16 @@ import {
 } from "../olm/peers";
 import axios from "axios";
 
-const updateClientParamsSchema = z
-    .object({
-        clientId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const updateClientParamsSchema = z.strictObject({
+        clientId: z.string().transform(Number).pipe(z.int().positive())
+    });
 
-const updateClientSchema = z
-    .object({
+const updateClientSchema = z.strictObject({
         name: z.string().min(1).max(255).optional(),
         siteIds: z
             .array(z.string().transform(Number).pipe(z.number()))
             .optional()
-    })
-    .strict();
+    });
 
 export type UpdateClientBody = z.infer<typeof updateClientSchema>;
 

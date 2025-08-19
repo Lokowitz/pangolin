@@ -11,11 +11,9 @@ import { isWithinExpirationDate } from "oslo";
 import config from "@server/lib/config";
 import logger from "@server/logger";
 
-export const verifyEmailBody = z
-    .object({
+export const verifyEmailBody = z.strictObject({
         code: z.string()
-    })
-    .strict();
+    });
 
 export type VerifyEmailBody = z.infer<typeof verifyEmailBody>;
 

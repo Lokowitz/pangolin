@@ -73,7 +73,7 @@ export default function Page() {
     const [dataLoaded, setDataLoaded] = useState(false);
 
     const internalFormSchema = z.object({
-        email: z.string().email({ message: t("emailInvalid") }),
+        email: z.email(),
         validForHours: z
             .string()
             .min(1, { message: t("inviteValidityDuration") }),
@@ -82,9 +82,7 @@ export default function Page() {
 
     const externalFormSchema = z.object({
         username: z.string().min(1, { message: t("usernameRequired") }),
-        email: z
-            .string()
-            .email({ message: t("emailInvalid") })
+        email: z.email()
             .optional()
             .or(z.literal("")),
         name: z.string().optional(),
