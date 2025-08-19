@@ -1,11 +1,11 @@
 import z from "zod";
 
 export function isValidCIDR(cidr: string): boolean {
-    return z.string().cidrv4().safeParse(cidr).success;
+    return z.cidrv4().safeParse(cidr).success;
 }
 
 export function isValidIP(ip: string): boolean {
-    return z.string().ipv4().safeParse(ip).success;
+    return z.ipv4().safeParse(ip).success;
 }
 
 export function isValidUrlGlobPattern(pattern: string): boolean {
