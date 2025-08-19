@@ -109,7 +109,7 @@
         "winston": "3.17.0",
         "winston-daily-rotate-file": "5.0.0",
         "ws": "8.18.3",
-        "zod": "3.25.76",
+        "zod": "4.0.17",
         "zod-validation-error": "3.5.2",
         "yargs": "18.0.0"
     },
