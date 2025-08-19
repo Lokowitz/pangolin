@@ -25,22 +25,18 @@ import { isValidCIDR, isValidIP } from "@server/lib/validators";
 import { isIpInCidr } from "@server/lib/ip";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const createClientParamsSchema = z
-    .object({
+const createClientParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const createClientSchema = z
-    .object({
+const createClientSchema = z.strictObject({
         name: z.string().min(1).max(255),
-        siteIds: z.array(z.number().int().positive()),
+        siteIds: z.array(z.int().positive()),
         olmId: z.string(),
         secret: z.string(),
         subnet: z.string(),
         type: z.enum(["olm"])
-    })
-    .strict();
+    });
 
 export type CreateClientBody = z.infer<typeof createClientSchema>;
 

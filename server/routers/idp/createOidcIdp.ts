@@ -13,22 +13,20 @@ import { encrypt } from "@server/lib/crypto";
 import config from "@server/lib/config";
 import license from "@server/license/license";
 
-const paramsSchema = z.object({}).strict();
+const paramsSchema = z.strictObject({});
 
-const bodySchema = z
-    .object({
+const bodySchema = z.strictObject({
         name: z.string().nonempty(),
         clientId: z.string().nonempty(),
         clientSecret: z.string().nonempty(),
-        authUrl: z.string().url(),
-        tokenUrl: z.string().url(),
+        authUrl: z.url(),
+        tokenUrl: z.url(),
         identifierPath: z.string().nonempty(),
         emailPath: z.string().optional(),
         namePath: z.string().optional(),
         scopes: z.string().nonempty(),
         autoProvision: z.boolean().optional()
-    })
-    .strict();
+    });
 
 export type CreateIdpResponse = {
     idpId: number;

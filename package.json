@@ -27,7 +27,7 @@
         "build:cli": "node esbuild.mjs -e cli/index.ts -o dist/cli.mjs"
     },
     "dependencies": {
-        "@asteasolutions/zod-to-openapi": "^7.3.4",
+        "@asteasolutions/zod-to-openapi": "8.1.0",
         "@hookform/resolvers": "3.9.1",
         "@node-rs/argon2": "^2.0.2",
         "@oslojs/crypto": "1.0.1",
@@ -109,8 +109,8 @@
         "winston": "3.17.0",
         "winston-daily-rotate-file": "5.0.0",
         "ws": "8.18.3",
-        "zod": "3.25.76",
-        "zod-validation-error": "3.5.2",
+        "zod": "4.0.17",
+        "zod-validation-error": "4.0.1",
         "yargs": "18.0.0"
     },
     "devDependencies": {

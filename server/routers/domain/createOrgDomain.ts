@@ -13,18 +13,14 @@ import { isValidDomain } from "@server/lib/validators";
 import { build } from "@server/build";
 import config from "@server/lib/config";
 
-const paramsSchema = z
-    .object({
+const paramsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const bodySchema = z
-    .object({
+const bodySchema = z.strictObject({
         type: z.enum(["ns", "cname", "wildcard"]),
         baseDomain: subdomainSchema
-    })
-    .strict();
+    });
 
 export type CreateDomainResponse = {
     domainId: string;

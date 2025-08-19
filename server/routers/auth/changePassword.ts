@@ -18,13 +18,11 @@ import { invalidateAllSessions } from "@server/auth/sessions/app";
 import { passwordSchema } from "@server/auth/passwordSchema";
 import { UserType } from "@server/types/UserTypes";
 
-export const changePasswordBody = z
-    .object({
+export const changePasswordBody = z.strictObject({
         oldPassword: z.string(),
         newPassword: passwordSchema,
         code: z.string().optional()
-    })
-    .strict();
+    });
 
 export type ChangePasswordBody = z.infer<typeof changePasswordBody>;
 

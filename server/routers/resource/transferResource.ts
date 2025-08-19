@@ -13,20 +13,16 @@ import { addTargets, removeTargets } from "../newt/targets";
 import { getAllowedIps } from "../target/helpers";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const transferResourceParamsSchema = z
-    .object({
+const transferResourceParamsSchema = z.strictObject({
         resourceId: z
             .string()
             .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+            .pipe(z.int().positive())
+    });
 
-const transferResourceBodySchema = z
-    .object({
-        siteId: z.number().int().positive()
-    })
-    .strict();
+const transferResourceBodySchema = z.strictObject({
+        siteId: z.int().positive()
+    });
 
 registry.registerPath({
     method: "post",

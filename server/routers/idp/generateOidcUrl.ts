@@ -21,11 +21,9 @@ const paramsSchema = z
     })
     .strict();
 
-const bodySchema = z
-    .object({
+const bodySchema = z.strictObject({
         redirectUrl: z.string()
-    })
-    .strict();
+    });
 
 const ensureTrailingSlash = (url: string): string => {
     return url;

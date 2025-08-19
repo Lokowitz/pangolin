@@ -11,12 +11,10 @@ import stoi from "@server/lib/stoi";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const getClientSchema = z
-    .object({
-        clientId: z.string().transform(stoi).pipe(z.number().int().positive()),
+const getClientSchema = z.strictObject({
+        clientId: z.string().transform(stoi).pipe(z.int().positive()),
         orgId: z.string()
-    })
-    .strict();
+    });
 
 async function query(clientId: number) {
     // Get the client
