@@ -22,14 +22,14 @@ export async function ensureActions() {
         .where(eq(roles.isAdmin, true))
         .execute();
 
-    await db.transaction(async (trx) => {
+    db.transaction((trx) => {
         // Add new actions
         for (const actionId of actionsToAdd) {
             logger.debug(`Adding action: ${actionId}`);
-            await trx.insert(actions).values({ actionId }).execute();
+            trx.insert(actions).values({ actionId });
             // Add new actions to the Default role
             if (defaultRoles.length != 0) {
-                await trx
+                trx
                     .insert(roleActions)
                     .values(
                         defaultRoles.map((role) => ({
@@ -37,22 +37,19 @@ export async function ensureActions() {
                             actionId,
                             orgId: role.orgId!
                         }))
-                    )
-                    .execute();
+                    );
             }
         }
 
         // Remove deprecated actions
         if (actionsToRemove.length > 0) {
             logger.debug(`Removing actions: ${actionsToRemove.join(", ")}`);
-            await trx
+            trx
                 .delete(actions)
-                .where(inArray(actions.actionId, actionsToRemove))
-                .execute();
-            await trx
+                .where(inArray(actions.actionId, actionsToRemove));
+            trx
                 .delete(roleActions)
-                .where(inArray(roleActions.actionId, actionsToRemove))
-                .execute();
+                .where(inArray(roleActions.actionId, actionsToRemove));
         }
     });
 }

@@ -31,9 +31,8 @@ export async function copyInConfig() {
 }
 
 async function copyInDomains() {
-    await db.transaction(async (trx) => {
-        const rawDomains = config.getRawConfig().domains!; // always defined if disable flag is not set
-
+    db.transaction((trx) => {
+        const rawDomains = config.getRawConfig().domains!;
         const configDomains = Object.entries(rawDomains).map(
             ([key, value]) => ({
                 domainId: key,
@@ -41,10 +40,11 @@ async function copyInDomains() {
             })
         );
 
-        const existingDomains = await trx
+        const existingDomains = trx
             .select()
             .from(domains)
-            .where(eq(domains.configManaged, true));
+            .where(eq(domains.configManaged, true))
+            .all();
         const existingDomainKeys = new Set(
             existingDomains.map((d) => d.domainId)
         );
@@ -52,22 +52,20 @@ async function copyInDomains() {
         const configDomainKeys = new Set(configDomains.map((d) => d.domainId));
         for (const existingDomain of existingDomains) {
             if (!configDomainKeys.has(existingDomain.domainId)) {
-                await trx
+                trx
                     .delete(domains)
-                    .where(eq(domains.domainId, existingDomain.domainId))
-                    .execute();
+                    .where(eq(domains.domainId, existingDomain.domainId));
             }
         }
 
         for (const { domainId, baseDomain } of configDomains) {
             if (existingDomainKeys.has(domainId)) {
-                await trx
+                trx
                     .update(domains)
                     .set({ baseDomain, verified: true, type: "wildcard" })
-                    .where(eq(domains.domainId, domainId))
-                    .execute();
+                    .where(eq(domains.domainId, domainId));
             } else {
-                await trx
+                trx
                     .insert(domains)
                     .values({
                         domainId,
@@ -75,14 +73,12 @@ async function copyInDomains() {
                         configManaged: true,
                         type: "wildcard",
                         verified: true
-                    })
-                    .execute();
+                    });
             }
         }
 
-        const allOrgs = await trx.select().from(orgs);
-
-        const existingOrgDomains = await trx.select().from(orgDomains);
+    const allOrgs = trx.select().from(orgs).all();
+    const existingOrgDomains = trx.select().from(orgDomains).all();
         const existingOrgDomainSet = new Set(
             existingOrgDomains.map((od) => `${od.orgId}-${od.domainId}`)
         );
@@ -101,15 +97,16 @@ async function copyInDomains() {
         }
 
         if (newOrgDomains.length > 0) {
-            await trx.insert(orgDomains).values(newOrgDomains).execute();
+            trx.insert(orgDomains).values(newOrgDomains);
         }
     });
 
-    await db.transaction(async (trx) => {
-        const allResources = await trx
+    db.transaction((trx) => {
+        const allResources = trx
             .select()
             .from(resources)
-            .leftJoin(domains, eq(domains.domainId, resources.domainId));
+            .leftJoin(domains, eq(domains.domainId, resources.domainId))
+            .all();
 
         for (const { resources: resource, domains: domain } of allResources) {
             if (!resource || !domain) {
@@ -127,7 +124,7 @@ async function copyInDomains() {
                 fullDomain = `${resource.subdomain}.${domain.baseDomain}`;
             }
 
-            await trx
+            trx
                 .update(resources)
                 .set({ fullDomain })
                 .where(eq(resources.resourceId, resource.resourceId));
