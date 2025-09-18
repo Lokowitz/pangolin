@@ -41,6 +41,7 @@ test_event.json
 public/branding
 server/db/index.ts
 server/build.ts
+server/setup/copyInConfig.ts
 postgres/
 dynamic/
 certificates/ 
