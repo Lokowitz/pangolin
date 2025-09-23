@@ -82,7 +82,7 @@ export default function SupporterStatus({ isCollapsed = false }: SupporterStatus
         })
     });
 
-    const form = useForm<z.infer<typeof formSchema>>({
+    const form = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
             githubUsername: "",

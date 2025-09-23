@@ -159,7 +159,7 @@ export default function Page() {
         { hours: 168, name: t("day", { count: 7 }) }
     ];
 
-    const internalForm = useForm<z.infer<typeof internalFormSchema>>({
+    const internalForm = useForm({
         resolver: zodResolver(internalFormSchema),
         defaultValues: {
             email: "",
@@ -168,7 +168,7 @@ export default function Page() {
         }
     });
 
-    const googleAzureForm = useForm<z.infer<typeof googleAzureFormSchema>>({
+    const googleAzureForm = useForm({
         resolver: zodResolver(googleAzureFormSchema),
         defaultValues: {
             email: "",
@@ -177,7 +177,7 @@ export default function Page() {
         }
     });
 
-    const genericOidcForm = useForm<z.infer<typeof genericOidcFormSchema>>({
+    const genericOidcForm = useForm({
         resolver: zodResolver(genericOidcFormSchema),
         defaultValues: {
             username: "",

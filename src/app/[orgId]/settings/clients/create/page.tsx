@@ -267,7 +267,7 @@ export default function Page() {
         }
     };
 
-    const form = useForm<CreateClientFormValues>({
+    const form = useForm({
         resolver: zodResolver(createClientFormSchema),
         defaultValues: {
             name: "",
