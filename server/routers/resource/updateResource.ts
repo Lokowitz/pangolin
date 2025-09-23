@@ -90,7 +90,8 @@ const updateHttpResourceBodySchema = z.strictObject({
             return true;
         },
         {
-            error: "Invalid headers format. Use comma-separated format: 'Header-Name: value, Another-Header: another-value'. Header values cannot contain colons."
+            message:
+                "Invalid headers format. Use comma-separated format: 'Header-Name: value, Another-Header: another-value'. Header values cannot contain colons."
         }
     );
 
@@ -287,9 +288,14 @@ async function updateHttpResource(
         updateData.subdomain = finalSubdomain;
     }
 
+    let headers = null;
+    if (updateData.headers) {
+        headers = JSON.stringify(updateData.headers);
+    }
+
     const updatedResource = await db
         .update(resources)
-        .set({ ...updateData })
+        .set({ ...updateData, headers })
         .where(eq(resources.resourceId, resource.resourceId))
         .returning();
 
@@ -336,31 +342,6 @@ async function updateRawResource(
     }
 
     const updateData = parsedBody.data;
-
-    if (updateData.proxyPort) {
-        const proxyPort = updateData.proxyPort;
-        const existingResource = await db
-            .select()
-            .from(resources)
-            .where(
-                and(
-                    eq(resources.protocol, resource.protocol),
-                    eq(resources.proxyPort, proxyPort!)
-                )
-            );
-
-        if (
-            existingResource.length > 0 &&
-            existingResource[0].resourceId !== resource.resourceId
-        ) {
-            return next(
-                createHttpError(
-                    HttpCode.CONFLICT,
-                    "Resource with that protocol and port already exists"
-                )
-            );
-        }
-    }
 
     const updatedResource = await db
         .update(resources)
