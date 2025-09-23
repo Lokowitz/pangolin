@@ -90,8 +90,7 @@ const updateHttpResourceBodySchema = z.strictObject({
             return true;
         },
         {
-            message:
-                "Invalid headers format. Use comma-separated format: 'Header-Name: value, Another-Header: another-value'. Header values cannot contain colons."
+            error: "Invalid headers format. Use comma-separated format: 'Header-Name: value, Another-Header: another-value'. Header values cannot contain colons."
         }
     );
 
