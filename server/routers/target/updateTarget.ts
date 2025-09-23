@@ -14,25 +14,21 @@ import { pickPort } from "./helpers";
 import { isTargetValid } from "@server/lib/validators";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const updateTargetParamsSchema = z
-    .object({
-        targetId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const updateTargetParamsSchema = z.strictObject({
+        targetId: z.string().transform(Number).pipe(z.int().positive())
+    });
 
-const updateTargetBodySchema = z
-    .object({
-        siteId: z.number().int().positive(),
+const updateTargetBodySchema = z.strictObject({
+        siteId: z.int().positive(),
         ip: z.string().refine(isTargetValid),
         method: z.string().min(1).max(10).optional().nullable(),
-        port: z.number().int().min(1).max(65535).optional(),
+        port: z.int().min(1).max(65535).optional(),
         enabled: z.boolean().optional(),
         path: z.string().optional().nullable(),
         pathMatchType: z.enum(["exact", "prefix", "regex"]).optional().nullable()
     })
-    .strict()
     .refine((data) => Object.keys(data).length > 0, {
-        message: "At least one field must be provided for update"
+        error: "At least one field must be provided for update"
     });
 
 registry.registerPath({

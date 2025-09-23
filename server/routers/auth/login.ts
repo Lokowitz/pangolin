@@ -19,13 +19,11 @@ import { verifyPassword } from "@server/auth/password";
 import { verifySession } from "@server/auth/sessions/verifySession";
 import { UserType } from "@server/types/UserTypes";
 
-export const loginBodySchema = z
-    .object({
-        email: z.string().toLowerCase().email(),
+export const loginBodySchema = z.strictObject({
+        email: z.email().toLowerCase(),
         password: z.string(),
         code: z.string().optional()
-    })
-    .strict();
+    });
 
 export type LoginBody = z.infer<typeof loginBodySchema>;
 

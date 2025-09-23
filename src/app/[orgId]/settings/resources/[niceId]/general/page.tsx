@@ -97,7 +97,7 @@ export default function GeneralForm() {
             subdomain: z.string().optional(),
             name: z.string().min(1).max(255),
             domainId: z.string().optional(),
-            proxyPort: z.number().int().min(1).max(65535).optional(),
+            proxyPort: z.int().min(1).max(65535).optional(),
             // enableProxy: z.boolean().optional()
         })
         .refine(

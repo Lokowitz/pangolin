@@ -16,22 +16,18 @@ import {
 import config from "@server/lib/config";
 import stoi from "@server/lib/stoi";
 
-const authWithAccessTokenBodySchema = z
-    .object({
+const authWithAccessTokenBodySchema = z.strictObject({
         accessToken: z.string(),
         accessTokenId: z.string().optional()
-    })
-    .strict();
+    });
 
-const authWithAccessTokenParamsSchema = z
-    .object({
+const authWithAccessTokenParamsSchema = z.strictObject({
         resourceId: z
             .string()
             .optional()
             .transform(stoi)
-            .pipe(z.number().int().positive().optional())
-    })
-    .strict();
+            .pipe(z.int().positive().optional())
+    });
 
 export type AuthWithAccessTokenResponse = {
     session?: string;

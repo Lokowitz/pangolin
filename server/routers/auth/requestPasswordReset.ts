@@ -16,14 +16,10 @@ import { sendEmail } from "@server/emails";
 import ResetPasswordCode from "@server/emails/templates/ResetPasswordCode";
 import { hashPassword } from "@server/auth/password";
 
-export const requestPasswordResetBody = z
-    .object({
-        email: z
-            .string()
-            .toLowerCase()
-            .email(),
-    })
-    .strict();
+export const requestPasswordResetBody = z.strictObject({
+        email: z.email()
+                    .toLowerCase(),
+    });
 
 export type RequestPasswordResetBody = z.infer<typeof requestPasswordResetBody>;
 
