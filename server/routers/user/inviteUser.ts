@@ -20,24 +20,18 @@ import { UserType } from "@server/types/UserTypes";
 
 const regenerateTracker = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
 
-const inviteUserParamsSchema = z
-    .object({
+const inviteUserParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const inviteUserBodySchema = z
-    .object({
-        email: z
-            .string()
-            .toLowerCase()
-            .email(),
+const inviteUserBodySchema = z.strictObject({
+        email: z.email()
+                    .toLowerCase(),
         roleId: z.number(),
         validHours: z.number().gt(0).lte(168),
         sendEmail: z.boolean().optional(),
         regenerate: z.boolean().optional()
-    })
-    .strict();
+    });
 
 export type InviteUserBody = z.infer<typeof inviteUserBodySchema>;
 

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const SiteSchema = z.object({
     name: z.string().min(1).max(100),
-    "docker-socket-enabled": z.boolean().optional().default(true)
+    "docker-socket-enabled": z.boolean().optional().prefault(true)
 });
 
 // Schema for individual target within a resource
@@ -10,9 +10,9 @@ export const TargetSchema = z.object({
     site: z.string().optional(),
     method: z.enum(["http", "https", "h2c"]).optional(),
     hostname: z.string(),
-    port: z.number().int().min(1).max(65535),
-    enabled: z.boolean().optional().default(true),
-    "internal-port": z.number().int().min(1).max(65535).optional(),
+    port: z.int().min(1).max(65535),
+    enabled: z.boolean().optional().prefault(true),
+    "internal-port": z.int().min(1).max(65535).optional(),
     path: z.string().optional(),
     "path-match": z.enum(["exact", "prefix", "regex"]).optional().nullable()
 });
@@ -22,16 +22,16 @@ export const AuthSchema = z.object({
     // pincode has to have 6 digits
     pincode: z.number().min(100000).max(999999).optional(),
     password: z.string().min(1).optional(),
-    "sso-enabled": z.boolean().optional().default(false),
+    "sso-enabled": z.boolean().optional().prefault(false),
     "sso-roles": z
         .array(z.string())
         .optional()
-        .default([])
+        .prefault([])
         .refine((roles) => !roles.includes("Admin"), {
-            message: "Admin role cannot be included in sso-roles"
+            error: "Admin role cannot be included in sso-roles"
         }),
-    "sso-users": z.array(z.string().email()).optional().default([]),
-    "whitelist-users": z.array(z.string().email()).optional().default([]),
+    "sso-users": z.array(z.email()).optional().prefault([]),
+    "whitelist-users": z.array(z.email()).optional().prefault([]),
 });
 
 export const RuleSchema = z.object({
@@ -52,9 +52,9 @@ export const ResourceSchema = z
         protocol: z.enum(["http", "tcp", "udp"]).optional(),
         ssl: z.boolean().optional(),
         "full-domain": z.string().optional(),
-        "proxy-port": z.number().int().min(1).max(65535).optional(),
+        "proxy-port": z.int().min(1).max(65535).optional(),
         enabled: z.boolean().optional(),
-        targets: z.array(TargetSchema.nullable()).optional().default([]),
+        targets: z.array(TargetSchema.nullable()).optional().prefault([]),
         auth: AuthSchema.optional(),
         "host-header": z.string().optional(),
         "tls-server-name": z.string().optional(),
@@ -73,9 +73,8 @@ export const ResourceSchema = z
             );
         },
         {
-            message:
-                "Resource must either be targets-only (only 'targets' field) or have both 'name' and 'protocol' fields at a minimum",
-            path: ["name", "protocol"]
+            path: ["name", "protocol"],
+            error: "Resource must either be targets-only (only 'targets' field) or have both 'name' and 'protocol' fields at a minimum"
         }
     )
     .refine(
@@ -97,7 +96,9 @@ export const ResourceSchema = z
                 );
             }
             return true;
-        },
+        }
+    )
+    .refine(
         (resource) => {
             if (resource.protocol === "http") {
                 return {
@@ -129,9 +130,8 @@ export const ResourceSchema = z
             return true;
         },
         {
-            message:
-                "When protocol is 'http', a 'full-domain' must be provided",
-            path: ["full-domain"]
+            path: ["full-domain"],
+            error: "When protocol is 'http', a 'full-domain' must be provided"
         }
     )
     .refine(
@@ -147,9 +147,8 @@ export const ResourceSchema = z
             return true;
         },
         {
-            message:
-                "When protocol is 'tcp' or 'udp', 'proxy-port' must be provided",
-            path: ["proxy-port", "exit-node"]
+            path: ["proxy-port", "exit-node"],
+            error: "When protocol is 'tcp' or 'udp', 'proxy-port' must be provided"
         }
     )
     .refine(
@@ -166,9 +165,8 @@ export const ResourceSchema = z
             return true;
         },
         {
-            message:
-                "When protocol is 'tcp' or 'udp', 'auth' must not be provided",
-            path: ["auth"]
+            path: ["auth"],
+            error: "When protocol is 'tcp' or 'udp', 'auth' must not be provided"
         }
     );
 
@@ -183,15 +181,15 @@ export const ClientResourceSchema = z.object({
     "proxy-port": z.number().min(1).max(65535),
     "hostname": z.string().min(1).max(255),
     "internal-port": z.number().min(1).max(65535),
-    enabled: z.boolean().optional().default(true)   
+    enabled: z.boolean().optional().prefault(true)   
 });
 
 // Schema for the entire configuration object
 export const ConfigSchema = z
     .object({
-        "proxy-resources": z.record(z.string(), ResourceSchema).optional().default({}),
-        "client-resources": z.record(z.string(), ClientResourceSchema).optional().default({}),
-        sites: z.record(z.string(), SiteSchema).optional().default({})
+        "proxy-resources": z.record(z.string(), ResourceSchema).optional().prefault({}),
+        "client-resources": z.record(z.string(), ClientResourceSchema).optional().prefault({}),
+        sites: z.record(z.string(), SiteSchema).optional().prefault({})
     })
     .refine(
         // Enforce the full-domain uniqueness across resources in the same stack
@@ -218,7 +216,9 @@ export const ConfigSchema = z
             );
 
             return duplicates.length === 0;
-        },
+        }
+    )
+    .refine(
         (config) => {
             // Extract duplicates for error message
             const fullDomainMap = new Map<string, string[]>();
@@ -273,7 +273,9 @@ export const ConfigSchema = z
             );
 
             return duplicates.length === 0;
-        },
+        }
+    )
+    .refine(
         (config) => {
             // Extract duplicates for error message
             const proxyPortMap = new Map<number, string[]>();
@@ -327,7 +329,9 @@ export const ConfigSchema = z
             );
 
             return duplicates.length === 0;
-        },
+        }
+    )
+    .refine(
         (config) => {
             // Extract duplicates for error message
             const proxyPortMap = new Map<number, string[]>();

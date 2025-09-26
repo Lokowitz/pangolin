@@ -10,12 +10,10 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const removeUserSchema = z
-    .object({
+const removeUserSchema = z.strictObject({
         userId: z.string(),
         orgId: z.string()
-    })
-    .strict();
+    });
 
 registry.registerPath({
     method: "delete",

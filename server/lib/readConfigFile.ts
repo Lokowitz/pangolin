@@ -13,25 +13,23 @@ const getEnvOrYaml = (envVar: string) => (valFromYaml: any) => {
 export const configSchema = z
     .object({
         app: z.object({
-            dashboard_url: z
-                .string()
-                .url()
-                .pipe(z.string().url())
+            dashboard_url: z.url()
+                .pipe(z.url())
                 .transform((url) => url.toLowerCase())
                 .optional(),
             log_level: z
                 .enum(["debug", "info", "warn", "error"])
                 .optional()
-                .default("info"),
-            save_logs: z.boolean().optional().default(false),
-            log_failed_attempts: z.boolean().optional().default(false),
+                .prefault("info"),
+            save_logs: z.boolean().optional().prefault(false),
+            log_failed_attempts: z.boolean().optional().prefault(false),
             telemetry: z
                 .object({
-                    anonymous_usage: z.boolean().optional().default(true)
+                    anonymous_usage: z.boolean().optional().prefault(true)
                 })
                 .optional()
-                .default({})
-        }).optional().default({
+                .prefault({})
+        }).optional().prefault({
             log_level: "info",
             save_logs: false,
             log_failed_attempts: false,
@@ -44,7 +42,7 @@ export const configSchema = z
                 name: z.string().optional(),
                 id: z.string().optional(),
                 secret: z.string().optional(),
-                endpoint: z.string().optional().default("https://pangolin.fossorial.io"),
+                endpoint: z.string().optional().prefault("https://pangolin.fossorial.io"),
                 redirect_endpoint: z.string().optional()
             })
             .optional(),
@@ -56,68 +54,68 @@ export const configSchema = z
                         .string()
                         .nonempty("base_domain must not be empty")
                         .transform((url) => url.toLowerCase()),
-                    cert_resolver: z.string().optional().default("letsencrypt"),
-                    prefer_wildcard_cert: z.boolean().optional().default(false)
+                    cert_resolver: z.string().optional().prefault("letsencrypt"),
+                    prefer_wildcard_cert: z.boolean().optional().prefault(false)
                 })
             )
             .optional(),
         server: z.object({
             integration_port: portSchema
                 .optional()
-                .default(3004)
+                .prefault(3004)
                 .transform(stoi)
                 .pipe(portSchema.optional()),
             external_port: portSchema
                 .optional()
-                .default(3000)
+                .prefault(3000)
                 .transform(stoi)
                 .pipe(portSchema),
             internal_port: portSchema
                 .optional()
-                .default(3001)
+                .prefault(3001)
                 .transform(stoi)
                 .pipe(portSchema),
             next_port: portSchema
                 .optional()
-                .default(3002)
+                .prefault(3002)
                 .transform(stoi)
                 .pipe(portSchema),
             internal_hostname: z
                 .string()
                 .optional()
-                .default("pangolin")
+                .prefault("pangolin")
                 .transform((url) => url.toLowerCase()),
             session_cookie_name: z
                 .string()
                 .optional()
-                .default("p_session_token"),
+                .prefault("p_session_token"),
             resource_access_token_param: z
                 .string()
                 .optional()
-                .default("p_token"),
+                .prefault("p_token"),
             resource_access_token_headers: z
                 .object({
-                    id: z.string().optional().default("P-Access-Token-Id"),
-                    token: z.string().optional().default("P-Access-Token")
+                    id: z.string().optional().prefault("P-Access-Token-Id"),
+                    token: z.string().optional().prefault("P-Access-Token")
                 })
                 .optional()
-                .default({}),
+                .prefault({}),
             resource_session_request_param: z
                 .string()
                 .optional()
-                .default("resource_session_request_param"),
+                .prefault("resource_session_request_param"),
             dashboard_session_length_hours: z
                 .number()
                 .positive()
                 .gt(0)
                 .optional()
-                .default(720),
+                .prefault(720),
             resource_session_length_hours: z
                 .number()
                 .positive()
                 .gt(0)
                 .optional()
-                .default(720),
+                .prefault(720),
             cors: z
                 .object({
                     origins: z.array(z.string()).optional(),
@@ -126,12 +124,12 @@ export const configSchema = z
                     credentials: z.boolean().optional()
                 })
                 .optional(),
-            trust_proxy: z.number().int().gte(0).optional().default(1),
+            trust_proxy: z.int().gte(0).optional().prefault(1),
             secret: z
                 .string()
                 .pipe(z.string().min(8))
                 .optional()
-        }).optional().default({
+        }).optional().prefault({
             integration_port: 3003,
             external_port: 3000,
             internal_port: 3001,
@@ -162,34 +160,34 @@ export const configSchema = z
             .optional(),
         traefik: z
             .object({
-                http_entrypoint: z.string().optional().default("web"),
-                https_entrypoint: z.string().optional().default("websecure"),
+                http_entrypoint: z.string().optional().prefault("web"),
+                https_entrypoint: z.string().optional().prefault("websecure"),
                 additional_middlewares: z.array(z.string()).optional(),
-                cert_resolver: z.string().optional().default("letsencrypt"),
-                prefer_wildcard_cert: z.boolean().optional().default(false),
-                certificates_path: z.string().default("/var/certificates"),
-                monitor_interval: z.number().default(5000),
+                cert_resolver: z.string().optional().prefault("letsencrypt"),
+                prefer_wildcard_cert: z.boolean().optional().prefault(false),
+                certificates_path: z.string().prefault("/var/certificates"),
+                monitor_interval: z.number().prefault(5000),
                 dynamic_cert_config_path: z
                     .string()
                     .optional()
-                    .default("/var/dynamic/cert_config.yml"),
+                    .prefault("/var/dynamic/cert_config.yml"),
                 dynamic_router_config_path: z
                     .string()
                     .optional()
-                    .default("/var/dynamic/router_config.yml"),
-                static_domains: z.array(z.string()).optional().default([]),
-                site_types: z.array(z.string()).optional().default(["newt", "wireguard", "local"]),
-                allow_raw_resources: z.boolean().optional().default(true),
-                file_mode: z.boolean().optional().default(false)
+                    .prefault("/var/dynamic/router_config.yml"),
+                static_domains: z.array(z.string()).optional().prefault([]),
+                site_types: z.array(z.string()).optional().prefault(["newt", "wireguard", "local"]),
+                allow_raw_resources: z.boolean().optional().prefault(true),
+                file_mode: z.boolean().optional().prefault(false)
             })
             .optional()
-            .default({}),
+            .prefault({}),
         gerbil: z
             .object({
                 exit_node_name: z.string().optional(),
                 start_port: portSchema
                     .optional()
-                    .default(51820)
+                    .prefault(51820)
                     .transform(stoi)
                     .pipe(portSchema),
                 base_endpoint: z
@@ -197,25 +195,25 @@ export const configSchema = z
                     .optional()
                     .pipe(z.string())
                     .transform((url) => url.toLowerCase()),
-                use_subdomain: z.boolean().optional().default(false),
-                subnet_group: z.string().optional().default("100.89.137.0/20"),
-                block_size: z.number().positive().gt(0).optional().default(24),
+                use_subdomain: z.boolean().optional().prefault(false),
+                subnet_group: z.string().optional().prefault("100.89.137.0/20"),
+                block_size: z.number().positive().gt(0).optional().prefault(24),
                 site_block_size: z
                     .number()
                     .positive()
                     .gt(0)
                     .optional()
-                    .default(30)
+                    .prefault(30)
             })
             .optional()
-            .default({}),
+            .prefault({}),
         orgs: z
             .object({
-                block_size: z.number().positive().gt(0).optional().default(24),
-                subnet_group: z.string().optional().default("100.90.128.0/24")
+                block_size: z.number().positive().gt(0).optional().prefault(24),
+                subnet_group: z.string().optional().prefault("100.90.128.0/24")
             })
             .optional()
-            .default({
+            .prefault({
                 block_size: 24,
                 subnet_group: "100.90.128.0/24"
             }),
@@ -228,16 +226,16 @@ export const configSchema = z
                             .positive()
                             .gt(0)
                             .optional()
-                            .default(1),
+                            .prefault(1),
                         max_requests: z
                             .number()
                             .positive()
                             .gt(0)
                             .optional()
-                            .default(500)
+                            .prefault(500)
                     })
                     .optional()
-                    .default({}),
+                    .prefault({}),
                 auth: z
                     .object({
                         window_minutes: z
@@ -245,19 +243,19 @@ export const configSchema = z
                             .positive()
                             .gt(0)
                             .optional()
-                            .default(1),
+                            .prefault(1),
                         max_requests: z
                             .number()
                             .positive()
                             .gt(0)
                             .optional()
-                            .default(500)
+                            .prefault(500)
                     })
                     .optional()
-                    .default({})
+                    .prefault({})
             })
             .optional()
-            .default({}),
+            .prefault({}),
         email: z
             .object({
                 smtp_host: z.string().optional(),
@@ -269,7 +267,7 @@ export const configSchema = z
                     .transform(getEnvOrYaml("EMAIL_SMTP_PASS")),
                 smtp_secure: z.boolean().optional(),
                 smtp_tls_reject_unauthorized: z.boolean().optional(),
-                no_reply: z.string().email().optional()
+                no_reply: z.email().optional()
             })
             .optional(),
         flags: z
@@ -282,7 +280,7 @@ export const configSchema = z
                 disable_local_sites: z.boolean().optional(),
                 disable_basic_wireguard_sites: z.boolean().optional(),
                 disable_config_managed_domains: z.boolean().optional(),
-                enable_clients: z.boolean().optional().default(true)
+                enable_clients: z.boolean().optional().prefault(true)
             })
             .optional(),
         dns: z
@@ -290,11 +288,11 @@ export const configSchema = z
                 nameservers: z
                     .array(z.string().optional().optional())
                     .optional()
-                    .default(["ns1.fossorial.io", "ns2.fossorial.io"]),
-                cname_extension: z.string().optional().default("fossorial.io")
+                    .prefault(["ns1.fossorial.io", "ns2.fossorial.io"]),
+                cname_extension: z.string().optional().prefault("fossorial.io")
             })
             .optional()
-            .default({
+            .prefault({
                 nameservers: ["ns1.fossorial.io", "ns2.fossorial.io"],
                 cname_extension: "fossorial.io"
             })
@@ -315,7 +313,7 @@ export const configSchema = z
             return true;
         },
         {
-            message: "At least one domain must be defined"
+            error: "At least one domain must be defined"
         }
     )
     .refine(
@@ -331,7 +329,7 @@ export const configSchema = z
             return data.server?.secret !== undefined && data.server.secret.length > 0;
         },
         {
-            message: "Server secret must be defined"
+            error: "Server secret must be defined"
         }
     )
     .refine(
@@ -344,7 +342,7 @@ export const configSchema = z
             return data.app.dashboard_url !== undefined && data.app.dashboard_url.length > 0;
         },
         {
-            message: "Dashboard URL must be defined"
+            error: "Dashboard URL must be defined"
         }
     );
 

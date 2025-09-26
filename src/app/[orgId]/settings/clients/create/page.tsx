@@ -104,9 +104,11 @@ export default function Page() {
             .refine((val) => val.length > 0, {
                 message: t("siteRequired")
             }),
-        subnet: z.string().ip().min(1, {
-            message: t("subnetRequired")
-        })
+        subnet: z.union([z.ipv4().min(1, {
+                                message: t("subnetRequired")
+                            }), z.ipv6().min(1, {
+                                message: t("subnetRequired")
+                            })])
     });
 
     type CreateClientFormValues = z.infer<typeof createClientFormSchema>;
