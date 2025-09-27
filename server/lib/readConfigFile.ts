@@ -13,10 +13,8 @@ const getEnvOrYaml = (envVar: string) => (valFromYaml: any) => {
 export const configSchema = z
     .object({
         app: z.object({
-            dashboard_url: z
-                .string()
-                .url()
-                .pipe(z.string().url())
+            dashboard_url: z.url()
+                .pipe(z.url())
                 .transform((url) => url.toLowerCase())
                 .optional(),
             log_level: z
@@ -101,7 +99,7 @@ export const configSchema = z
                     token: z.string().optional().default("P-Access-Token")
                 })
                 .optional()
-                .default({}),
+                .prefault({}),
             resource_session_request_param: z
                 .string()
                 .optional()
@@ -126,7 +124,7 @@ export const configSchema = z
                     credentials: z.boolean().optional()
                 })
                 .optional(),
-            trust_proxy: z.number().int().gte(0).optional().default(1),
+            trust_proxy: z.int().gte(0).optional().default(1),
             secret: z
                 .string()
                 .pipe(z.string().min(8))
@@ -183,7 +181,7 @@ export const configSchema = z
                 file_mode: z.boolean().optional().default(false)
             })
             .optional()
-            .default({}),
+            .prefault({}),
         gerbil: z
             .object({
                 exit_node_name: z.string().optional(),
@@ -208,7 +206,7 @@ export const configSchema = z
                     .default(30)
             })
             .optional()
-            .default({}),
+            .prefault({}),
         orgs: z
             .object({
                 block_size: z.number().positive().gt(0).optional().default(24),
@@ -237,7 +235,7 @@ export const configSchema = z
                             .default(500)
                     })
                     .optional()
-                    .default({}),
+                    .prefault({}),
                 auth: z
                     .object({
                         window_minutes: z
@@ -254,10 +252,10 @@ export const configSchema = z
                             .default(500)
                     })
                     .optional()
-                    .default({})
+                    .prefault({})
             })
             .optional()
-            .default({}),
+            .prefault({}),
         email: z
             .object({
                 smtp_host: z.string().optional(),
@@ -269,7 +267,7 @@ export const configSchema = z
                     .transform(getEnvOrYaml("EMAIL_SMTP_PASS")),
                 smtp_secure: z.boolean().optional(),
                 smtp_tls_reject_unauthorized: z.boolean().optional(),
-                no_reply: z.string().email().optional()
+                no_reply: z.email().optional()
             })
             .optional(),
         flags: z
@@ -315,7 +313,7 @@ export const configSchema = z
             return true;
         },
         {
-            message: "At least one domain must be defined"
+            error: "At least one domain must be defined"
         }
     )
     .refine(
@@ -331,7 +329,7 @@ export const configSchema = z
             return data.server?.secret !== undefined && data.server.secret.length > 0;
         },
         {
-            message: "Server secret must be defined"
+            error: "Server secret must be defined"
         }
     )
     .refine(
@@ -344,7 +342,7 @@ export const configSchema = z
             return data.app.dashboard_url !== undefined && data.app.dashboard_url.length > 0;
         },
         {
-            message: "Dashboard URL must be defined"
+            error: "Dashboard URL must be defined"
         }
     );
 

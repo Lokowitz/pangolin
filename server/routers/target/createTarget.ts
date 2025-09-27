@@ -15,26 +15,22 @@ import { pickPort } from "./helpers";
 import { isTargetValid } from "@server/lib/validators";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const createTargetParamsSchema = z
-    .object({
+const createTargetParamsSchema = z.strictObject({
         resourceId: z
             .string()
             .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+            .pipe(z.int().positive())
+    });
 
-const createTargetSchema = z
-    .object({
-        siteId: z.number().int().positive(),
+const createTargetSchema = z.strictObject({
+        siteId: z.int().positive(),
         ip: z.string().refine(isTargetValid),
         method: z.string().optional().nullable(),
-        port: z.number().int().min(1).max(65535),
+        port: z.int().min(1).max(65535),
         enabled: z.boolean().default(true),
         path: z.string().optional().nullable(),
         pathMatchType: z.enum(["exact", "prefix", "regex"]).optional().nullable()
-    })
-    .strict();
+    });
 
 export type CreateTargetResponse = Target;
 

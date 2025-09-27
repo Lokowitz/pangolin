@@ -25,13 +25,11 @@ import { defaultRoleAllowedActions } from "../role";
 import { OpenAPITags, registry } from "@server/openApi";
 import { isValidCIDR } from "@server/lib/validators";
 
-const createOrgSchema = z
-    .object({
+const createOrgSchema = z.strictObject({
         orgId: z.string(),
         name: z.string().min(1).max(255),
         subnet: z.string()
-    })
-    .strict();
+    });
 
 registry.registerPath({
     method: "put",

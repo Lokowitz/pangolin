@@ -10,9 +10,9 @@ export const TargetSchema = z.object({
     site: z.string().optional(),
     method: z.enum(["http", "https", "h2c"]).optional(),
     hostname: z.string(),
-    port: z.number().int().min(1).max(65535),
+    port: z.int().min(1).max(65535),
     enabled: z.boolean().optional().default(true),
-    "internal-port": z.number().int().min(1).max(65535).optional(),
+    "internal-port": z.int().min(1).max(65535).optional(),
     path: z.string().optional(),
     "path-match": z.enum(["exact", "prefix", "regex"]).optional().nullable()
 });
@@ -28,10 +28,10 @@ export const AuthSchema = z.object({
         .optional()
         .default([])
         .refine((roles) => !roles.includes("Admin"), {
-            message: "Admin role cannot be included in sso-roles"
+            error: "Admin role cannot be included in sso-roles"
         }),
-    "sso-users": z.array(z.string().email()).optional().default([]),
-    "whitelist-users": z.array(z.string().email()).optional().default([]),
+    "sso-users": z.array(z.email()).optional().default([]),
+    "whitelist-users": z.array(z.email()).optional().default([]),
 });
 
 export const RuleSchema = z.object({
@@ -52,7 +52,7 @@ export const ResourceSchema = z
         protocol: z.enum(["http", "tcp", "udp"]).optional(),
         ssl: z.boolean().optional(),
         "full-domain": z.string().optional(),
-        "proxy-port": z.number().int().min(1).max(65535).optional(),
+        "proxy-port": z.int().min(1).max(65535).optional(),
         enabled: z.boolean().optional(),
         targets: z.array(TargetSchema.nullable()).optional().default([]),
         auth: AuthSchema.optional(),
@@ -73,46 +73,39 @@ export const ResourceSchema = z
             );
         },
         {
-            message:
-                "Resource must either be targets-only (only 'targets' field) or have both 'name' and 'protocol' fields at a minimum",
-            path: ["name", "protocol"]
+            path: ["name", "protocol"],
+            error: "Resource must either be targets-only (only 'targets' field) or have both 'name' and 'protocol' fields at a minimum"
         }
     )
-    .refine(
-        (resource) => {
-            if (isTargetsOnlyResource(resource)) {
-                return true;
-            }
+    .superRefine((resource, ctx) => {
+        if (isTargetsOnlyResource(resource)) return;
 
-            // If protocol is http, all targets must have method field
-            if (resource.protocol === "http") {
-                return resource.targets.every(
-                    (target) => target == null || target.method !== undefined
-                );
+        const targets = resource.targets ?? [];
+
+        if (resource.protocol === "http") {
+            for (const [i, target] of targets.entries()) {
+                if (target && target.method === undefined) {
+                    ctx.addIssue({
+                        code: "custom",
+                        message: "Target is missing 'method' for HTTP protocol",
+                        path: ["targets", i, "method"]
+                    });
+                }
             }
-            // If protocol is tcp or udp, no target should have method field
-            if (resource.protocol === "tcp" || resource.protocol === "udp") {
-                return resource.targets.every(
-                    (target) => target == null || target.method === undefined
-                );
-            }
-            return true;
-        },
-        (resource) => {
-            if (resource.protocol === "http") {
-                return {
-                    message:
-                        "When protocol is 'http', all targets must have a 'method' field",
-                    path: ["targets"]
-                };
-            }
-            return {
-                message:
-                    "When protocol is 'tcp' or 'udp', targets must not have a 'method' field",
-                path: ["targets"]
-            };
         }
-    )
+
+        if (resource.protocol === "tcp" || resource.protocol === "udp") {
+            for (const [i, target] of targets.entries()) {
+                if (target && target.method !== undefined) {
+                    ctx.addIssue({
+                        code: "custom",
+                        message: "Target must not have 'method' for TCP/UDP protocol",
+                        path: ["targets", i, "method"]
+                    });
+                }
+            }
+        }
+    })
     .refine(
         (resource) => {
             if (isTargetsOnlyResource(resource)) {
@@ -129,9 +122,8 @@ export const ResourceSchema = z
             return true;
         },
         {
-            message:
-                "When protocol is 'http', a 'full-domain' must be provided",
-            path: ["full-domain"]
+            path: ["full-domain"],
+            error: "When protocol is 'http', a 'full-domain' must be provided"
         }
     )
     .refine(
@@ -147,9 +139,8 @@ export const ResourceSchema = z
             return true;
         },
         {
-            message:
-                "When protocol is 'tcp' or 'udp', 'proxy-port' must be provided",
-            path: ["proxy-port", "exit-node"]
+            path: ["proxy-port", "exit-node"],
+            error: "When protocol is 'tcp' or 'udp', 'proxy-port' must be provided"
         }
     )
     .refine(
@@ -166,9 +157,8 @@ export const ResourceSchema = z
             return true;
         },
         {
-            message:
-                "When protocol is 'tcp' or 'udp', 'auth' must not be provided",
-            path: ["auth"]
+            path: ["auth"],
+            error: "When protocol is 'tcp' or 'udp', 'auth' must not be provided"
         }
     );
 
