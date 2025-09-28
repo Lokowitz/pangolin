@@ -1,5 +1,5 @@
 import { APP_PATH } from "@server/lib/consts";
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import path from "path";
 
 const version = "1.10.2";
@@ -8,7 +8,7 @@ export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
     const location = path.join(APP_PATH, "db", "db.sqlite");
-    const db = new Database(location);
+    const db = createClient({ url: "file:" + location });
 
     const resources = db.prepare("SELECT * FROM resources").all() as Array<{
         resourceId: number;
@@ -16,7 +16,7 @@ export default async function migration() {
     }>;
 
     try {
-        db.pragma("foreign_keys = OFF");
+        db.execute("foreign_keys = OFF");
 
         db.transaction(() => {
             for (const resource of resources) {
@@ -44,7 +44,7 @@ export default async function migration() {
             }
         })();
 
-        db.pragma("foreign_keys = ON");
+        db.execute("foreign_keys = ON");
 
         console.log(`Migrated database`);
     } catch (e) {

@@ -1,5 +1,5 @@
 import { APP_PATH } from "@server/lib/consts";
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import path from "path";
 
 const version = "1.10.1";
@@ -8,10 +8,10 @@ export default async function migration() {
 	console.log(`Running setup script ${version}...`);
 
 	const location = path.join(APP_PATH, "db", "db.sqlite");
-	const db = new Database(location);
+	const db = createClient({ url: "file:" + location });
 
 	try {
-		db.pragma("foreign_keys = OFF");
+		db.execute("foreign_keys = OFF");
 
 		db.transaction(() => {
 			db.exec(`ALTER TABLE "targets" RENAME TO "targets_old";
@@ -59,7 +59,7 @@ FROM "targets_old";
 DROP TABLE "targets_old";`);
 		})();
 
-		db.pragma("foreign_keys = ON");
+		db.execute("foreign_keys = ON");
 
 		console.log(`Migrated database`);
 	} catch (e) {

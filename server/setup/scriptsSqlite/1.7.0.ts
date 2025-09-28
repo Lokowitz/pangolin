@@ -1,5 +1,5 @@
 import { APP_PATH } from "@server/lib/consts";
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import path from "path";
 
 const version = "1.7.0";
@@ -8,13 +8,13 @@ export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
     const location = path.join(APP_PATH, "db", "db.sqlite");
-    const db = new Database(location);
+    const db = createClient({ url: "file:" + location });
 
     try {
-        db.pragma("foreign_keys = OFF");
-
-        db.transaction(() => {
-            db.exec(`
+        await db.execute("foreign_keys = OFF");
+       await db.batch([
+            {
+                sql:`
                 CREATE TABLE 'clientSites' (
                     'clientId' integer NOT NULL,
                     'siteId' integer NOT NULL,
@@ -99,7 +99,9 @@ export default async function migration() {
                     FOREIGN KEY ('userId') REFERENCES 'user'('id') ON UPDATE no action ON DELETE cascade
                 );
 
-            `);
+            `
+            }
+        ]);
 
             db.exec(`
                 CREATE TABLE '__new_sites' (
@@ -148,7 +150,7 @@ export default async function migration() {
             `);
         })();
 
-        db.pragma("foreign_keys = ON");
+        db.execute("foreign_keys = ON");
 
         console.log(`Migrated database schema`);
     } catch (e) {

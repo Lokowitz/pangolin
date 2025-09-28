@@ -1,5 +1,5 @@
 import { __DIRNAME, APP_PATH } from "@server/lib/consts";
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import { readFileSync } from "fs";
 import path, { join } from "path";
 
@@ -9,7 +9,7 @@ export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
     const location = path.join(APP_PATH, "db", "db.sqlite");
-    const db = new Database(location);
+    const db = createClient({ url: "file:" + location });
 
     try {
         const resources = db

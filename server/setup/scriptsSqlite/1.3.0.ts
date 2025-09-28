@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import path from "path";
 import fs from "fs";
 import yaml from "js-yaml";
@@ -11,12 +11,13 @@ const location = path.join(APP_PATH, "db", "db.sqlite");
 export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
-    const db = new Database(location);
+    const db = createClient({ url: "file:" + location });
 
     try {
-        db.pragma("foreign_keys = OFF");
-        db.transaction(() => {
-            db.exec(`
+        await db.execute("foreign_keys = OFF");
+        await db.batch([
+            {
+                sql:`
                 CREATE TABLE 'apiKeyActions' (
                     'apiKeyId' text NOT NULL,
                     'actionId' text NOT NULL,
@@ -150,9 +151,10 @@ export default async function migration() {
 
                 DROP TABLE 'exitNodes';
                 ALTER TABLE 'exitNodes_new' RENAME TO 'exitNodes';
-            `);
-        })(); // <-- executes the transaction immediately
-        db.pragma("foreign_keys = ON");
+            `
+        }
+        ]);
+        await db.execute("foreign_keys = ON");
         console.log(`Migrated database schema`);
     } catch (e) {
         console.log("Unable to migrate database schema");

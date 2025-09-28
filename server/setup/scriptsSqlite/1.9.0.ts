@@ -1,5 +1,5 @@
 import { APP_PATH } from "@server/lib/consts";
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import path from "path";
 
 const version = "1.9.0";
@@ -8,7 +8,7 @@ export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
     const location = path.join(APP_PATH, "db", "db.sqlite");
-    const db = new Database(location);
+    const db = createClient({ url: "file:" + location });
 
     const resourceSiteMap = new Map<number, number>();
 	let firstSiteId: number = 1;
@@ -33,10 +33,11 @@ export default async function migration() {
 	}
 
     try {
-        db.pragma("foreign_keys = OFF");
+        await db.execute("foreign_keys = OFF");
 
-        db.transaction(() => {
-            db.exec(`CREATE TABLE 'setupTokens' (
+        await db.batch([
+            {
+                sql:`CREATE TABLE 'setupTokens' (
 	'tokenId' text PRIMARY KEY NOT NULL,
 	'token' text NOT NULL,
 	'used' integer DEFAULT false NOT NULL,
@@ -116,21 +117,28 @@ ALTER TABLE 'exitNodes' ADD 'lastPing' integer;--> statement-breakpoint
 ALTER TABLE 'exitNodes' ADD 'type' text DEFAULT 'gerbil';--> statement-breakpoint
 ALTER TABLE 'olms' ADD 'version' text;--> statement-breakpoint
 ALTER TABLE 'orgs' ADD 'createdAt' text;--> statement-breakpoint
-ALTER TABLE 'targets' ADD 'siteId' integer NOT NULL DEFAULT ${firstSiteId || 1} REFERENCES sites(siteId);`);
+ALTER TABLE 'targets' ADD 'siteId' integer NOT NULL DEFAULT ${firstSiteId || 1} REFERENCES sites(siteId);`
+}
+        ]);
 
             // for each resource, get all of its targets, and update the siteId to be the previously stored siteId
             for (const [resourceId, siteId] of resourceSiteMap) {
-                const targets = db
-                    .prepare(
-                        "SELECT targetId FROM targets WHERE resourceId = ?"
-                    )
-                    .all(resourceId) as Array<{ targetId: number }>;
-                for (const target of targets) {
-                    db.prepare(
-                        "UPDATE targets SET siteId = ? WHERE targetId = ?"
-                    ).run(siteId, target.targetId);
-                }
-            }
+				const result = await db.execute({
+					sql: "SELECT targetId FROM targets WHERE resourceId = ?",
+					args: [resourceId],
+				});
+
+				if (!result.rows) continue;
+
+				for (const row of result.rows) {
+					const targetId = row.targetId as number;
+
+					await db.execute({
+						sql: "UPDATE targets SET siteId = ? WHERE targetId = ?",
+						args: [siteId, targetId],
+					});
+				}
+			}
 
             // list resources that have enableProxy false
             // move them to the siteResources table
@@ -181,7 +189,7 @@ ALTER TABLE 'targets' ADD 'siteId' integer NOT NULL DEFAULT ${firstSiteId || 1} 
             }
         })();
 
-        db.pragma("foreign_keys = ON");
+        db.execute("foreign_keys = ON");
 
         console.log(`Migrated database`);
     } catch (e) {
