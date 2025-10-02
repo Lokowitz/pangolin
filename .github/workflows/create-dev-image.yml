@@ -1,8 +1,7 @@
 name: Create Dev-Image
 
 on:
-    push:
-        pull_request:
+    pull_request:
 
 jobs:
     release:
