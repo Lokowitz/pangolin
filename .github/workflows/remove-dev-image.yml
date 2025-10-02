@@ -1,6 +1,6 @@
 on:
   pull_request:
-    types: [closed]
+    types: [closed, merged]
 
 jobs:
   cleanup:
