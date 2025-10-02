@@ -2,6 +2,7 @@ name: Create Dev-Image
 
 on:
     pull_request:
+        types: [open, draft]
 
 jobs:
     release:
