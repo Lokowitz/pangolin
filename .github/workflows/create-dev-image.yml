@@ -1,8 +1,13 @@
 name: Create Dev-Image
 
 on:
-    pull_request:
-        types: [open, draft]
+  pull_request:
+    branches:
+      - main
+      - dev
+    types: 
+      - opened
+      - draft
 
 jobs:
     release:
