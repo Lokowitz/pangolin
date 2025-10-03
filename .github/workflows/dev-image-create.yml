@@ -27,11 +27,7 @@ jobs:
                   username: ${{ secrets.DOCKER_HUB_USERNAME }}
                   password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-            - name: Extract tag name
-              id: get-tag
-              run: echo "TAG=dev-pr${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-
             - name: Build and push Docker images
               run: |
-                  docker buildx build --build-arg DATABASE=sqlite --platform linux/arm64,linux/amd64 -t ${{ secrets.DOCKER_HUB_REPO }}:${{ env.TAG }} --push .
-                  docker buildx build --build-arg DATABASE=pg --platform linux/arm64,linux/amd64 -t ${{ secrets.DOCKER_HUB_REPO }}:postgresql-${{ env.TAG }} --push .
+                  docker buildx build --build-arg DATABASE=sqlite --platform linux/arm64,linux/amd64 -t ${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }} --push .
+                  docker buildx build --build-arg DATABASE=pg --platform linux/arm64,linux/amd64 -t ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }} --push .
