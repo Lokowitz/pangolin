@@ -28,5 +28,5 @@ jobs:
 
             - name: Build and push Docker images
               run: |
-                  TAG=${{ env.TAG }}
-                  make build-release tag=$TAG
+                  docker buildx build --build-arg DATABASE=sqlite --platform linux/arm64,linux/amd64 -t ${{ secrets.DOCKER_HUB_REPO }}:${{ env.TAG }} --push .
+                  docker buildx build --build-arg DATABASE=pg --platform linux/arm64,linux/amd64 -t ${{ secrets.DOCKER_HUB_REPO }}:postgresql-${{ env.TAG }} --push .
