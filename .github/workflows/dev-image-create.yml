@@ -35,9 +35,15 @@ jobs:
                   context: .
                   push: true
                   tags: ${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}
-                  cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-sqlite
-                  cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-sqlite,mode=max
+                  cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-sqlite-arm64,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-sqlite-amd64
                   build-args: DATABASE=sqlite
+
+            - name: Cache Docker image SQL
+              uses: docker/build-push-action@v5
+              with:
+                  platforms: linux/arm64,linux/amd64
+                  context: .
+                  cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-sqlite-arm64,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-sqlite-amd64,mode=max
                   
             - name: Build and push Docker image PG
               uses: docker/build-push-action@v5
@@ -46,7 +52,14 @@ jobs:
                   context: .
                   push: true
                   tags: ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
-                  cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg
-                  cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
+                  cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg-arm64,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg-amd64
                   build-args: DATABASE=pg
+
+            - name: Cache Docker image SQL
+              uses: docker/build-push-action@v5
+              with:
+                  platforms: linux/arm64,linux/amd64
+                  context: .
+                  cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg-arm64,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg-amd64,mode=max
+                  
                   
