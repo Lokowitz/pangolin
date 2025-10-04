@@ -35,8 +35,8 @@ jobs:
                   context: .
                   push: true
                   tags: ${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}
-                  cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache
-                  cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache,mode=max
+                  cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-sqlite
+                  cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-sqlite,mode=max
                   build-args: DATABASE=sqlite
                   
             - name: Build and push Docker image PG
@@ -46,7 +46,7 @@ jobs:
                   context: .
                   push: true
                   tags: ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
-                  cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache
-                  cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache,mode=max
+                  cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg
+                  cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
                   build-args: DATABASE=pg
                   
