@@ -42,4 +42,13 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
           build-args: DATABASE=pg
-                  
+
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '👋 Thanks for your PR! Dev image now available on docker hub \'${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}\' and \'${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}\' '
+            })
