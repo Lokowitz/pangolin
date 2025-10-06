@@ -29,7 +29,7 @@ jobs:
                   password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
             - name: Build and push Docker image SQL
-              uses: docker/build-push-action@v5
+              uses: docker/build-push-action@v6
               with:
                   platforms: linux/arm64,linux/amd64
                   context: .
@@ -39,14 +39,14 @@ jobs:
                   build-args: DATABASE=sqlite
 
             - name: Cache Docker image SQL
-              uses: docker/build-push-action@v5
+              uses: docker/build-push-action@v6
               with:
                   platforms: linux/arm64,linux/amd64
                   context: .
                   cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-sqlite-arm64,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-sqlite-amd64,mode=max
                   
             - name: Build and push Docker image PG
-              uses: docker/build-push-action@v5
+              uses: docker/build-push-action@v6
               with:
                   platforms: linux/arm64,linux/amd64
                   context: .
@@ -56,7 +56,7 @@ jobs:
                   build-args: DATABASE=pg
 
             - name: Cache Docker image SQL
-              uses: docker/build-push-action@v5
+              uses: docker/build-push-action@v6
               with:
                   platforms: linux/arm64,linux/amd64
                   context: .
