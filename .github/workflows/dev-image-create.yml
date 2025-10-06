@@ -10,7 +10,6 @@ on:
       - synchronize
       - reopened
 
-
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -27,22 +26,20 @@ jobs:
       - name: Build and push Docker image SQLITE
         uses: docker/build-push-action@v6
         with:
-            platforms: linux/amd64
-            context: .
-            push: true
-            tags: ${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}
-            cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache
-            cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache,mode=max
-            build-args: DATABASE=sqlite
+          platforms: linux/amd64
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache,mode=max
+          build-args: DATABASE=sqlite
             
       - name: Build and push Docker image PG
         uses: docker/build-push-action@v6
         with:
-            platforms: linux/amd64
-            context: .
-            push: true
-            tags: ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
-            cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg
-            cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
-            build-args: DATABASE=pg
+          platforms: linux/amd64
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
+          build-args: DATABASE=pg
                   
