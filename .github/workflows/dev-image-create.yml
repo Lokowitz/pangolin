@@ -51,5 +51,11 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: '👋 Thanks for your PR! 
-              Dev image now available on docker hub ```${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}``` and ```${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}``` '
+                Dev images are now available on [docker hub](https://hub.docker.com/r/${{ secrets.DOCKER_HUB_REPO }}/tags): 
+                ```
+                ${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}
+                ```
+                ```
+                ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
+                ``` '
             })
