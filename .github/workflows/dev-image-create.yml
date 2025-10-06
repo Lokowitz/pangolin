@@ -31,11 +31,11 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `👋 Thanks for your PR!  
-                Dev images for this PR are now available on [docker hub](${repo}):
-                \`\`\`
-                ${devPr}
-                \`\`\`
-                \`\`\`
-                ${devPrPg}
-                \`\`\``
+              Dev images for this PR are now available on [docker hub](${repo}):
+              \`\`\`
+              ${devPr}
+              \`\`\`
+              \`\`\`
+              ${devPrPg}
+              \`\`\``
             })
