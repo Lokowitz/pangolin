@@ -44,14 +44,17 @@ jobs:
           build-args: DATABASE=pg
 
       - uses: actions/github-script@v8
+        env:
+          REPO: ${{ secrets.DOCKER_HUB_REPO }}
+          PR: ${{ github.event.pull_request.number }}
         with:
           script: |
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '👋 Thanks for your PR! 
-                Dev images are now available on [docker hub](https://hub.docker.com/r/${{ secrets.DOCKER_HUB_REPO }}/tags): 
-                **${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}**
-                ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}'
+              body: `👋 Thanks for your PR! 
+                Dev images are now available on [docker hub](https://hub.docker.com/r/process.env.REPO/tags): 
+                **process.env.REPO:dev-pr process.env.PR**
+                process.env.REPO:postgresql-dev-pr process.env.PR`
             })
