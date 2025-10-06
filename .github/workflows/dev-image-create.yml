@@ -15,9 +15,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      TAG_URL: https://hub.docker.com/r/${{ secrets.DOCKER_HUB_REPO }}/tags
-      TAG: ${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}
-      TAG_PG: ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
+      TAG_URL: https://hub.docker.com/r/${{ env.DOCKER_HUB_REPO }}/tags
+      TAG: ${{ env.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}
+      TAG_PG: ${{ env.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
     
     steps:
       - name: Login to Docker Hub
@@ -35,8 +35,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.DOCKER_HUB_REPO }}:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKER_HUB_REPO }}:buildcache,mode=max
           build-args: DATABASE=sqlite
             
       - name: Build and push Docker image PG
@@ -45,8 +45,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG_PG }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
+          cache-from: type=registry,ref=${{ env.DOCKER_HUB_REPO }}:buildcache-pg
+          cache-to: type=registry,ref=${{ env.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
           build-args: DATABASE=pg
           
       - uses: actions/github-script@v8
