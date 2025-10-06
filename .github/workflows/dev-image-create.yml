@@ -50,12 +50,15 @@ jobs:
           DEV-PR-PG: ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
         with:
           script: |
+            const repo = process.env.REPO;
+            const devPr = process.env.DEV_PR;
+            const devPrPg = process.env.DEV_PR_PG;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `👋 Thanks for your PR! 
-                Dev images are now available on [docker hub](process.env.REPO): 
-                **process.env.DEV-PR**
-                process.env.DEV-PR-PG`
+              body: `👋 Thanks for your PR!  
+                Dev images are now available on [docker hub](${repo}):  
+                **${devPr}**  
+                **${devPrPg}**`
             })
