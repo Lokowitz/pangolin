@@ -34,7 +34,7 @@ jobs:
         with:
           platforms: linux/amd64
           push: true
-          tags: ${TAG}
+          tags: ${{ env.TAG }}
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache,mode=max
           build-args: DATABASE=sqlite
@@ -44,7 +44,7 @@ jobs:
         with:
           platforms: linux/amd64
           push: true
-          tags: ${TAG_PG}
+          tags: ${{ env.TAG_PG }}
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
           build-args: DATABASE=pg
