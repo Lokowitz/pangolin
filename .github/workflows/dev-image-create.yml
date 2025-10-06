@@ -19,8 +19,8 @@ jobs:
       - uses: actions/github-script@v8
         env:
           REPO: https://hub.docker.com/r/${{ secrets.DOCKER_HUB_REPO }}/tags
-          DEV-PR: ${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}
-          DEV-PR-PG: ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
+          DEV_PR: ${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}
+          DEV_PR_PG: ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
         with:
           script: |
             const repo = process.env.REPO;
