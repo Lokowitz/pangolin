@@ -45,8 +45,9 @@ jobs:
 
       - uses: actions/github-script@v8
         env:
-          REPO: ${{ secrets.DOCKER_HUB_REPO }}
-          PR: ${{ github.event.pull_request.number }}
+          REPO: https://hub.docker.com/r/${{ secrets.DOCKER_HUB_REPO }}/tags
+          DEV-PR: ${{ secrets.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}
+          DEV-PR-PG: ${{ secrets.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
         with:
           script: |
             github.rest.issues.createComment({
@@ -54,7 +55,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `👋 Thanks for your PR! 
-                Dev images are now available on [docker hub](https://hub.docker.com/r/process.env.REPO/tags): 
-                **process.env.REPO:dev-pr process.env.PR**
-                process.env.REPO:postgresql-dev-pr process.env.PR`
+                Dev images are now available on [docker hub](process.env.REPO): 
+                **process.env.DEV-PR**
+                process.env.DEV-PR-PG`
             })
