@@ -108,20 +108,20 @@ const httpResourceFormSchema = z.object({
 
 const tcpUdpResourceFormSchema = z.object({
     protocol: z.string(),
-    proxyPort: z.number().int().min(1).max(65535)
+    proxyPort: z.int().min(1).max(65535)
     // enableProxy: z.boolean().default(false)
 });
 
 const addTargetSchema = z.object({
     ip: z.string().refine(isTargetValid),
     method: z.string().nullable(),
-    port: z.coerce.number().int().positive(),
-    siteId: z.number().int().positive(),
+    port: z.coerce.number<number>().int().positive(),
+    siteId: z.int().positive(),
     path: z.string().optional().nullable(),
     pathMatchType: z.enum(["exact", "prefix", "regex"]).optional().nullable(),
     rewritePath: z.string().optional().nullable(),
     rewritePathType: z.enum(["exact", "prefix", "regex", "stripPrefix"]).optional().nullable(),
-    priority: z.number().int().min(1).max(1000)
+    priority: z.int().min(1).max(1000)
 }).refine(
     (data) => {
         // If path is provided, pathMatchType must be provided
@@ -152,7 +152,7 @@ const addTargetSchema = z.object({
         return true;
     },
     {
-        message: "Invalid path configuration"
+        error: "Invalid path configuration"
     }
 )
     .refine(
@@ -168,7 +168,7 @@ const addTargetSchema = z.object({
             return true;
         },
         {
-            message: "Invalid rewrite path configuration"
+            error: "Invalid rewrite path configuration"
         }
     );
 

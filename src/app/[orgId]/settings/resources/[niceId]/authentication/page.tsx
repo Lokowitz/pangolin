@@ -920,9 +920,7 @@ export default function ResourceAuthenticationPage() {
                                                             validateTag={(
                                                                 tag
                                                             ) => {
-                                                                return z
-                                                                    .string()
-                                                                    .email()
+                                                                return z.email()
                                                                     .or(
                                                                         z
                                                                             .string()

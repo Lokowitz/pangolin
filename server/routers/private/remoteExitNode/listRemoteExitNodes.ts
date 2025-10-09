@@ -22,11 +22,9 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const listRemoteExitNodesParamsSchema = z
-    .object({
+const listRemoteExitNodesParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 const listRemoteExitNodesSchema = z.object({
     limit: z
@@ -34,13 +32,13 @@ const listRemoteExitNodesSchema = z.object({
         .optional()
         .default("1000")
         .transform(Number)
-        .pipe(z.number().int().positive()),
+        .pipe(z.int().positive()),
     offset: z
         .string()
         .optional()
         .default("0")
         .transform(Number)
-        .pipe(z.number().int().nonnegative())
+        .pipe(z.int().nonnegative())
 });
 
 function queryRemoteExitNodes(orgId: string) {

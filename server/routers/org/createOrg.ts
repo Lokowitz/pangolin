@@ -29,13 +29,11 @@ import { usageService } from "@server/lib/private/billing/usageService";
 import { FeatureId } from "@server/lib/private/billing";
 import { build } from "@server/build";
 
-const createOrgSchema = z
-    .object({
+const createOrgSchema = z.strictObject({
         orgId: z.string(),
         name: z.string().min(1).max(255),
         subnet: z.string()
-    })
-    .strict();
+    });
 
 registry.registerPath({
     method: "put",

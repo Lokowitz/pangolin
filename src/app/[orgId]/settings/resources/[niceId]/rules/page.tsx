@@ -439,9 +439,7 @@ export default function ResourceRules(props: {
                     className="w-[75px]"
                     type="number"
                     onBlur={(e) => {
-                        const parsed = z.coerce
-                            .number()
-                            .int()
+                        const parsed = z.int()
                             .optional()
                             .safeParse(e.target.value);
 

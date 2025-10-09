@@ -25,11 +25,9 @@ export type PickRemoteExitNodeDefaultsResponse = {
     secret: string;
 };
 
-const paramsSchema = z
-    .object({
+const paramsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 export async function pickRemoteExitNodeDefaults(
     req: Request,

@@ -31,11 +31,9 @@ import {
     SubscriptionItem
 } from "@server/db";
 
-const getOrgSchema = z
-    .object({
+const getOrgSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 export type GetOrgSubscriptionResponse = {
     subscription: Subscription | null;

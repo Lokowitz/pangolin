@@ -22,12 +22,10 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const getRemoteExitNodeSchema = z
-    .object({
+const getRemoteExitNodeSchema = z.strictObject({
         orgId: z.string().min(1),
         remoteExitNodeId: z.string().min(1)
-    })
-    .strict();
+    });
 
 async function query(remoteExitNodeId: string) {
     const [remoteExitNode] = await db

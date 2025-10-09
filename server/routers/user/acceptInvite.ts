@@ -13,12 +13,10 @@ import { verifySession } from "@server/auth/sessions/verifySession";
 import { usageService } from "@server/lib/private/billing/usageService";
 import { FeatureId } from "@server/lib/private/billing";
 
-const acceptInviteBodySchema = z
-    .object({
+const acceptInviteBodySchema = z.strictObject({
         token: z.string(),
         inviteId: z.string()
-    })
-    .strict();
+    });
 
 export type AcceptInviteResponse = {
     accepted: boolean;

@@ -22,11 +22,9 @@ import { getTierPriceSet } from "@server/lib/private/billing/tiers";
 import { getOrgSubscriptionData } from "./getOrgSubscription";
 import { build } from "@server/build";
 
-const getOrgSchema = z
-    .object({
+const getOrgSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 export type GetOrgTierResponse = {
     tier: string | null;

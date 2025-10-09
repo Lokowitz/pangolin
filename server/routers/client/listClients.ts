@@ -17,11 +17,9 @@ import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const listClientsParamsSchema = z
-    .object({
+const listClientsParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 const listClientsSchema = z.object({
     limit: z
@@ -29,13 +27,13 @@ const listClientsSchema = z.object({
         .optional()
         .default("1000")
         .transform(Number)
-        .pipe(z.number().int().positive()),
+        .pipe(z.int().positive()),
     offset: z
         .string()
         .optional()
         .default("0")
         .transform(Number)
-        .pipe(z.number().int().nonnegative())
+        .pipe(z.int().nonnegative())
 });
 
 function queryClients(orgId: string, accessibleClientIds: number[]) {

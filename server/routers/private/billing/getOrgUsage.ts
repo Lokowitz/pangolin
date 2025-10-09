@@ -26,11 +26,9 @@ import { Limit, limits, Usage, usage } from "@server/db";
 import { usageService } from "@server/lib/private/billing/usageService";
 import { FeatureId } from "@server/lib/private/billing";
 
-const getOrgSchema = z
-    .object({
+const getOrgSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 export type GetOrgUsageResponse = {
     usage: Usage[];

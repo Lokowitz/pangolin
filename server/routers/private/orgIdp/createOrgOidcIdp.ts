@@ -28,15 +28,14 @@ import { build } from "@server/build";
 import { getOrgTierData } from "@server/routers/private/billing";
 import { TierId } from "@server/lib/private/billing/tiers";
 
-const paramsSchema = z.object({ orgId: z.string().nonempty() }).strict();
+const paramsSchema = z.strictObject({ orgId: z.string().nonempty() });
 
-const bodySchema = z
-    .object({
+const bodySchema = z.strictObject({
         name: z.string().nonempty(),
         clientId: z.string().nonempty(),
         clientSecret: z.string().nonempty(),
-        authUrl: z.string().url(),
-        tokenUrl: z.string().url(),
+        authUrl: z.url(),
+        tokenUrl: z.url(),
         identifierPath: z.string().nonempty(),
         emailPath: z.string().optional(),
         namePath: z.string().optional(),
@@ -44,8 +43,7 @@ const bodySchema = z
         autoProvision: z.boolean().optional(),
         variant: z.enum(["oidc", "google", "azure"]).optional().default("oidc"),
         roleMapping: z.string().optional()
-    })
-    .strict();
+    });
 
 export type CreateOrgIdpResponse = {
     idpId: number;

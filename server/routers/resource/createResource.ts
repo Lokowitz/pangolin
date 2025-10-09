@@ -25,21 +25,17 @@ import { createCertificate } from "../private/certificates/createCertificate";
 import { getUniqueResourceName } from "@server/db/names";
 import { validateAndConstructDomain } from "@server/lib/domainUtils";
 
-const createResourceParamsSchema = z
-    .object({
+const createResourceParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const createHttpResourceSchema = z
-    .object({
+const createHttpResourceSchema = z.strictObject({
         name: z.string().min(1).max(255),
         subdomain: z.string().nullable().optional(),
         http: z.boolean(),
         protocol: z.enum(["tcp", "udp"]),
         domainId: z.string()
     })
-    .strict()
     .refine(
         (data) => {
             if (data.subdomain) {
@@ -47,18 +43,18 @@ const createHttpResourceSchema = z
             }
             return true;
         },
-        { message: "Invalid subdomain" }
+        {
+            error: "Invalid subdomain"
+        }
     );
 
-const createRawResourceSchema = z
-    .object({
+const createRawResourceSchema = z.strictObject({
         name: z.string().min(1).max(255),
         http: z.boolean(),
         protocol: z.enum(["tcp", "udp"]),
-        proxyPort: z.number().int().min(1).max(65535)
+        proxyPort: z.int().min(1).max(65535)
         // enableProxy: z.boolean().default(true) // always true now
     })
-    .strict()
     .refine(
         (data) => {
             if (!config.getRawConfig().flags?.allow_raw_resources) {
@@ -69,7 +65,7 @@ const createRawResourceSchema = z
             return true;
         },
         {
-            message: "Raw resources are not allowed"
+            error: "Raw resources are not allowed"
         }
     );
 

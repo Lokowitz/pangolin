@@ -34,18 +34,14 @@ import { getOrgTierData } from "@server/routers/private/billing";
 import { TierId } from "@server/lib/private/billing/tiers";
 import { build } from "@server/build";
 
-const paramsSchema = z
-    .object({
+const paramsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const bodySchema = z
-    .object({
+const bodySchema = z.strictObject({
         subdomain: z.string().nullable().optional(),
         domainId: z.string()
-    })
-    .strict();
+    });
 
 export type CreateLoginPageBody = z.infer<typeof bodySchema>;
 

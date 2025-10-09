@@ -40,12 +40,10 @@ export type CreateRemoteExitNodeResponse = {
     secret: string;
 };
 
-const bodySchema = z
-    .object({
+const bodySchema = z.strictObject({
         remoteExitNodeId: z.string().length(15),
         secret: z.string().length(48)
-    })
-    .strict();
+    });
 
 export type CreateRemoteExitNodeBody = z.infer<typeof bodySchema>;
 

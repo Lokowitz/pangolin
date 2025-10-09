@@ -7,11 +7,9 @@ import license, { LicenseStatus } from "@server/license/license";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
 
-const bodySchema = z
-    .object({
+const bodySchema = z.strictObject({
         licenseKey: z.string().min(1).max(255)
-    })
-    .strict();
+    });
 
 export type ActivateLicenseStatus = LicenseStatus;
 

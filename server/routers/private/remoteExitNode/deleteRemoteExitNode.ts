@@ -24,12 +24,10 @@ import { fromError } from "zod-validation-error";
 import { usageService } from "@server/lib/private/billing/usageService";
 import { FeatureId } from "@server/lib/private/billing";
 
-const paramsSchema = z
-    .object({
+const paramsSchema = z.strictObject({
         orgId: z.string().min(1),
         remoteExitNodeId: z.string().min(1)
-    })
-    .strict();
+    });
 
 export async function deleteRemoteExitNode(
     req: Request,

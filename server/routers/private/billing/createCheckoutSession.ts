@@ -25,11 +25,9 @@ import stripe from "@server/lib/private/stripe";
 import { getLineItems, getStandardFeaturePriceSet } from "@server/lib/private/billing";
 import { getTierPriceSet, TierId } from "@server/lib/private/billing/tiers";
 
-const createCheckoutSessionSchema = z
-    .object({
+const createCheckoutSessionSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 export async function createCheckoutSession(
     req: Request,

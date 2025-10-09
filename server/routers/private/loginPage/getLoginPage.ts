@@ -21,11 +21,9 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const paramsSchema = z
-    .object({
+const paramsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 async function query(orgId: string) {
     const [res] = await db
