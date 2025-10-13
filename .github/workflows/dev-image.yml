@@ -69,7 +69,9 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `👋 Thanks for your PR!  
+              body: `> [!WARNING]
+              > This image can contain unchecked and breaking changes. Only use on own risk.
+              👋 Thanks for your PR!  
               Dev images for this PR are now available on [docker hub](${repoUrl}):
               
               **SQLITE Image:**
