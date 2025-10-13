@@ -70,7 +70,8 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `> [!WARNING]
-              > This image can contain unchecked and breaking changes. Only use on own risk.
+              > This image may contain unchecked and breaking changes. Only use on own risk.
+              
               👋 Thanks for your PR!  
               Dev images for this PR are now available on [docker hub](${repoUrl}):
               
