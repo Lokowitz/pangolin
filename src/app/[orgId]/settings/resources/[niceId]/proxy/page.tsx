@@ -120,11 +120,8 @@ const addTargetSchema = z
     .object({
         ip: z.string().refine(isTargetValid),
         method: z.string().nullable(),
-        port: z.coerce.number().int().positive(),
-        siteId: z
-            .number()
-            .int()
-            .positive({ message: "You must select a site for a target." }),
+        port: z.coerce.number<number>().int().positive(),
+        siteId: z.int().positive({ message: "You must select a site for a target." }),
         path: z.string().optional().nullable(),
         pathMatchType: z
             .enum(["exact", "prefix", "regex"])
@@ -135,7 +132,7 @@ const addTargetSchema = z
             .enum(["exact", "prefix", "regex", "stripPrefix"])
             .optional()
             .nullable(),
-        priority: z.number().int().min(1).max(1000).optional()
+        priority: z.int().min(1).max(1000).optional()
     })
     .refine(
         (data) => {
@@ -167,7 +164,7 @@ const addTargetSchema = z
             return true;
         },
         {
-            message: "Invalid path configuration"
+            error: "Invalid path configuration"
         }
     )
     .refine(
@@ -183,7 +180,7 @@ const addTargetSchema = z
             return true;
         },
         {
-            message: "Invalid rewrite path configuration"
+            error: "Invalid rewrite path configuration"
         }
     );
 

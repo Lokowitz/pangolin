@@ -29,7 +29,7 @@ import resend, {
 } from "#dynamic/lib/resend";
 
 export const signupBodySchema = z.object({
-    email: z.string().toLowerCase().email(),
+    email: z.email().toLowerCase(),
     password: passwordSchema,
     inviteToken: z.string().optional(),
     inviteId: z.string().optional(),
