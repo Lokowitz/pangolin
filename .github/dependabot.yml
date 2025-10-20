@@ -1,7 +1,6 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    target: dev
     directory: "/"
     schedule:
       interval: "daily"
