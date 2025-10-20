@@ -21,7 +21,7 @@ env:
 
 jobs:
   build-w:
-    if: github.event.pull_request.head.repo.fork == true
+    if: ${{ github.event.pull_request.head.repo.full_name }} != ${{github.event.pull_request.base.repo.full_name }}
     runs-on: ubuntu-latest
     environment: build-dev
     
@@ -87,7 +87,7 @@ jobs:
               \`\`\``
             })
   build-wo:
-    if: github.event.pull_request.head.repo.fork == false
+    if: ${{ github.event.pull_request.head.repo.full_name }} == ${{github.event.pull_request.base.repo.full_name }}
     runs-on: ubuntu-latest
     
     steps:
