@@ -20,10 +20,10 @@ env:
   TAG_PG: ${{ vars.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
 
 jobs:
-  build:
+  build-w:
+    if: github.event.pull_request.head.repo.fork == true
     runs-on: ubuntu-latest
     environment: build-dev
-    if: github.event.pull_request.head.repo.fork == true
     
     steps:
       - name: Checkout PR code
@@ -87,8 +87,8 @@ jobs:
               \`\`\``
             })
   build-wo:
-    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.fork == false
+    runs-on: ubuntu-latest
     
     steps:
       - name: Checkout PR code
