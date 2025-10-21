@@ -39,7 +39,7 @@ jobs:
         run: npm run db:sqlite:push
 
       - name: Test with tsc
-        run: npx tsc --noEmit
+        run: npx tsc --noEmit -p tsconfig.oss.json
 
       - name: Start app in background
         run: nohup npm run dev &
