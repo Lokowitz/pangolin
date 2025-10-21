@@ -107,8 +107,6 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG }}
-          cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache
-          cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache,mode=max
           build-args: DATABASE=sqlite
             
       - name: Build and push Docker image PG
@@ -117,8 +115,6 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG_PG }}
-          cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg
-          cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
           build-args: DATABASE=pg
           
       - uses: actions/github-script@v8
