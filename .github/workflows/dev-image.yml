@@ -43,6 +43,7 @@ jobs:
       - name: Build and push Docker image SQLITE
         uses: docker/build-push-action@v6
         with:
+          context: .
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG }}
@@ -53,6 +54,7 @@ jobs:
       - name: Build and push Docker image PG
         uses: docker/build-push-action@v6
         with:
+          context: .
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG_PG }}
@@ -108,6 +110,7 @@ jobs:
       - name: Build and push Docker image SQLITE
         uses: docker/build-push-action@v6
         with:
+          context: .
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG }}
@@ -118,6 +121,7 @@ jobs:
       - name: Build and push Docker image PG
         uses: docker/build-push-action@v6
         with:
+          context: .
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG_PG }}
