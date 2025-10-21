@@ -50,6 +50,8 @@ jobs:
           push: true
           tags: ${{ env.TAG }}
           build-args: DATABASE=sqlite
+          cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache
+          cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache,mode=max
             
       - name: Build and push Docker image PG
         uses: docker/build-push-action@v6
@@ -58,6 +60,8 @@ jobs:
           push: true
           tags: ${{ env.TAG_PG }}
           build-args: DATABASE=pg
+          cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg
+          cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
           
       - uses: actions/github-script@v8
         with:
@@ -114,6 +118,8 @@ jobs:
           push: true
           tags: ${{ env.TAG }}
           build-args: DATABASE=sqlite
+          cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache
+          cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache,mode=max
             
       - name: Build and push Docker image PG
         uses: docker/build-push-action@v6
@@ -122,6 +128,8 @@ jobs:
           push: true
           tags: ${{ env.TAG_PG }}
           build-args: DATABASE=pg
+          cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg
+          cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
           
       - uses: actions/github-script@v8
         with:
