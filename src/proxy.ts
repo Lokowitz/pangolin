@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { build } from '@server/build';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     // If build is OSS, block access to private routes
     if (build === 'oss') {
         const pathname = request.nextUrl.pathname;
