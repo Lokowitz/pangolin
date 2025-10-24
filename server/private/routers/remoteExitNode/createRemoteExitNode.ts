@@ -18,7 +18,7 @@ import { z } from "zod";
 import { remoteExitNodes } from "@server/db";
 import createHttpError from "http-errors";
 import response from "@server/lib/response";
-import { SqliteError } from "better-sqlite3";
+import { LibsqlError } from "@libsql/client";
 import moment from "moment";
 import { generateSessionToken } from "@server/auth/sessions/app";
 import { createRemoteExitNodeSession } from "#private/auth/sessions/remoteExitNode";
@@ -36,11 +36,10 @@ export const paramsSchema = z.object({
 });
 
 const bodySchema = z
-    .object({
+    .strictObject({
         remoteExitNodeId: z.string().length(15),
         secret: z.string().length(48)
-    })
-    .strict();
+    });
 
 export type CreateRemoteExitNodeBody = z.infer<typeof bodySchema>;
 
@@ -248,7 +247,7 @@ export async function createRemoteExitNode(
             status: HttpCode.OK
         });
     } catch (e) {
-        if (e instanceof SqliteError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
+        if (e instanceof LibsqlError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
             return next(
                 createHttpError(
                     HttpCode.BAD_REQUEST,

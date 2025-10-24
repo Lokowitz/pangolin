@@ -23,21 +23,18 @@ import { build } from "@server/build";
 
 const regenerateTracker = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
 
-const inviteUserParamsSchema = z
-    .object({
+const inviteUserParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
 const inviteUserBodySchema = z
     .object({
-        email: z.string().toLowerCase().email(),
+        email: z.email().toLowerCase(),
         roleId: z.number(),
         validHours: z.number().gt(0).lte(168),
         sendEmail: z.boolean().optional(),
         regenerate: z.boolean().optional()
-    })
-    .strict();
+    });
 
 export type InviteUserBody = z.infer<typeof inviteUserBodySchema>;
 

@@ -19,16 +19,13 @@ import { isIpInCidr } from "@server/lib/ip";
 import { verifyExitNodeOrgAccess } from "#dynamic/lib/exitNodes";
 import { build } from "@server/build";
 
-const createSiteParamsSchema = z
-    .object({
+const createSiteParamsSchema = z.strictObject({
         orgId: z.string()
-    })
-    .strict();
+    });
 
-const createSiteSchema = z
-    .object({
+const createSiteSchema = z.strictObject({
         name: z.string().min(1).max(255),
-        exitNodeId: z.number().int().positive().optional(),
+        exitNodeId: z.int().positive().optional(),
         // subdomain: z
         //     .string()
         //     .min(1)

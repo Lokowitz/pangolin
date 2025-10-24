@@ -1,66 +1,20 @@
 #! /usr/bin/env node
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { migrate } from "drizzle-orm/libsql/migrator";
 import { db, exists } from "../db/sqlite";
 import path from "path";
 import semver from "semver";
 import { versionMigrations } from "../db/sqlite";
 import { __DIRNAME, APP_PATH, APP_VERSION } from "@server/lib/consts";
-import { SqliteError } from "better-sqlite3";
+import { LibsqlError } from "@libsql/client";
 import fs from "fs";
-import m1 from "./scriptsSqlite/1.0.0-beta1";
-import m2 from "./scriptsSqlite/1.0.0-beta2";
-import m3 from "./scriptsSqlite/1.0.0-beta3";
-import m4 from "./scriptsSqlite/1.0.0-beta5";
-import m5 from "./scriptsSqlite/1.0.0-beta6";
-import m6 from "./scriptsSqlite/1.0.0-beta9";
-import m7 from "./scriptsSqlite/1.0.0-beta10";
-import m8 from "./scriptsSqlite/1.0.0-beta12";
-import m13 from "./scriptsSqlite/1.0.0-beta13";
-import m15 from "./scriptsSqlite/1.0.0-beta15";
-import m16 from "./scriptsSqlite/1.0.0";
-import m17 from "./scriptsSqlite/1.1.0";
-import m18 from "./scriptsSqlite/1.2.0";
-import m19 from "./scriptsSqlite/1.3.0";
-import m20 from "./scriptsSqlite/1.5.0";
-import m21 from "./scriptsSqlite/1.6.0";
-import m22 from "./scriptsSqlite/1.7.0";
-import m23 from "./scriptsSqlite/1.8.0";
-import m24 from "./scriptsSqlite/1.9.0";
-import m25 from "./scriptsSqlite/1.10.0";
-import m26 from "./scriptsSqlite/1.10.1";
-import m27 from "./scriptsSqlite/1.10.2";
-import m28 from "./scriptsSqlite/1.11.0";
-import m29 from "./scriptsSqlite/1.11.1";
+import m30 from "./scriptsSqlite/2.0.0";
 
 // THIS CANNOT IMPORT ANYTHING FROM THE SERVER
 // EXCEPT FOR THE DATABASE AND THE SCHEMA
 
 // Define the migration list with versions and their corresponding functions
 const migrations = [
-    { version: "1.0.0-beta.1", run: m1 },
-    { version: "1.0.0-beta.2", run: m2 },
-    { version: "1.0.0-beta.3", run: m3 },
-    { version: "1.0.0-beta.5", run: m4 },
-    { version: "1.0.0-beta.6", run: m5 },
-    { version: "1.0.0-beta.9", run: m6 },
-    { version: "1.0.0-beta.10", run: m7 },
-    { version: "1.0.0-beta.12", run: m8 },
-    { version: "1.0.0-beta.13", run: m13 },
-    { version: "1.0.0-beta.15", run: m15 },
-    { version: "1.0.0", run: m16 },
-    { version: "1.1.0", run: m17 },
-    { version: "1.2.0", run: m18 },
-    { version: "1.3.0", run: m19 },
-    { version: "1.5.0", run: m20 },
-    { version: "1.6.0", run: m21 },
-    { version: "1.7.0", run: m22 },
-    { version: "1.8.0", run: m23 },
-    { version: "1.9.0", run: m24 },
-    { version: "1.10.0", run: m25 },
-    { version: "1.10.1", run: m26 },
-    { version: "1.10.2", run: m27 },
-    { version: "1.11.0", run: m28 },
-    { version: "1.11.1", run: m29 }
+    { version: "2.0.0", run: m30 },
     // Add new migrations here as they are created
 ] as const;
 
@@ -131,6 +85,7 @@ export async function runMigrations() {
 
 async function executeScripts() {
     try {
+        const requiredMinimumVersion = "1.11.1";
         // Get the last executed version from the database
         const lastExecuted = await db.select().from(versionMigrations);
 
@@ -139,6 +94,13 @@ async function executeScripts() {
             .map((m) => m)
             .sort((a, b) => semver.compare(b.version, a.version));
         const startVersion = pendingMigrations[0]?.version ?? APP_VERSION;
+
+        if (semver.lt(startVersion, requiredMinimumVersion)) {
+            console.error(`Starting App not allowed. Your previous version is: ${startVersion}.`);
+            console.error(`Please update first to version ${requiredMinimumVersion} due to breaking changes in version 2.0.0.`);
+            process.exit(1);
+        }
+
         console.log(`Starting migrations from version ${startVersion}`);
 
         const migrationsToRun = migrations.filter((migration) =>
@@ -176,7 +138,7 @@ async function executeScripts() {
                 );
             } catch (e) {
                 if (
-                    e instanceof SqliteError &&
+                    e instanceof LibsqlError &&
                     e.code === "SQLITE_CONSTRAINT_UNIQUE"
                 ) {
                     console.error("Migration has already run! Skipping...");

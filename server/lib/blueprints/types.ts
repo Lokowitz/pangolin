@@ -7,18 +7,18 @@ export const SiteSchema = z.object({
 
 export const TargetHealthCheckSchema = z.object({
     hostname: z.string(),
-    port: z.number().int().min(1).max(65535),
+    port: z.int().min(1).max(65535),
     enabled: z.boolean().optional().default(true),
     path: z.string().optional(),
     scheme: z.string().optional(),
     mode: z.string().default("http"),
-    interval: z.number().int().default(30),
-    unhealthyInterval: z.number().int().default(30),
-    timeout: z.number().int().default(5),
+    interval: z.int().default(30),
+    unhealthyInterval: z.int().default(30),
+    timeout: z.int().default(5),
     headers: z.array(z.object({ name: z.string(), value: z.string() })).nullable().optional().default(null),
     followRedirects: z.boolean().default(true),
     method: z.string().default("GET"),
-    status: z.number().int().optional()
+    status: z.int().optional()
 });
 
 // Schema for individual target within a resource
@@ -26,15 +26,15 @@ export const TargetSchema = z.object({
     site: z.string().optional(),
     method: z.enum(["http", "https", "h2c"]).optional(),
     hostname: z.string(),
-    port: z.number().int().min(1).max(65535),
+    port: z.int().min(1).max(65535),
     enabled: z.boolean().optional().default(true),
-    "internal-port": z.number().int().min(1).max(65535).optional(),
+    "internal-port": z.int().min(1).max(65535).optional(),
     path: z.string().optional(),
     "path-match": z.enum(["exact", "prefix", "regex"]).optional().nullable(),
     healthcheck: TargetHealthCheckSchema.optional(),
     rewritePath: z.string().optional(),
     "rewrite-match": z.enum(["exact", "prefix", "regex", "stripPrefix"]).optional().nullable(),
-    priority: z.number().int().min(1).max(1000).optional().default(100)
+    priority: z.int().min(1).max(1000).optional().default(100)
 });
 export type TargetData = z.infer<typeof TargetSchema>;
 
@@ -52,10 +52,10 @@ export const AuthSchema = z.object({
         .optional()
         .default([])
         .refine((roles) => !roles.includes("Admin"), {
-            message: "Admin role cannot be included in sso-roles"
+            error: "Admin role cannot be included in sso-roles"
         }),
-    "sso-users": z.array(z.string().email()).optional().default([]),
-    "whitelist-users": z.array(z.string().email()).optional().default([]),
+    "sso-users": z.array(z.email()).optional().default([]),
+    "whitelist-users": z.array(z.email()).optional().default([]),
 });
 
 export const RuleSchema = z.object({
@@ -76,7 +76,7 @@ export const ResourceSchema = z
         protocol: z.enum(["http", "tcp", "udp"]).optional(),
         ssl: z.boolean().optional(),
         "full-domain": z.string().optional(),
-        "proxy-port": z.number().int().min(1).max(65535).optional(),
+        "proxy-port": z.int().min(1).max(65535).optional(),
         enabled: z.boolean().optional(),
         targets: z.array(TargetSchema.nullable()).optional().default([]),
         auth: AuthSchema.optional(),
@@ -97,9 +97,8 @@ export const ResourceSchema = z
             );
         },
         {
-            message:
-                "Resource must either be targets-only (only 'targets' field) or have both 'name' and 'protocol' fields at a minimum",
-            path: ["name", "protocol"]
+            path: ["name", "protocol"],
+            error: "Resource must either be targets-only (only 'targets' field) or have both 'name' and 'protocol' fields at a minimum"
         }
     )
     .refine(
@@ -114,6 +113,19 @@ export const ResourceSchema = z
                     (target) => target == null || target.method !== undefined
                 );
             }
+            return true;
+        },
+        {
+            path: ["targets"],
+            error: "When protocol is 'http', all targets must have a 'method' field"
+        }
+    )
+    .refine(
+        (resource) => {
+            if (isTargetsOnlyResource(resource)) {
+                return true;
+            }
+
             // If protocol is tcp or udp, no target should have method field
             if (resource.protocol === "tcp" || resource.protocol === "udp") {
                 return resource.targets.every(
@@ -122,19 +134,9 @@ export const ResourceSchema = z
             }
             return true;
         },
-        (resource) => {
-            if (resource.protocol === "http") {
-                return {
-                    message:
-                        "When protocol is 'http', all targets must have a 'method' field",
-                    path: ["targets"]
-                };
-            }
-            return {
-                message:
-                    "When protocol is 'tcp' or 'udp', targets must not have a 'method' field",
-                path: ["targets"]
-            };
+        {
+            path: ["targets"],
+            error: "When protocol is 'tcp' or 'udp', targets must not have a 'method' field"       
         }
     )
     .refine(
@@ -153,9 +155,8 @@ export const ResourceSchema = z
             return true;
         },
         {
-            message:
-                "When protocol is 'http', a 'full-domain' must be provided",
-            path: ["full-domain"]
+            path: ["full-domain"],
+            error: "When protocol is 'http', a 'full-domain' must be provided"
         }
     )
     .refine(
@@ -171,9 +172,8 @@ export const ResourceSchema = z
             return true;
         },
         {
-            message:
-                "When protocol is 'tcp' or 'udp', 'proxy-port' must be provided",
-            path: ["proxy-port", "exit-node"]
+            path: ["proxy-port", "exit-node"],
+            error: "When protocol is 'tcp' or 'udp', 'proxy-port' must be provided"
         }
     )
     .refine(
@@ -190,9 +190,8 @@ export const ResourceSchema = z
             return true;
         },
         {
-            message:
-                "When protocol is 'tcp' or 'udp', 'auth' must not be provided",
-            path: ["auth"]
+            path: ["auth"],
+            error: "When protocol is 'tcp' or 'udp', 'auth' must not be provided"
         }
     );
 
@@ -213,13 +212,13 @@ export const ClientResourceSchema = z.object({
 // Schema for the entire configuration object
 export const ConfigSchema = z
     .object({
-        "proxy-resources": z.record(z.string(), ResourceSchema).optional().default({}),
-        "client-resources": z.record(z.string(), ClientResourceSchema).optional().default({}),
-        sites: z.record(z.string(), SiteSchema).optional().default({})
+        "proxy-resources": z.record(z.string(), ResourceSchema).optional().prefault({}),
+        "client-resources": z.record(z.string(), ClientResourceSchema).optional().prefault({}),
+        sites: z.record(z.string(), SiteSchema).optional().prefault({})
     })
-    .refine(
+    .superRefine(
         // Enforce the full-domain uniqueness across resources in the same stack
-        (config) => {
+        (config, ctx) => {
             // Extract all full-domain values with their resource keys
             const fullDomainMap = new Map<string, string[]>();
 
@@ -237,46 +236,25 @@ export const ConfigSchema = z
             );
 
             // Find duplicates
-            const duplicates = Array.from(fullDomainMap.entries()).filter(
-                ([_, resourceKeys]) => resourceKeys.length > 1
-            );
-
-            return duplicates.length === 0;
-        },
-        (config) => {
-            // Extract duplicates for error message
-            const fullDomainMap = new Map<string, string[]>();
-
-            Object.entries(config["proxy-resources"]).forEach(
-                ([resourceKey, resource]) => {
-                    const fullDomain = resource["full-domain"];
-                    if (fullDomain) {
-                        // Only process if full-domain is defined
-                        if (!fullDomainMap.has(fullDomain)) {
-                            fullDomainMap.set(fullDomain, []);
-                        }
-                        fullDomainMap.get(fullDomain)!.push(resourceKey);
-                    }
-                }
-            );
-
             const duplicates = Array.from(fullDomainMap.entries())
-                .filter(([_, resourceKeys]) => resourceKeys.length > 1)
-                .map(
-                    ([fullDomain, resourceKeys]) =>
-                        `'${fullDomain}' used by resources: ${resourceKeys.join(", ")}`
-                )
-                .join("; ");
+            .filter(([_, resourceKeys]) => resourceKeys.length > 1)
+            .map(
+                ([fullDomain, resourceKeys]) =>
+                    `'${fullDomain}' used by resources: ${resourceKeys.join(", ")}`
+            )
+            .join("; ");
 
-            return {
-                message: `Duplicate 'full-domain' values found: ${duplicates}`,
-                path: ["resources"]
-            };
+            if (duplicates.length !== 0) {
+                ctx.addIssue({
+                    code: "custom",
+                    message: `Duplicate 'full-domain' values found: ${duplicates}`
+                });
+            }
         }
     )
-    .refine(
+    .superRefine(
         // Enforce proxy-port uniqueness within proxy-resources
-        (config) => {
+        (config, ctx) => {
             const proxyPortMap = new Map<number, string[]>();
 
             Object.entries(config["proxy-resources"]).forEach(
@@ -292,45 +270,25 @@ export const ConfigSchema = z
             );
 
             // Find duplicates
-            const duplicates = Array.from(proxyPortMap.entries()).filter(
-                ([_, resourceKeys]) => resourceKeys.length > 1
-            );
-
-            return duplicates.length === 0;
-        },
-        (config) => {
-            // Extract duplicates for error message
-            const proxyPortMap = new Map<number, string[]>();
-
-            Object.entries(config["proxy-resources"]).forEach(
-                ([resourceKey, resource]) => {
-                    const proxyPort = resource["proxy-port"];
-                    if (proxyPort !== undefined) {
-                        if (!proxyPortMap.has(proxyPort)) {
-                            proxyPortMap.set(proxyPort, []);
-                        }
-                        proxyPortMap.get(proxyPort)!.push(resourceKey);
-                    }
-                }
-            );
-
             const duplicates = Array.from(proxyPortMap.entries())
-                .filter(([_, resourceKeys]) => resourceKeys.length > 1)
-                .map(
-                    ([proxyPort, resourceKeys]) =>
-                        `port ${proxyPort} used by proxy-resources: ${resourceKeys.join(", ")}`
+            .filter(([_, resourceKeys]) => resourceKeys.length > 1)
+            .map(
+                ([proxyPort, resourceKeys]) =>
+                    `port ${proxyPort} used by proxy-resources: ${resourceKeys.join(", ")}`
                 )
                 .join("; ");
-
-            return {
-                message: `Duplicate 'proxy-port' values found in proxy-resources: ${duplicates}`,
-                path: ["proxy-resources"]
-            };
+            
+            if (duplicates.length !== 0) {
+                ctx.addIssue({
+                    code: "custom",
+                    message: `Duplicate 'proxy-port' values found in proxy-resources: ${duplicates}`
+                });
+            }
         }
     )
-    .refine(
+    .superRefine(
         // Enforce proxy-port uniqueness within client-resources
-        (config) => {
+        (config, ctx) => {
             const proxyPortMap = new Map<number, string[]>();
 
             Object.entries(config["client-resources"]).forEach(
@@ -346,40 +304,20 @@ export const ConfigSchema = z
             );
 
             // Find duplicates
-            const duplicates = Array.from(proxyPortMap.entries()).filter(
-                ([_, resourceKeys]) => resourceKeys.length > 1
-            );
-
-            return duplicates.length === 0;
-        },
-        (config) => {
-            // Extract duplicates for error message
-            const proxyPortMap = new Map<number, string[]>();
-
-            Object.entries(config["client-resources"]).forEach(
-                ([resourceKey, resource]) => {
-                    const proxyPort = resource["proxy-port"];
-                    if (proxyPort !== undefined) {
-                        if (!proxyPortMap.has(proxyPort)) {
-                            proxyPortMap.set(proxyPort, []);
-                        }
-                        proxyPortMap.get(proxyPort)!.push(resourceKey);
-                    }
-                }
-            );
-
             const duplicates = Array.from(proxyPortMap.entries())
-                .filter(([_, resourceKeys]) => resourceKeys.length > 1)
-                .map(
-                    ([proxyPort, resourceKeys]) =>
-                        `port ${proxyPort} used by client-resources: ${resourceKeys.join(", ")}`
+            .filter(([_, resourceKeys]) => resourceKeys.length > 1)
+            .map(
+                ([proxyPort, resourceKeys]) =>
+                    `port ${proxyPort} used by client-resources: ${resourceKeys.join(", ")}`
                 )
                 .join("; ");
-
-            return {
-                message: `Duplicate 'proxy-port' values found in client-resources: ${duplicates}`,
-                path: ["client-resources"]
-            };
+            
+            if (duplicates.length !== 0) {
+                ctx.addIssue({
+                    code: "custom",
+                    message: `Duplicate 'proxy-port' values found in client-resources: ${duplicates}`
+                });
+            }
         }
     );
 

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import createHttpError from "http-errors";
 import response from "@server/lib/response";
-import { SqliteError } from "better-sqlite3";
+import { LibsqlError } from "@libsql/client";
 import { sendEmailVerificationCode } from "../../auth/sendEmailVerificationCode";
 import { eq, and } from "drizzle-orm";
 import moment from "moment";
@@ -29,7 +29,7 @@ import resend, {
 } from "#dynamic/lib/resend";
 
 export const signupBodySchema = z.object({
-    email: z.string().toLowerCase().email(),
+    email: z.email().toLowerCase(),
     password: passwordSchema,
     inviteToken: z.string().optional(),
     inviteId: z.string().optional(),
@@ -224,7 +224,7 @@ export async function signup(
         res.appendHeader("Set-Cookie", cookie);
 
         if (build == "saas") {
-            moveEmailToAudience(email, AudienceIds.General);
+            moveEmailToAudience(email, AudienceIds.SignUps);
         }
 
         if (config.getRawConfig().flags?.require_email_verification) {
@@ -249,7 +249,7 @@ export async function signup(
             status: HttpCode.OK
         });
     } catch (e) {
-        if (e instanceof SqliteError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
+        if (e instanceof LibsqlError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
             if (config.getRawConfig().app.log_failed_attempts) {
                 logger.info(
                     `Account already exists with that email. Email: ${email}. IP: ${req.ip}.`
