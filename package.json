@@ -160,7 +160,7 @@
         "esbuild": "0.25.12",
         "esbuild-node-externals": "1.18.0",
         "postcss": "^8",
-        "react-email": "4.3.2",
+        "react-email": "5.0.1",
         "tailwindcss": "^4.1.4",
         "tsc-alias": "1.8.16",
         "tsx": "4.20.6",
