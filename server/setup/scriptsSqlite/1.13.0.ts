@@ -2,7 +2,7 @@ import { APP_PATH } from "@server/lib/consts";
 import { createClient } from "@libsql/client";
 import path from "path";
 
-const version = "2.0.0";
+const version = "1.13.0";
 
 export default async function migration() {
 	console.log(`Running setup script ${version}...`);
