@@ -7,14 +7,14 @@ import { versionMigrations } from "../db/sqlite";
 import { __DIRNAME, APP_PATH, APP_VERSION } from "@server/lib/consts";
 import { LibsqlError } from "@libsql/client";
 import fs from "fs";
-import m30 from "./scriptsSqlite/2.0.0";
+import m31 from "./scriptsSqlite/1.13.0";
 
 // THIS CANNOT IMPORT ANYTHING FROM THE SERVER
 // EXCEPT FOR THE DATABASE AND THE SCHEMA
 
 // Define the migration list with versions and their corresponding functions
 const migrations = [
-    { version: "2.0.0", run: m30 },
+    { version: "1.13.0", run: m31 },
     // Add new migrations here as they are created
 ] as const;
 
@@ -85,7 +85,7 @@ export async function runMigrations() {
 
 async function executeScripts() {
     try {
-        const requiredMinimumVersion = "1.11.1";
+        const requiredMinimumVersion = "1.12.2";
         // Get the last executed version from the database
         const lastExecuted = await db.select().from(versionMigrations);
 
@@ -97,7 +97,7 @@ async function executeScripts() {
 
         if (semver.lt(startVersion, requiredMinimumVersion)) {
             console.error(`Starting App not allowed. Your previous version is: ${startVersion}.`);
-            console.error(`Please update first to version ${requiredMinimumVersion} due to breaking changes in version 2.0.0.`);
+            console.error(`Please update first to version ${requiredMinimumVersion} due to breaking changes in version 1.13.0.`);
             process.exit(1);
         }
 
