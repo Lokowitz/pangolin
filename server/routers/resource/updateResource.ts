@@ -37,6 +37,7 @@ const updateResourceParamsSchema = z
 const updateHttpResourceBodySchema = z
     .object({
         name: z.string().min(1).max(255).optional(),
+        niceId: z.string().min(1).max(255).optional(),
         subdomain: subdomainSchema.nullable().optional(),
         ssl: z.boolean().optional(),
         sso: z.boolean().optional(),
@@ -97,10 +98,12 @@ export type UpdateResourceResponse = Resource;
 const updateRawResourceBodySchema = z
     .object({
         name: z.string().min(1).max(255).optional(),
+        niceId: z.string().min(1).max(255).optional(),
         proxyPort: z.number().int().min(1).max(65535).optional(),
         stickySession: z.boolean().optional(),
-        enabled: z.boolean().optional()
-        // enableProxy: z.boolean().optional() // always true now
+        enabled: z.boolean().optional(),
+        proxyProtocol: z.boolean().optional(),
+        proxyProtocolVersion: z.number().int().min(1).optional()
     })
     .strict()
     .refine((data) => Object.keys(data).length > 0, {
@@ -235,6 +238,30 @@ async function updateHttpResource(
 
     const updateData = parsedBody.data;
 
+    if (updateData.niceId) {
+        const [existingResource] = await db
+            .select()
+            .from(resources)
+            .where(
+            and(
+                eq(resources.niceId, updateData.niceId),
+                eq(resources.orgId, resource.orgId)
+            )
+        );
+
+        if (
+            existingResource &&
+            existingResource.resourceId !== resource.resourceId
+        ) {
+            return next(
+                createHttpError(
+                    HttpCode.CONFLICT,
+                    `A resource with niceId "${updateData.niceId}" already exists`
+                )
+            );
+        }
+    }
+
     if (updateData.domainId) {
         const domainId = updateData.domainId;
 
@@ -360,6 +387,30 @@ async function updateRawResource(
     }
 
     const updateData = parsedBody.data;
+
+    if (updateData.niceId) {
+        const [existingResource] = await db
+            .select()
+            .from(resources)
+            .where(
+            and(
+                eq(resources.niceId, updateData.niceId),
+                eq(resources.orgId, resource.orgId)
+            )
+        );
+
+        if (
+            existingResource &&
+            existingResource.resourceId !== resource.resourceId
+        ) {
+            return next(
+                createHttpError(
+                    HttpCode.CONFLICT,
+                    `A resource with niceId "${updateData.niceId}" already exists`
+                )
+            );
+        }
+    }
 
     const updatedResource = await db
         .update(resources)

@@ -77,7 +77,8 @@ import {
     MoveRight,
     ArrowUp,
     Info,
-    ArrowDown
+    ArrowDown,
+    AlertTriangle
 } from "lucide-react";
 import { ContainersSelector } from "@app/components/ContainersSelector";
 import { useTranslations } from "next-intl";
@@ -115,6 +116,7 @@ import {
     TooltipProvider,
     TooltipTrigger
 } from "@app/components/ui/tooltip";
+import { Alert, AlertDescription } from "@app/components/ui/alert";
 
 const addTargetSchema = z
     .object({
@@ -288,7 +290,9 @@ export default function ReverseProxyTargets(props: {
             ),
         headers: z
             .array(z.object({ name: z.string(), value: z.string() }))
-            .nullable()
+            .nullable(),
+        proxyProtocol: z.boolean().optional(),
+        proxyProtocolVersion: z.number().int().min(1).max(2).optional()
     });
 
     const tlsSettingsSchema = z.object({
@@ -325,7 +329,9 @@ export default function ReverseProxyTargets(props: {
         resolver: zodResolver(proxySettingsSchema),
         defaultValues: {
             setHostHeader: resource.setHostHeader || "",
-            headers: resource.headers
+            headers: resource.headers,
+            proxyProtocol: resource.proxyProtocol || false,
+            proxyProtocolVersion: resource.proxyProtocolVersion || 1
         }
     });
 
@@ -495,25 +501,6 @@ export default function ReverseProxyTargets(props: {
             return;
         }
 
-        // Check if target with same IP, port and method already exists
-        const isDuplicate = targets.some(
-            (t) =>
-                t.targetId !== target.targetId &&
-                t.ip === target.ip &&
-                t.port === target.port &&
-                t.method === target.method &&
-                t.siteId === target.siteId
-        );
-
-        if (isDuplicate) {
-            toast({
-                variant: "destructive",
-                title: t("targetErrorDuplicate"),
-                description: t("targetErrorDuplicateDescription")
-            });
-            return;
-        }
-
         try {
             setTargetsLoading(true);
 
@@ -525,9 +512,18 @@ export default function ReverseProxyTargets(props: {
                 port: target.port,
                 enabled: target.enabled,
                 hcEnabled: target.hcEnabled,
-                hcPath: target.hcPath,
-                hcInterval: target.hcInterval,
-                hcTimeout: target.hcTimeout
+                hcPath: target.hcPath || null,
+                hcScheme: target.hcScheme || null,
+                hcHostname: target.hcHostname || null,
+                hcPort: target.hcPort || null,
+                hcInterval: target.hcInterval || null,
+                hcTimeout: target.hcTimeout || null,
+                hcHeaders: target.hcHeaders || null,
+                hcFollowRedirects: target.hcFollowRedirects || null,
+                hcMethod: target.hcMethod || null,
+                hcStatus: target.hcStatus || null,
+                hcUnhealthyInterval: target.hcUnhealthyInterval || null,
+                hcMode: target.hcMode || null
             };
 
             // Only include path-related fields for HTTP resources
@@ -549,11 +545,11 @@ export default function ReverseProxyTargets(props: {
                     prev.map((t) =>
                         t.targetId === target.targetId
                             ? {
-                                  ...t,
-                                  targetId: response.data.data.targetId,
-                                  new: false,
-                                  updated: false
-                              }
+                                ...t,
+                                targetId: response.data.data.targetId,
+                                new: false,
+                                updated: false
+                            }
                             : t
                     )
                 );
@@ -579,24 +575,6 @@ export default function ReverseProxyTargets(props: {
     }
 
     async function addTarget(data: z.infer<typeof addTargetSchema>) {
-        // Check if target with same IP, port and method already exists
-        const isDuplicate = targets.some(
-            (target) =>
-                target.ip === data.ip &&
-                target.port === data.port &&
-                target.method === data.method &&
-                target.siteId === data.siteId
-        );
-
-        if (isDuplicate) {
-            toast({
-                variant: "destructive",
-                title: t("targetErrorDuplicate"),
-                description: t("targetErrorDuplicateDescription")
-            });
-            return;
-        }
-
         // if (site && site.type == "wireguard" && site.subnet) {
         //     // make sure that the target IP is within the site subnet
         //     const targetIp = data.ip;
@@ -673,11 +651,11 @@ export default function ReverseProxyTargets(props: {
             targets.map((target) =>
                 target.targetId === targetId
                     ? {
-                          ...target,
-                          ...data,
-                          updated: true,
-                          siteType: site ? site.type : target.siteType
-                      }
+                        ...target,
+                        ...data,
+                        updated: true,
+                        siteType: site ? site.type : target.siteType
+                    }
                     : target
             )
         );
@@ -688,10 +666,10 @@ export default function ReverseProxyTargets(props: {
             targets.map((target) =>
                 target.targetId === targetId
                     ? {
-                          ...target,
-                          ...config,
-                          updated: true
-                      }
+                        ...target,
+                        ...config,
+                        updated: true
+                    }
                     : target
             )
         );
@@ -727,6 +705,10 @@ export default function ReverseProxyTargets(props: {
             setHttpsTlsLoading(true);
             setProxySettingsLoading(true);
 
+            for (const targetId of targetsToRemove) {
+                await api.delete(`/target/${targetId}`);
+            }
+
             // Save targets
             for (const target of targets) {
                 const data: any = {
@@ -745,7 +727,9 @@ export default function ReverseProxyTargets(props: {
                     hcHeaders: target.hcHeaders || null,
                     hcFollowRedirects: target.hcFollowRedirects || null,
                     hcMethod: target.hcMethod || null,
-                    hcStatus: target.hcStatus || null
+                    hcStatus: target.hcStatus || null,
+                    hcUnhealthyInterval: target.hcUnhealthyInterval || null,
+                    hcMode: target.hcMode || null
                 };
 
                 // Only include path-related fields for HTTP resources
@@ -767,10 +751,6 @@ export default function ReverseProxyTargets(props: {
                     await api.post(`/target/${target.targetId}`, data);
                     target.updated = false;
                 }
-            }
-
-            for (const targetId of targetsToRemove) {
-                await api.delete(`/target/${targetId}`);
             }
 
             if (resource.http) {
@@ -799,6 +779,22 @@ export default function ReverseProxyTargets(props: {
                     tlsServerName: tlsData.tlsServerName || null,
                     setHostHeader: proxyData.setHostHeader || null,
                     headers: proxyData.headers || null
+                });
+            } else {
+                // For TCP/UDP resources, save proxy protocol settings
+                const proxyData = proxySettingsForm.getValues();
+
+                const payload = {
+                    proxyProtocol: proxyData.proxyProtocol || false,
+                    proxyProtocolVersion: proxyData.proxyProtocolVersion || 1
+                };
+
+                await api.post(`/resource/${resource.resourceId}`, payload);
+
+                updateResource({
+                    ...resource,
+                    proxyProtocol: proxyData.proxyProtocol || false,
+                    proxyProtocolVersion: proxyData.proxyProtocolVersion || 1
                 });
             }
 
@@ -877,7 +873,7 @@ export default function ReverseProxyTargets(props: {
 
         const healthCheckColumn: ColumnDef<LocalTarget> = {
             accessorKey: "healthCheck",
-            header: t("healthCheck"),
+            header: () => (<span className="p-3">{t("healthCheck")}</span>),
             cell: ({ row }) => {
                 const status = row.original.hcHealth || "unknown";
                 const isEnabled = row.original.hcEnabled;
@@ -949,7 +945,7 @@ export default function ReverseProxyTargets(props: {
 
         const matchPathColumn: ColumnDef<LocalTarget> = {
             accessorKey: "path",
-            header: t("matchPath"),
+            header: () => (<span className="p-3">{t("matchPath")}</span>),
             cell: ({ row }) => {
                 const hasPathMatch = !!(
                     row.original.path || row.original.pathMatchType
@@ -1011,7 +1007,7 @@ export default function ReverseProxyTargets(props: {
 
         const addressColumn: ColumnDef<LocalTarget> = {
             accessorKey: "address",
-            header: t("address"),
+            header: () => (<span className="p-3">{t("address")}</span>),
             cell: ({ row }) => {
                 const selectedSite = sites.find(
                     (site) => site.siteId === row.original.siteId
@@ -1030,7 +1026,7 @@ export default function ReverseProxyTargets(props: {
 
                 return (
                     <div className="flex items-center w-full">
-                        <div className="flex items-center w-full justify-start py-0 space-x-2 px-0 cursor-default border border-input shadow-2xs rounded-md">
+                        <div className="flex items-center w-full justify-start py-0 space-x-2 px-0 cursor-default border border-input rounded-md">
                             {selectedSite &&
                                 selectedSite.type === "newt" &&
                                 (() => {
@@ -1064,7 +1060,7 @@ export default function ReverseProxyTargets(props: {
                                         className={cn(
                                             "w-[180px] justify-between text-sm border-r pr-4 rounded-none h-8 hover:bg-transparent",
                                             !row.original.siteId &&
-                                                "text-muted-foreground"
+                                            "text-muted-foreground"
                                         )}
                                     >
                                         <span className="truncate max-w-[150px]">
@@ -1225,7 +1221,7 @@ export default function ReverseProxyTargets(props: {
 
         const rewritePathColumn: ColumnDef<LocalTarget> = {
             accessorKey: "rewritePath",
-            header: t("rewritePath"),
+            header: () => (<span className="p-3">{t("rewritePath")}</span>),
             cell: ({ row }) => {
                 const hasRewritePath = !!(
                     row.original.rewritePath || row.original.rewritePathType
@@ -1295,7 +1291,7 @@ export default function ReverseProxyTargets(props: {
 
         const enabledColumn: ColumnDef<LocalTarget> = {
             accessorKey: "enabled",
-            header: t("enabled"),
+            header: () => (<span className="p-3">{t("enabled")}</span>),
             cell: ({ row }) => (
                 <div className="flex items-center justify-center w-full">
                     <Switch
@@ -1316,8 +1312,9 @@ export default function ReverseProxyTargets(props: {
 
         const actionsColumn: ColumnDef<LocalTarget> = {
             id: "actions",
+            header: () => (<span className="p-3">{t("actions")}</span>),
             cell: ({ row }) => (
-                <div className="flex items-center justify-end w-full">
+                <div className="flex items-center w-full">
                     <Button
                         variant="outline"
                         onClick={() => removeTarget(row.original.targetId)}
@@ -1404,12 +1401,12 @@ export default function ReverseProxyTargets(props: {
                                                                 {header.isPlaceholder
                                                                     ? null
                                                                     : flexRender(
-                                                                          header
-                                                                              .column
-                                                                              .columnDef
-                                                                              .header,
-                                                                          header.getContext()
-                                                                      )}
+                                                                        header
+                                                                            .column
+                                                                            .columnDef
+                                                                            .header,
+                                                                        header.getContext()
+                                                                    )}
                                                             </TableHead>
                                                         )
                                                     )}
@@ -1675,6 +1672,102 @@ export default function ReverseProxyTargets(props: {
                 </SettingsSection>
             )}
 
+            {!resource.http && resource.protocol == "tcp" && (
+                <SettingsSection>
+                    <SettingsSectionHeader>
+                        <SettingsSectionTitle>
+                            {t("proxyProtocol")}
+                        </SettingsSectionTitle>
+                        <SettingsSectionDescription>
+                            {t("proxyProtocolDescription")}
+                        </SettingsSectionDescription>
+                    </SettingsSectionHeader>
+                    <SettingsSectionBody>
+                        <SettingsSectionForm>
+                            <Form {...proxySettingsForm}>
+                                <form
+                                    onSubmit={proxySettingsForm.handleSubmit(
+                                        saveAllSettings
+                                    )}
+                                    className="space-y-4"
+                                    id="proxy-protocol-settings-form"
+                                >
+                                    <FormField
+                                        control={proxySettingsForm.control}
+                                        name="proxyProtocol"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <SwitchInput
+                                                        id="proxy-protocol-toggle"
+                                                        label={t(
+                                                            "enableProxyProtocol"
+                                                        )}
+                                                        description={t(
+                                                            "proxyProtocolInfo"
+                                                        )}
+                                                        defaultChecked={
+                                                            field.value || false
+                                                        }
+                                                        onCheckedChange={(val) => {
+                                                            field.onChange(val);
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    {proxySettingsForm.watch("proxyProtocol") && (
+                                        <>
+                                            <FormField
+                                                control={proxySettingsForm.control}
+                                                name="proxyProtocolVersion"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>{t("proxyProtocolVersion")}</FormLabel>
+                                                        <FormControl>
+                                                            <Select
+                                                                value={String(field.value || 1)}
+                                                                onValueChange={(value) =>
+                                                                    field.onChange(parseInt(value, 10))
+                                                                }
+                                                            >
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Select version" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="1">
+                                                                        {t("version1")}
+                                                                    </SelectItem>
+                                                                    <SelectItem value="2">
+                                                                        {t("version2")}
+                                                                    </SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            {t("versionDescription")}
+                                                        </FormDescription>
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <Alert>
+                                                <AlertTriangle className="h-4 w-4" />
+                                                <AlertDescription>
+                                                    <strong>{t("warning")}:</strong> {t("proxyProtocolWarning")}
+                                                </AlertDescription>
+                                            </Alert>
+                                        </>
+                                    )}
+                                </form>
+                            </Form>
+                        </SettingsSectionForm>
+                    </SettingsSectionBody>
+                </SettingsSection>
+            )}
+
             <div className="flex justify-end mt-6">
                 <Button
                     onClick={saveAllSettings}
@@ -1732,6 +1825,7 @@ export default function ReverseProxyTargets(props: {
                             30
                     }}
                     onChanges={async (config) => {
+                        console.log("here");
                         if (selectedTargetForHealthCheck) {
                             console.log(config);
                             updateTargetHealthCheck(

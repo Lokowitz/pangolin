@@ -19,6 +19,7 @@ export enum ActionsEnum {
     getSite = "getSite",
     listSites = "listSites",
     updateSite = "updateSite",
+    reGenerateSecret = "reGenerateSecret",
     createResource = "createResource",
     deleteResource = "deleteResource",
     getResource = "getResource",
@@ -81,6 +82,9 @@ export enum ActionsEnum {
     listClients = "listClients",
     getClient = "getClient",
     listOrgDomains = "listOrgDomains",
+    getDomain = "getDomain",
+    updateOrgDomain = "updateOrgDomain",
+    getDNSRecords = "getDNSRecords",
     createNewt = "createNewt",
     createIdp = "createIdp",
     updateIdp = "updateIdp",
@@ -116,7 +120,11 @@ export enum ActionsEnum {
     updateLoginPage = "updateLoginPage",
     getLoginPage = "getLoginPage",
     deleteLoginPage = "deleteLoginPage",
-    applyBlueprint = "applyBlueprint"
+    listBlueprints = "listBlueprints",
+    getBlueprint = "getBlueprint",
+    applyBlueprint = "applyBlueprint",
+    viewLogs = "viewLogs",
+    exportLogs = "exportLogs"
 }
 
 export async function checkUserActionPermission(
@@ -193,7 +201,6 @@ export async function checkUserActionPermission(
             .limit(1);
 
         return roleActionPermission.length > 0;
-
     } catch (error) {
         console.error("Error checking user action permission:", error);
         throw createHttpError(

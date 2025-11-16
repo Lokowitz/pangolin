@@ -56,6 +56,9 @@ import { build } from "@server/build";
 import { finalizeSubdomainSanitize } from "@app/lib/subdomain-utils";
 import { DomainRow } from "../../../../../../components/DomainsTable";
 import { toASCII, toUnicode } from "punycode";
+import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
+import { useSubscriptionStatusContext } from "@app/hooks/useSubscriptionStatusContext";
+import { useUserContext } from "@app/hooks/useUserContext";
 
 export default function GeneralForm() {
     const [formKey, setFormKey] = useState(0);
@@ -65,6 +68,9 @@ export default function GeneralForm() {
     const router = useRouter();
     const t = useTranslations();
     const [editDomainOpen, setEditDomainOpen] = useState(false);
+    const { licenseStatus } = useLicenseStatusContext();
+    const subscriptionStatus = useSubscriptionStatusContext();
+    const { user } = useUserContext();
 
     const { env } = useEnvContext();
 
@@ -96,6 +102,7 @@ export default function GeneralForm() {
             enabled: z.boolean(),
             subdomain: z.string().optional(),
             name: z.string().min(1).max(255),
+            niceId: z.string().min(1).max(255).optional(),
             domainId: z.string().optional(),
             proxyPort: z.number().int().min(1).max(65535).optional(),
             // enableProxy: z.boolean().optional()
@@ -124,6 +131,7 @@ export default function GeneralForm() {
         defaultValues: {
             enabled: resource.enabled,
             name: resource.name,
+            niceId: resource.niceId,
             subdomain: resource.subdomain ? resource.subdomain : undefined,
             domainId: resource.domainId || undefined,
             proxyPort: resource.proxyPort || undefined,
@@ -186,6 +194,7 @@ export default function GeneralForm() {
                 {
                     enabled: data.enabled,
                     name: data.name,
+                    niceId: data.niceId,
                     subdomain: data.subdomain ? toASCII(data.subdomain) : undefined,
                     domainId: data.domainId,
                     proxyPort: data.proxyPort,
@@ -206,16 +215,12 @@ export default function GeneralForm() {
             });
 
         if (res && res.status === 200) {
-            toast({
-                title: t("resourceUpdated"),
-                description: t("resourceUpdatedDescription")
-            });
-
-            const resource = res.data.data;
+            const updated = res.data.data;
 
             updateResource({
                 enabled: data.enabled,
                 name: data.name,
+                niceId: data.niceId,
                 subdomain: data.subdomain,
                 fullDomain: resource.fullDomain,
                 proxyPort: data.proxyPort,
@@ -224,8 +229,20 @@ export default function GeneralForm() {
                 // })
             });
 
-            router.refresh();
+            toast({
+                title: t("resourceUpdated"),
+                description: t("resourceUpdatedDescription")
+            });
+
+            if (data.niceId && data.niceId !== resource?.niceId) {
+                router.replace(`/${updated.orgId}/settings/resources/${data.niceId}/general`);
+            } else {
+                router.refresh();
+            }
+
+            setSaveLoading(false);
         }
+
         setSaveLoading(false);
     }
 
@@ -292,6 +309,24 @@ export default function GeneralForm() {
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Input {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="niceId"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{t("identifier")}</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            {...field}
+                                                            placeholder={t("enterIdentifier")}
+                                                            className="flex-1"
+                                                        />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>

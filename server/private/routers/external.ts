@@ -21,20 +21,26 @@ import * as domain from "#private/routers/domain";
 import * as auth from "#private/routers/auth";
 import * as license from "#private/routers/license";
 import * as generateLicense from "./generatedLicense";
+import * as logs from "#private/routers/auditLogs";
+import * as misc from "#private/routers/misc";
+import * as reKey from "#private/routers/re-key";
 
-import { Router } from "express";
 import {
     verifyOrgAccess,
     verifyUserHasAction,
-    verifyUserIsOrgOwner,
-    verifyUserIsServerAdmin
+    verifyUserIsServerAdmin,
+    verifySiteAccess,
+    verifyClientAccess,
+    verifyClientsEnabled,
 } from "@server/middlewares";
 import { ActionsEnum } from "@server/auth/actions";
 import {
+    logActionAudit,
     verifyCertificateAccess,
     verifyIdpAccess,
     verifyLoginPageAccess,
-    verifyRemoteExitNodeAccess
+    verifyRemoteExitNodeAccess,
+    verifyValidSubscription
 } from "#private/middlewares";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import createHttpError from "http-errors";
@@ -72,6 +78,7 @@ authenticated.put(
     verifyValidLicense,
     verifyOrgAccess,
     verifyUserHasAction(ActionsEnum.createIdp),
+    logActionAudit(ActionsEnum.createIdp),
     orgIdp.createOrgOidcIdp
 );
 
@@ -81,6 +88,7 @@ authenticated.post(
     verifyOrgAccess,
     verifyIdpAccess,
     verifyUserHasAction(ActionsEnum.updateIdp),
+    logActionAudit(ActionsEnum.updateIdp),
     orgIdp.updateOrgOidcIdp
 );
 
@@ -90,6 +98,7 @@ authenticated.delete(
     verifyOrgAccess,
     verifyIdpAccess,
     verifyUserHasAction(ActionsEnum.deleteIdp),
+    logActionAudit(ActionsEnum.deleteIdp),
     orgIdp.deleteOrgIdp
 );
 
@@ -127,6 +136,7 @@ authenticated.post(
     verifyOrgAccess,
     verifyCertificateAccess,
     verifyUserHasAction(ActionsEnum.restartCertificate),
+    logActionAudit(ActionsEnum.restartCertificate),
     certificates.restartCertificate
 );
 
@@ -152,6 +162,7 @@ if (build === "saas") {
         "/org/:orgId/billing/create-checkout-session",
         verifyOrgAccess,
         verifyUserHasAction(ActionsEnum.billing),
+        logActionAudit(ActionsEnum.billing),
         billing.createCheckoutSession
     );
 
@@ -159,6 +170,7 @@ if (build === "saas") {
         "/org/:orgId/billing/create-portal-session",
         verifyOrgAccess,
         verifyUserHasAction(ActionsEnum.billing),
+        logActionAudit(ActionsEnum.billing),
         billing.createPortalSession
     );
 
@@ -187,6 +199,24 @@ if (build === "saas") {
         verifyOrgAccess,
         generateLicense.generateNewLicense
     );
+
+    authenticated.post(
+        "/send-support-request",
+        rateLimit({
+            windowMs: 15 * 60 * 1000,
+            max: 3,
+            keyGenerator: (req) =>
+                `sendSupportRequest:${req.user?.userId || ipKeyGenerator(req.ip || "")}`,
+            handler: (req, res, next) => {
+                const message = `You can only send 3 support requests every 15 minutes. Please try again later.`;
+                return next(
+                    createHttpError(HttpCode.TOO_MANY_REQUESTS, message)
+                );
+            },
+            store: createStore()
+        }),
+        misc.sendSupportEmail
+    );
 }
 
 authenticated.get(
@@ -206,6 +236,7 @@ authenticated.put(
     verifyValidLicense,
     verifyOrgAccess,
     verifyUserHasAction(ActionsEnum.createRemoteExitNode),
+    logActionAudit(ActionsEnum.createRemoteExitNode),
     remoteExitNode.createRemoteExitNode
 );
 
@@ -240,6 +271,7 @@ authenticated.delete(
     verifyOrgAccess,
     verifyRemoteExitNodeAccess,
     verifyUserHasAction(ActionsEnum.deleteRemoteExitNode),
+    logActionAudit(ActionsEnum.deleteRemoteExitNode),
     remoteExitNode.deleteRemoteExitNode
 );
 
@@ -248,6 +280,7 @@ authenticated.put(
     verifyValidLicense,
     verifyOrgAccess,
     verifyUserHasAction(ActionsEnum.createLoginPage),
+    logActionAudit(ActionsEnum.createLoginPage),
     loginPage.createLoginPage
 );
 
@@ -257,6 +290,7 @@ authenticated.post(
     verifyOrgAccess,
     verifyLoginPageAccess,
     verifyUserHasAction(ActionsEnum.updateLoginPage),
+    logActionAudit(ActionsEnum.updateLoginPage),
     loginPage.updateLoginPage
 );
 
@@ -266,6 +300,7 @@ authenticated.delete(
     verifyOrgAccess,
     verifyLoginPageAccess,
     verifyUserHasAction(ActionsEnum.deleteLoginPage),
+    logActionAudit(ActionsEnum.deleteLoginPage),
     loginPage.deleteLoginPage
 );
 
@@ -333,4 +368,65 @@ authenticated.post(
     "/license/recheck",
     verifyUserIsServerAdmin,
     license.recheckStatus
+);
+
+authenticated.get(
+    "/org/:orgId/logs/action",
+    verifyValidLicense,
+    verifyValidSubscription,
+    verifyOrgAccess,
+    verifyUserHasAction(ActionsEnum.exportLogs),
+    logs.queryActionAuditLogs
+);
+
+authenticated.get(
+    "/org/:orgId/logs/action/export",
+    verifyValidLicense,
+    verifyValidSubscription,
+    verifyOrgAccess,
+    verifyUserHasAction(ActionsEnum.exportLogs),
+    logActionAudit(ActionsEnum.exportLogs),
+    logs.exportActionAuditLogs
+);
+
+authenticated.get(
+    "/org/:orgId/logs/access",
+    verifyValidLicense,
+    verifyValidSubscription,
+    verifyOrgAccess,
+    verifyUserHasAction(ActionsEnum.exportLogs),
+    logs.queryAccessAuditLogs
+);
+
+authenticated.get(
+    "/org/:orgId/logs/access/export",
+    verifyValidLicense,
+    verifyValidSubscription,
+    verifyOrgAccess,
+    verifyUserHasAction(ActionsEnum.exportLogs),
+    logActionAudit(ActionsEnum.exportLogs),
+    logs.exportAccessAuditLogs
+);
+
+authenticated.post(
+    "/re-key/:clientId/regenerate-client-secret",
+    verifyClientsEnabled,
+    verifyClientAccess,
+    verifyUserHasAction(ActionsEnum.reGenerateSecret),
+    reKey.reGenerateClientSecret
+);
+
+authenticated.post(
+    "/re-key/:siteId/regenerate-site-secret",
+    verifySiteAccess,
+    verifyUserHasAction(ActionsEnum.reGenerateSecret),
+    reKey.reGenerateSiteSecret
+);
+
+authenticated.put(
+    "/re-key/:orgId/reGenerate-remote-exit-node-secret",
+    verifyValidLicense,
+    verifyOrgAccess,
+    verifyUserHasAction(ActionsEnum.updateRemoteExitNode),
+    reKey.reGenerateExitNodeSecret
 );

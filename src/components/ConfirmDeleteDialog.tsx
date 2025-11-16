@@ -54,6 +54,7 @@ type InviteUserFormProps = {
     dialog: React.ReactNode;
     buttonText: string;
     onConfirm: () => Promise<void>;
+    warningText?: string;
 };
 
 export default function InviteUserForm({
@@ -63,7 +64,8 @@ export default function InviteUserForm({
     title,
     onConfirm,
     buttonText,
-    dialog
+    dialog,
+    warningText
 }: InviteUserFormProps) {
     const [loading, setLoading] = useState(false);
 
@@ -86,13 +88,20 @@ export default function InviteUserForm({
 
     function reset() {
         form.reset();
-        setLoading(false);
     }
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setLoading(true);
-        await onConfirm();
-        reset();
+        try {
+            await onConfirm();
+            setOpen(false);
+            reset();
+        } catch (error) {
+            // Handle error if needed
+            console.error("Confirmation failed:", error);
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -111,15 +120,17 @@ export default function InviteUserForm({
                     <CredenzaBody>
                         <div className="mb-4 break-all overflow-hidden">
                             {dialog}
-                            <div className="mt-2 mb-6 font-bold text-red-700">
-                                {t("cannotbeUndone")}
+                            <div className="mt-2 mb-6 font-bold text-destructive">
+                                {warningText || t("cannotbeUndone")}
                             </div>
 
                             <div>
                                 <div className="flex items-center gap-2">
-                                    {t("type")}
-                                    <span className="px-2 py-1 rounded-md bg-secondary"><CopyToClipboard text={string} /></span>
-                                    {t("toConfirm")}
+                                    <span>{t("type")}</span>
+                                    <div className="px-2 py-1 rounded-md bg-secondary max-w-[250px] overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                                        <CopyToClipboard text={string} />
+                                    </div>
+                                    <span>{t("toConfirm")}</span>
                                 </div>
                             </div>
                         </div>
