@@ -1,11 +1,11 @@
 #! /usr/bin/env node
-import { migrate } from "drizzle-orm/libsql/migrator";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { db, exists } from "../db/sqlite";
 import path from "path";
 import semver from "semver";
 import { versionMigrations } from "../db/sqlite";
 import { __DIRNAME, APP_PATH, APP_VERSION } from "@server/lib/consts";
-import { LibsqlError } from "@libsql/client";
+import { SqliteError } from "better-sqlite3";
 import fs from "fs";
 import m1 from "./scriptsSqlite/1.0.0-beta1";
 import m2 from "./scriptsSqlite/1.0.0-beta2";
@@ -30,6 +30,8 @@ import m25 from "./scriptsSqlite/1.10.0";
 import m26 from "./scriptsSqlite/1.10.1";
 import m27 from "./scriptsSqlite/1.10.2";
 import m28 from "./scriptsSqlite/1.11.0";
+import m29 from "./scriptsSqlite/1.11.1";
+import m30 from "./scriptsSqlite/1.12.0";
 
 // THIS CANNOT IMPORT ANYTHING FROM THE SERVER
 // EXCEPT FOR THE DATABASE AND THE SCHEMA
@@ -59,6 +61,8 @@ const migrations = [
     { version: "1.10.1", run: m26 },
     { version: "1.10.2", run: m27 },
     { version: "1.11.0", run: m28 },
+    { version: "1.11.1", run: m29 },
+    { version: "1.12.0", run: m30 }
     // Add new migrations here as they are created
 ] as const;
 
@@ -174,7 +178,7 @@ async function executeScripts() {
                 );
             } catch (e) {
                 if (
-                    e instanceof LibsqlError &&
+                    e instanceof SqliteError &&
                     e.code === "SQLITE_CONSTRAINT_UNIQUE"
                 ) {
                     console.error("Migration has already run! Skipping...");
