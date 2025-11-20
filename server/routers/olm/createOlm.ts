@@ -6,7 +6,7 @@ import { z } from "zod";
 import { newts } from "@server/db";
 import createHttpError from "http-errors";
 import response from "@server/lib/response";
-import { SqliteError } from "better-sqlite3";
+import { LibsqlError } from "@libsql/client";
 import moment from "moment";
 import { generateSessionToken } from "@server/auth/sessions/app";
 import { createNewtSession } from "@server/auth/sessions/newt";
@@ -23,12 +23,10 @@ export type CreateNewtResponse = {
     secret: string;
 };
 
-const createNewtSchema = z
-    .object({
+const createNewtSchema = z.strictObject({
         newtId: z.string(),
         secret: z.string()
-    })
-    .strict();
+    });
 
 export async function createNewt(
     req: Request,
@@ -85,7 +83,7 @@ export async function createNewt(
             status: HttpCode.OK,
         });
     } catch (e) {
-        if (e instanceof SqliteError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
+        if (e instanceof LibsqlError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
             return next(
                 createHttpError(
                     HttpCode.BAD_REQUEST,
