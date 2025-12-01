@@ -105,26 +105,30 @@ export default async function migration() {
     }
 
     try {
-        await db.transaction(async (trx) => {
-            await trx
-                .insert(domains)
-                .values({
-                    domainId: "domain1",
-                    baseDomain: domain,
-                    configManaged: true
-                })
-                .execute();
-            await trx.update(resources).set({ domainId: "domain1" });
-            const existingOrgDomains = await trx.select().from(orgDomains);
-            for (const orgDomain of existingOrgDomains) {
-                await trx
-                    .insert(orgDomains)
-                    .values({ orgId: orgDomain.orgId, domainId: "domain1" })
-                    .execute();
-            }
+        await db.execute({
+            sql: `INSERT INTO domains (domainId, baseDomain, configManaged) VALUES (?, ?, ?)`,
+            args: ["domain1", domain, 1]
         });
 
+        await db.execute({
+            sql: `UPDATE resources SET domainId = ?`,
+            args: ["domain1"]
+        });
+
+        const existingOrgDomainsResult = await db.execute(`SELECT orgId FROM orgDomains`);
+        const existingOrgDomains = (existingOrgDomainsResult.rows as unknown) as Array<{
+            orgId: string;
+        }>;
+
+        for (const orgDomain of existingOrgDomains) {
+            await db.execute({
+                sql: `INSERT INTO orgDomains (orgId, domainId) VALUES (?, ?)`,
+                args: [orgDomain.orgId, "domain1"]
+            });
+        }
+
         console.log(`Updated resources table with new domainId`);
+
     } catch (e) {
         console.log(
             `Unable to update resources table with new domainId. Error: ${e}`
