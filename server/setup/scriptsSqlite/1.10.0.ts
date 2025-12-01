@@ -12,17 +12,11 @@ export default async function migration() {
     const db = createClient({ url: "file:" + location });
 
     try {
-        const resources = await db
-            .execute(
-                "SELECT resourceId FROM resources"
-            )
-            .all() as Array<{ resourceId: number }>;
+        const resourcesResult = await db.execute("SELECT resourceId FROM resources");
+        const resources = (resourcesResult.rows as unknown) as Array<{ resourceId: number }>;
 
-        const siteResources = await db
-            .execute(
-                "SELECT siteResourceId FROM siteResources"
-            )
-            .all() as Array<{ siteResourceId: number }>;
+        const siteResourcesResult = await db.execute("SELECT siteResourceId FROM siteResources");
+        const siteResources = (siteResourcesResult.rows as unknown) as Array<{ siteResourceId: number }>;
 
         await db.execute(`
             ALTER TABLE 'exitNodes' ADD 'region' text;
@@ -82,19 +76,16 @@ export default async function migration() {
         }
 
         // Handle auto-provisioned users for identity providers
-        const autoProvisionIdps = await db
-            .execute(
-                "SELECT idpId FROM idp WHERE autoProvision = 1"
-            )
-            .all() as Array<{ idpId: number }>;
+        const autoProvisionIdpsResult = await db.execute("SELECT idpId FROM idp WHERE autoProvision = 1");
+        const autoProvisionIdps = (autoProvisionIdpsResult.rows as unknown) as Array<{ idpId: number }>;
 
         for (const idp of autoProvisionIdps) {
             // Get all users with this identity provider
-            const usersWithIdp = await db
-                .execute(
-                    "SELECT id FROM user WHERE idpId = ?"
-                )
-                .all(idp.idpId) as Array<{ id: string }>;
+            const usersWithIdpResult = await db.execute({
+                sql: "SELECT id FROM user WHERE idpId = ?",
+                args: [idp.idpId]
+            });
+            const usersWithIdp = (usersWithIdpResult.rows as unknown) as Array<{ id: string }>;
 
             // Update userOrgs to set autoProvisioned to true for these users
             for (const user of usersWithIdp) {

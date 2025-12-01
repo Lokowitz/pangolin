@@ -10,7 +10,8 @@ export default async function migration() {
     const location = path.join(APP_PATH, "db", "db.sqlite");
     const db = createClient({ url: "file:" + location });
 
-    const resources = await db.execute("SELECT * FROM resources").all() as Array<{
+    const resourcesResult = await db.execute("SELECT * FROM resources");
+    const resources = (resourcesResult.rows as unknown) as Array<{
         resourceId: number;
         headers: string | null;
     }>;
