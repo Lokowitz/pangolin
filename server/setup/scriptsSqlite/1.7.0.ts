@@ -154,16 +154,20 @@ export default async function migration() {
         await db.execute(`UPDATE 'orgs' SET 'subnet' = '100.90.128.0/24'`);
 
         // Get all orgs and their sites to assign sequential IP addresses
-        const orgs = await db.execute(`SELECT orgId FROM 'orgs'`).all() as {
+        const orgsResult = await db.execute(`SELECT orgId FROM 'orgs'`);
+        const orgs = (orgsResult.rows as unknown) as {
             orgId: string;
         }[];
 
         for (const org of orgs) {
-            const sites = db
-                .execute(
-                    `SELECT siteId FROM 'sites' WHERE orgId = ? ORDER BY siteId`
-                )
-                .all(org.orgId) as { siteId: number }[];
+            const sitesResult = await db.execute({
+                sql: `SELECT siteId FROM 'sites' WHERE orgId = ? ORDER BY siteId`,
+                args: [org.orgId]
+            });
+
+            const sites = (sitesResult.rows as unknown) as { 
+                siteId: number 
+            }[];
 
             let ipIndex = 1;
             for (const site of sites) {

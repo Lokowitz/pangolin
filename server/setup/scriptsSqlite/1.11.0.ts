@@ -13,238 +13,238 @@ export default async function migration() {
     const db = createClient({ url: "file:" + location });
 
     await db.execute(`
-    CREATE TABLE 'account' (
-        'accountId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'userId' text NOT NULL,
-        FOREIGN KEY ('userId') REFERENCES 'user'('id') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'account' (
+            'accountId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+            'userId' text NOT NULL,
+            FOREIGN KEY ('userId') REFERENCES 'user'('id') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'accountDomains' (
-        'accountId' integer NOT NULL,
-        'domainId' text NOT NULL,
-        FOREIGN KEY ('accountId') REFERENCES 'account'('accountId') ON UPDATE no action ON DELETE cascade,
-        FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'accountDomains' (
+            'accountId' integer NOT NULL,
+            'domainId' text NOT NULL,
+            FOREIGN KEY ('accountId') REFERENCES 'account'('accountId') ON UPDATE no action ON DELETE cascade,
+            FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'certificates' (
-        'certId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'domain' text NOT NULL,
-        'domainId' text,
-        'wildcard' integer DEFAULT false,
-        'status' text DEFAULT 'pending' NOT NULL,
-        'expiresAt' integer,
-        'lastRenewalAttempt' integer,
-        'createdAt' integer NOT NULL,
-        'updatedAt' integer NOT NULL,
-        'orderId' text,
-        'errorMessage' text,
-        'renewalCount' integer DEFAULT 0,
-        'certFile' text,
-        'keyFile' text,
-        FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'certificates' (
+            'certId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+            'domain' text NOT NULL,
+            'domainId' text,
+            'wildcard' integer DEFAULT false,
+            'status' text DEFAULT 'pending' NOT NULL,
+            'expiresAt' integer,
+            'lastRenewalAttempt' integer,
+            'createdAt' integer NOT NULL,
+            'updatedAt' integer NOT NULL,
+            'orderId' text,
+            'errorMessage' text,
+            'renewalCount' integer DEFAULT 0,
+            'certFile' text,
+            'keyFile' text,
+            FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`CREATE UNIQUE INDEX 'certificates_domain_unique' ON 'certificates' ('domain');`);
 
     await db.execute(`
-    CREATE TABLE 'customers' (
-        'customerId' text PRIMARY KEY NOT NULL,
-        'orgId' text NOT NULL,
-        'email' text,
-        'name' text,
-        'phone' text,
-        'address' text,
-        'createdAt' integer NOT NULL,
-        'updatedAt' integer NOT NULL,
-        FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'customers' (
+            'customerId' text PRIMARY KEY NOT NULL,
+            'orgId' text NOT NULL,
+            'email' text,
+            'name' text,
+            'phone' text,
+            'address' text,
+            'createdAt' integer NOT NULL,
+            'updatedAt' integer NOT NULL,
+            FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'dnsChallenges' (
-        'dnsChallengeId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'domain' text NOT NULL,
-        'token' text NOT NULL,
-        'keyAuthorization' text NOT NULL,
-        'createdAt' integer NOT NULL,
-        'expiresAt' integer NOT NULL,
-        'completed' integer DEFAULT false
-    );
+        CREATE TABLE 'dnsChallenges' (
+            'dnsChallengeId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+            'domain' text NOT NULL,
+            'token' text NOT NULL,
+            'keyAuthorization' text NOT NULL,
+            'createdAt' integer NOT NULL,
+            'expiresAt' integer NOT NULL,
+            'completed' integer DEFAULT false
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'domainNamespaces' (
-        'domainNamespaceId' text PRIMARY KEY NOT NULL,
-        'domainId' text NOT NULL,
-        FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE set null
-    );
+        CREATE TABLE 'domainNamespaces' (
+            'domainNamespaceId' text PRIMARY KEY NOT NULL,
+            'domainId' text NOT NULL,
+            FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE set null
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'exitNodeOrgs' (
-        'exitNodeId' integer NOT NULL,
-        'orgId' text NOT NULL,
-        FOREIGN KEY ('exitNodeId') REFERENCES 'exitNodes'('exitNodeId') ON UPDATE no action ON DELETE cascade,
-        FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'exitNodeOrgs' (
+            'exitNodeId' integer NOT NULL,
+            'orgId' text NOT NULL,
+            FOREIGN KEY ('exitNodeId') REFERENCES 'exitNodes'('exitNodeId') ON UPDATE no action ON DELETE cascade,
+            FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'loginPage' (
-        'loginPageId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'subdomain' text,
-        'fullDomain' text,
-        'exitNodeId' integer,
-        'domainId' text,
-        FOREIGN KEY ('exitNodeId') REFERENCES 'exitNodes'('exitNodeId') ON UPDATE no action ON DELETE set null,
-        FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE set null
-    );
+        CREATE TABLE 'loginPage' (
+            'loginPageId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+            'subdomain' text,
+            'fullDomain' text,
+            'exitNodeId' integer,
+            'domainId' text,
+            FOREIGN KEY ('exitNodeId') REFERENCES 'exitNodes'('exitNodeId') ON UPDATE no action ON DELETE set null,
+            FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE set null
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'loginPageOrg' (
-        'loginPageId' integer NOT NULL,
-        'orgId' text NOT NULL,
-        FOREIGN KEY ('loginPageId') REFERENCES 'loginPage'('loginPageId') ON UPDATE no action ON DELETE cascade,
-        FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'loginPageOrg' (
+            'loginPageId' integer NOT NULL,
+            'orgId' text NOT NULL,
+            FOREIGN KEY ('loginPageId') REFERENCES 'loginPage'('loginPageId') ON UPDATE no action ON DELETE cascade,
+            FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'remoteExitNodeSession' (
-        'id' text PRIMARY KEY NOT NULL,
-        'remoteExitNodeId' text NOT NULL,
-        'expiresAt' integer NOT NULL,
-        FOREIGN KEY ('remoteExitNodeId') REFERENCES 'remoteExitNode'('id') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'remoteExitNodeSession' (
+            'id' text PRIMARY KEY NOT NULL,
+            'remoteExitNodeId' text NOT NULL,
+            'expiresAt' integer NOT NULL,
+            FOREIGN KEY ('remoteExitNodeId') REFERENCES 'remoteExitNode'('id') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'remoteExitNode' (
-        'id' text PRIMARY KEY NOT NULL,
-        'secretHash' text NOT NULL,
-        'dateCreated' text NOT NULL,
-        'version' text,
-        'exitNodeId' integer,
-        FOREIGN KEY ('exitNodeId') REFERENCES 'exitNodes'('exitNodeId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'remoteExitNode' (
+            'id' text PRIMARY KEY NOT NULL,
+            'secretHash' text NOT NULL,
+            'dateCreated' text NOT NULL,
+            'version' text,
+            'exitNodeId' integer,
+            FOREIGN KEY ('exitNodeId') REFERENCES 'exitNodes'('exitNodeId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'sessionTransferToken' (
-        'token' text PRIMARY KEY NOT NULL,
-        'sessionId' text NOT NULL,
-        'encryptedSession' text NOT NULL,
-        'expiresAt' integer NOT NULL,
-        FOREIGN KEY ('sessionId') REFERENCES 'session'('id') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'sessionTransferToken' (
+            'token' text PRIMARY KEY NOT NULL,
+            'sessionId' text NOT NULL,
+            'encryptedSession' text NOT NULL,
+            'expiresAt' integer NOT NULL,
+            FOREIGN KEY ('sessionId') REFERENCES 'session'('id') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'subscriptionItems' (
-        'subscriptionItemId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'subscriptionId' text NOT NULL,
-        'planId' text NOT NULL,
-        'priceId' text,
-        'meterId' text,
-        'unitAmount' real,
-        'tiers' text,
-        'interval' text,
-        'currentPeriodStart' integer,
-        'currentPeriodEnd' integer,
-        'name' text,
-        FOREIGN KEY ('subscriptionId') REFERENCES 'subscriptions'('subscriptionId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'subscriptionItems' (
+            'subscriptionItemId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+            'subscriptionId' text NOT NULL,
+            'planId' text NOT NULL,
+            'priceId' text,
+            'meterId' text,
+            'unitAmount' real,
+            'tiers' text,
+            'interval' text,
+            'currentPeriodStart' integer,
+            'currentPeriodEnd' integer,
+            'name' text,
+            FOREIGN KEY ('subscriptionId') REFERENCES 'subscriptions'('subscriptionId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'subscriptions' (
-        'subscriptionId' text PRIMARY KEY NOT NULL,
-        'customerId' text NOT NULL,
-        'status' text DEFAULT 'active' NOT NULL,
-        'canceledAt' integer,
-        'createdAt' integer NOT NULL,
-        'updatedAt' integer,
-        'billingCycleAnchor' integer,
-        FOREIGN KEY ('customerId') REFERENCES 'customers'('customerId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'subscriptions' (
+            'subscriptionId' text PRIMARY KEY NOT NULL,
+            'customerId' text NOT NULL,
+            'status' text DEFAULT 'active' NOT NULL,
+            'canceledAt' integer,
+            'createdAt' integer NOT NULL,
+            'updatedAt' integer,
+            'billingCycleAnchor' integer,
+            FOREIGN KEY ('customerId') REFERENCES 'customers'('customerId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'usage' (
-        'usageId' text PRIMARY KEY NOT NULL,
-        'featureId' text NOT NULL,
-        'orgId' text NOT NULL,
-        'meterId' text,
-        'instantaneousValue' real,
-        'latestValue' real NOT NULL,
-        'previousValue' real,
-        'updatedAt' integer NOT NULL,
-        'rolledOverAt' integer,
-        'nextRolloverAt' integer,
-        FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'usage' (
+            'usageId' text PRIMARY KEY NOT NULL,
+            'featureId' text NOT NULL,
+            'orgId' text NOT NULL,
+            'meterId' text,
+            'instantaneousValue' real,
+            'latestValue' real NOT NULL,
+            'previousValue' real,
+            'updatedAt' integer NOT NULL,
+            'rolledOverAt' integer,
+            'nextRolloverAt' integer,
+            FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'usageNotifications' (
-        'notificationId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'orgId' text NOT NULL,
-        'featureId' text NOT NULL,
-        'limitId' text NOT NULL,
-        'notificationType' text NOT NULL,
-        'sentAt' integer NOT NULL,
-        FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'usageNotifications' (
+            'notificationId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+            'orgId' text NOT NULL,
+            'featureId' text NOT NULL,
+            'limitId' text NOT NULL,
+            'notificationType' text NOT NULL,
+            'sentAt' integer NOT NULL,
+            FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'resourceHeaderAuth' (
-        'headerAuthId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'resourceId' integer NOT NULL,
-        'headerAuthHash' text NOT NULL,
-        FOREIGN KEY ('resourceId') REFERENCES 'resources'('resourceId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'resourceHeaderAuth' (
+            'headerAuthId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+            'resourceId' integer NOT NULL,
+            'headerAuthHash' text NOT NULL,
+            FOREIGN KEY ('resourceId') REFERENCES 'resources'('resourceId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`
-    CREATE TABLE 'targetHealthCheck' (
-        'targetHealthCheckId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'targetId' integer NOT NULL,
-        'hcEnabled' integer DEFAULT false NOT NULL,
-        'hcPath' text,
-        'hcScheme' text,
-        'hcMode' text DEFAULT 'http',
-        'hcHostname' text,
-        'hcPort' integer,
-        'hcInterval' integer DEFAULT 30,
-        'hcUnhealthyInterval' integer DEFAULT 30,
-        'hcTimeout' integer DEFAULT 5,
-        'hcHeaders' text,
-        'hcFollowRedirects' integer DEFAULT true,
-        'hcMethod' text DEFAULT 'GET',
-        'hcStatus' integer,
-        'hcHealth' text DEFAULT 'unknown',
-        FOREIGN KEY ('targetId') REFERENCES 'targets'('targetId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'targetHealthCheck' (
+            'targetHealthCheckId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+            'targetId' integer NOT NULL,
+            'hcEnabled' integer DEFAULT false NOT NULL,
+            'hcPath' text,
+            'hcScheme' text,
+            'hcMode' text DEFAULT 'http',
+            'hcHostname' text,
+            'hcPort' integer,
+            'hcInterval' integer DEFAULT 30,
+            'hcUnhealthyInterval' integer DEFAULT 30,
+            'hcTimeout' integer DEFAULT 5,
+            'hcHeaders' text,
+            'hcFollowRedirects' integer DEFAULT true,
+            'hcMethod' text DEFAULT 'GET',
+            'hcStatus' integer,
+            'hcHealth' text DEFAULT 'unknown',
+            FOREIGN KEY ('targetId') REFERENCES 'targets'('targetId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`DROP TABLE 'limits';`);
 
     await db.execute(`
-    CREATE TABLE 'limits' (
-        'limitId' text PRIMARY KEY NOT NULL,
-        'featureId' text NOT NULL,
-        'orgId' text NOT NULL,
-        'value' real,
-        'description' text,
-        FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
-    );
+        CREATE TABLE 'limits' (
+            'limitId' text PRIMARY KEY NOT NULL,
+            'featureId' text NOT NULL,
+            'orgId' text NOT NULL,
+            'value' real,
+            'description' text,
+            FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+        );
     `);
 
     await db.execute(`ALTER TABLE 'orgs' ADD 'settings' text;`);
@@ -252,10 +252,8 @@ export default async function migration() {
     await db.execute(`ALTER TABLE 'targets' ADD 'rewritePathType' text;`);
     await db.execute(`ALTER TABLE 'targets' ADD 'priority' integer DEFAULT 100 NOT NULL;`);
 
-    const webauthnCredentials = db.execute({
-        sql: `SELECT credentialId, publicKey, userId, signCount, transports, name, lastUsed, dateCreated FROM 'webauthnCredentials'`
-        )
-        as {
+    const webauthnCredentialsResult = await db.execute(`SELECT credentialId, publicKey, userId, signCount, transports, name, lastUsed, dateCreated FROM 'webauthnCredentials'`);
+    const webauthnCredentials = (webauthnCredentialsResult.rows as unknown) as {
         credentialId: string;
         publicKey: string;
         userId: string;
@@ -302,7 +300,8 @@ export default async function migration() {
     );
 
     // 2. Select all rows
-    const resources = await db.execute(`SELECT resourceId FROM resources`) as {
+    const resourcesResult = await db.execute(`SELECT resourceId FROM resources`);
+    const resources = (resourcesResult.rows as unknown) as {
         resourceId: number;
     }[];
 
@@ -312,20 +311,23 @@ export default async function migration() {
     );
 
     for (const row of resources) {
-        updateStmt.run(randomUUID(), row.resourceId);
+        await db.execute({
+            sql: `UPDATE resources SET resourceGuid = ? WHERE resourceId = ?`,
+            args: [randomUUID(), row.resourceId]
+        });
     }
 
     // get all of the targets
-    const targets = await db.execute(`SELECT targetId FROM targets`).all() as {
+    const targetsResult = await db.execute(`SELECT targetId FROM targets`);
+    const targets = (targetsResult.rows as unknown) as {
         targetId: number;
     }[];
 
-    const insertTargetHealthCheckStmt = await db.execute(
-        `INSERT INTO targetHealthCheck (targetId) VALUES (?)`
-    );
-
     for (const target of targets) {
-        insertTargetHealthCheckStmt.run(target.targetId);
+        await db.execute({
+            sql: `INSERT INTO targetHealthCheck (targetId) VALUES (?)`,
+            args: [target.targetId]
+        });
     }
 
     await db.execute(

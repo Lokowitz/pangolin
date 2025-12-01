@@ -15,19 +15,20 @@ export default async function migration() {
 
 	try {
 		// Get the first siteId to use as default
-		const firstSite = await db.execute("SELECT siteId FROM sites LIMIT 1").get() as { siteId: number } | undefined;
+		const firstSiteResult = await db.execute("SELECT siteId FROM sites LIMIT 1");
+		const firstSite = (firstSiteResult.rows?.[0] as unknown) as { siteId: number } | undefined;
+
 		if (firstSite) {
 			firstSiteId = firstSite.siteId;
 		}
 
-		const resources = await db
-			.execute(
-				"SELECT resourceId, siteId FROM resources WHERE siteId IS NOT NULL"
-			)
-			.all() as Array<{ resourceId: number; siteId: number }>;
+		const resourcesResult = await db.execute("SELECT resourceId, siteId FROM resources WHERE siteId IS NOT NULL");
+		const resources = (resourcesResult.rows as unknown) as Array<{ resourceId: number; siteId: number }>;
+
 		for (const resource of resources) {
 			resourceSiteMap.set(resource.resourceId, resource.siteId);
 		}
+		
 	} catch (e) {
 		console.log("Error getting resources:", e);
 	}
@@ -117,11 +118,12 @@ ALTER TABLE 'targets' ADD 'siteId' integer NOT NULL DEFAULT ${firstSiteId || 1} 
 
 		// for each resource, get all of its targets, and update the siteId to be the previously stored siteId
 		for (const [resourceId, siteId] of resourceSiteMap) {
-			const targets = await db
-				.execute(
-					"SELECT targetId FROM targets WHERE resourceId = ?"
-				)
-				.all(resourceId) as Array<{ targetId: number }>;
+			const targetsResult = await db.execute({
+				sql: "SELECT targetId FROM targets WHERE resourceId = ?",
+				args: [resourceId]
+			});
+			const targets = (targetsResult.rows as unknown) as Array<{ targetId: number }>;
+			
 			for (const target of targets) {
 				await db.execute({
 					sql: "UPDATE targets SET siteId = ? WHERE targetId = ?",
@@ -133,17 +135,16 @@ ALTER TABLE 'targets' ADD 'siteId' integer NOT NULL DEFAULT ${firstSiteId || 1} 
 		// list resources that have enableProxy false
 		// move them to the siteResources table
 		// remove them from the resources table
-		const proxyFalseResources = await db
-			.execute("SELECT * FROM resources WHERE enableProxy = 0")
-			.all() as Array<any>;
+		const proxyFalseResourcesResult = await db.execute("SELECT * FROM resources WHERE enableProxy = 0");
+		const proxyFalseResources = (proxyFalseResourcesResult.rows as unknown) as Array<any>;
 
 		for (const resource of proxyFalseResources) {
 			// Get the first target to derive destination IP and port
-			const firstTarget = db
-				.execute(
-					"SELECT ip, port FROM targets WHERE resourceId = ? LIMIT 1"
-				)
-				.get(resource.resourceId) as
+			const targetResult = await db.execute({
+				sql: "SELECT ip, port FROM targets WHERE resourceId = ? LIMIT 1",
+				args: [resource.resourceId]
+				});
+			const firstTarget = (targetResult.rows?.[0] as unknown) as
 				| { ip: string; port: number }
 				| undefined;
 
@@ -153,8 +154,7 @@ ALTER TABLE 'targets' ADD 'siteId' integer NOT NULL DEFAULT ${firstSiteId || 1} 
 
 			// Insert into siteResources table
 			const stmt = await db.execute({
-				sql: `INSERT INTO siteResources (siteId, orgId, name, protocol, proxyPort, destinationPort, destinationIp, enabled)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+				sql: `INSERT INTO siteResources (siteId, orgId, name, protocol, proxyPort, destinationPort, destinationIp, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 				args: [
 					resourceSiteMap.get(resource.resourceId),
 					resource.orgId,

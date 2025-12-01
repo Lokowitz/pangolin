@@ -16,24 +16,22 @@ export default async function migration() {
         );
 
         await db.execute(
-            `
-    CREATE TABLE 'accessAuditLog' (
-        'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'timestamp' integer NOT NULL,
-        'orgId' text NOT NULL,
-        'actorType' text,
-        'actor' text,
-        'actorId' text,
-        'resourceId' integer,
-        'ip' text,
-        'location' text,
-        'type' text NOT NULL,
-        'action' integer NOT NULL,
-        'userAgent' text,
-        'metadata' text,
-        FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
-    );
-    `
+            `CREATE TABLE 'accessAuditLog' (
+                'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+                'timestamp' integer NOT NULL,
+                'orgId' text NOT NULL,
+                'actorType' text,
+                'actor' text,
+                'actorId' text,
+                'resourceId' integer,
+                'ip' text,
+                'location' text,
+                'type' text NOT NULL,
+                'action' integer NOT NULL,
+                'userAgent' text,
+                'metadata' text,
+                FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+            );`
         );
 
         await db.execute(
@@ -44,19 +42,17 @@ export default async function migration() {
         );
 
         await db.execute(
-            `
-    CREATE TABLE 'actionAuditLog' (
-        'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'timestamp' integer NOT NULL,
-        'orgId' text NOT NULL,
-        'actorType' text NOT NULL,
-        'actor' text NOT NULL,
-        'actorId' text NOT NULL,
-        'action' text NOT NULL,
-        'metadata' text,
-        FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
-    );
-    `
+            `CREATE TABLE 'actionAuditLog' (
+                'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+                'timestamp' integer NOT NULL,
+                'orgId' text NOT NULL,
+                'actorType' text NOT NULL,
+                'actor' text NOT NULL,
+                'actorId' text NOT NULL,
+                'action' text NOT NULL,
+                'metadata' text,
+                FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+            );`
         );
 
         await db.execute(
@@ -67,63 +63,57 @@ export default async function migration() {
         );
 
         await db.execute(
-            `
-    CREATE TABLE 'dnsRecords' (
-        'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'domainId' text NOT NULL,
-        'recordType' text NOT NULL,
-        'baseDomain' text,
-        'value' text NOT NULL,
-        'verified' integer DEFAULT false NOT NULL,
-        FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE cascade
-    );
-    `
+            `CREATE TABLE 'dnsRecords' (
+                'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+                'domainId' text NOT NULL,
+                'recordType' text NOT NULL,
+                'baseDomain' text,
+                'value' text NOT NULL,
+                'verified' integer DEFAULT false NOT NULL,
+                FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE cascade
+            );`
         );
 
         await db.execute(
-            `
-    CREATE TABLE 'requestAuditLog' (
-        'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'timestamp' integer NOT NULL,
-        'orgId' text,
-        'action' integer NOT NULL,
-        'reason' integer NOT NULL,
-        'actorType' text,
-        'actor' text,
-        'actorId' text,
-        'resourceId' integer,
-        'ip' text,
-        'location' text,
-        'userAgent' text,
-        'metadata' text,
-        'headers' text,
-        'query' text,
-        'originalRequestURL' text,
-        'scheme' text,
-        'host' text,
-        'path' text,
-        'method' text,
-        'tls' integer,
-        FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
-    );
-    `
+            `CREATE TABLE 'requestAuditLog' (
+                'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+                'timestamp' integer NOT NULL,
+                'orgId' text,
+                'action' integer NOT NULL,
+                'reason' integer NOT NULL,
+                'actorType' text,
+                'actor' text,
+                'actorId' text,
+                'resourceId' integer,
+                'ip' text,
+                'location' text,
+                'userAgent' text,
+                'metadata' text,
+                'headers' text,
+                'query' text,
+                'originalRequestURL' text,
+                'scheme' text,
+                'host' text,
+                'path' text,
+                'method' text,
+                'tls' integer,
+                FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+            );`
         );
 
 
         await db.execute(
-            `
-    CREATE TABLE 'blueprints' (
-            'blueprintId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-            'orgId' text NOT NULL,
-            'name' text NOT NULL,
-            'source' text NOT NULL,
-            'createdAt' integer NOT NULL,
-            'succeeded' integer NOT NULL,
-            'contents' text NOT NULL,
-            'message' text,
-            FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
-    );
-    `
+            `CREATE TABLE 'blueprints' (
+                'blueprintId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+                'orgId' text NOT NULL,
+                'name' text NOT NULL,
+                'source' text NOT NULL,
+                'createdAt' integer NOT NULL,
+                'succeeded' integer NOT NULL,
+                'contents' text NOT NULL,
+                'message' text,
+                FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+            );`
         );
 
         await db.execute(
@@ -134,38 +124,36 @@ export default async function migration() {
         );
 
         await db.execute(
-            `
-    CREATE TABLE '__new_resources' (
-        'resourceId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        'resourceGuid' text(36) NOT NULL,
-        'orgId' text NOT NULL,
-        'niceId' text NOT NULL,
-        'name' text NOT NULL,
-        'subdomain' text,
-        'fullDomain' text,
-        'domainId' text,
-        'ssl' integer DEFAULT false NOT NULL,
-        'blockAccess' integer DEFAULT false NOT NULL,
-        'sso' integer DEFAULT true NOT NULL,
-        'http' integer DEFAULT true NOT NULL,
-        'protocol' text NOT NULL,
-        'proxyPort' integer,
-        'emailWhitelistEnabled' integer DEFAULT false NOT NULL,
-        'applyRules' integer DEFAULT false NOT NULL,
-        'enabled' integer DEFAULT true NOT NULL,
-        'stickySession' integer DEFAULT false NOT NULL,
-        'tlsServerName' text,
-        'setHostHeader' text,
-        'enableProxy' integer DEFAULT true,
-        'skipToIdpId' integer,
-        'headers' text,
-        'proxyProtocol' integer DEFAULT false NOT NULL,
-        'proxyProtocolVersion' integer DEFAULT 1,
-        FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade,
-        FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE set null,
-        FOREIGN KEY ('skipToIdpId') REFERENCES 'idp'('idpId') ON UPDATE no action ON DELETE set null
-    );
-    `
+            `CREATE TABLE '__new_resources' (
+                'resourceId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+                'resourceGuid' text(36) NOT NULL,
+                'orgId' text NOT NULL,
+                'niceId' text NOT NULL,
+                'name' text NOT NULL,
+                'subdomain' text,
+                'fullDomain' text,
+                'domainId' text,
+                'ssl' integer DEFAULT false NOT NULL,
+                'blockAccess' integer DEFAULT false NOT NULL,
+                'sso' integer DEFAULT true NOT NULL,
+                'http' integer DEFAULT true NOT NULL,
+                'protocol' text NOT NULL,
+                'proxyPort' integer,
+                'emailWhitelistEnabled' integer DEFAULT false NOT NULL,
+                'applyRules' integer DEFAULT false NOT NULL,
+                'enabled' integer DEFAULT true NOT NULL,
+                'stickySession' integer DEFAULT false NOT NULL,
+                'tlsServerName' text,
+                'setHostHeader' text,
+                'enableProxy' integer DEFAULT true,
+                'skipToIdpId' integer,
+                'headers' text,
+                'proxyProtocol' integer DEFAULT false NOT NULL,
+                'proxyProtocolVersion' integer DEFAULT 1,
+                FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade,
+                FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE set null,
+                FOREIGN KEY ('skipToIdpId') REFERENCES 'idp'('idpId') ON UPDATE no action ON DELETE set null
+            );`
         );
 
         await db.execute(
@@ -212,27 +200,39 @@ export default async function migration() {
         await db.execute(`ALTER TABLE 'remoteExitNode' ADD 'secondaryVersion' text;`);
 
         // get all of the domains
-        const domains = await db.execute(`SELECT domainId, baseDomain from domains`) as {
-            domainId: number;
+        const result = await db.execute("SELECT domainId, baseDomain FROM domains");
+        const domains = (result.rows as unknown) as {
+            domainId: string;
             baseDomain: string;
         }[];
 
         for (const domain of domains) {
-            // insert two records into the dnsRecords table for each domain
-            const insert = await db.execute(
-                `INSERT INTO 'dnsRecords' (domainId, recordType, baseDomain, value, verified) VALUES (?, 'A', ?, ?, 1)`
-            );
-            insert.run(
-                domain.domainId,
-                `*.${domain.baseDomain}`,
-                `Server IP Address`
-            );
-            insert.run(
-                domain.domainId,
-                `${domain.baseDomain}`,
-                `Server IP Address`
-            );
-        };
+
+            // erster Record: *.domain.tld
+            await db.execute({
+                sql: `INSERT INTO dnsRecords
+                        (domainId, recordType, baseDomain, value, verified)
+                    VALUES (?, 'A', ?, ?, 1)`,
+                args: [
+                    domain.domainId,
+                    `*.${domain.baseDomain}`,
+                    "Server IP Address"
+                ],
+            });
+
+            // zweiter Record: domain.tld
+            await db.execute({
+                sql: `INSERT INTO dnsRecords
+                        (domainId, recordType, baseDomain, value, verified)
+                    VALUES (?, 'A', ?, ?, 1)`,
+                args: [
+                    domain.domainId,
+                    `${domain.baseDomain}`,
+                    "Server IP Address"
+                ],
+            });
+        }
+
 
         console.log(`Migrated database`);
     } catch (e) {
