@@ -1,5 +1,5 @@
 import { __DIRNAME, APP_PATH } from "@server/lib/consts";
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import { readFileSync } from "fs";
 import path, { join } from "path";
 
@@ -9,100 +9,101 @@ export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
     const location = path.join(APP_PATH, "db", "db.sqlite");
-    const db = new Database(location);
+    const db = createClient({ url: "file:" + location });
 
     try {
-        const resources = db
-            .prepare(
+        const resources = await db
+            .execute(
                 "SELECT resourceId FROM resources"
             )
             .all() as Array<{ resourceId: number }>;
 
-        const siteResources = db
-            .prepare(
+        const siteResources = await db
+            .execute(
                 "SELECT siteResourceId FROM siteResources"
             )
             .all() as Array<{ siteResourceId: number }>;
 
-        db.transaction(() => {
-            db.exec(`
-                ALTER TABLE 'exitNodes' ADD 'region' text;
-                ALTER TABLE 'idpOidcConfig' ADD 'variant' text DEFAULT 'oidc' NOT NULL;
-                ALTER TABLE 'resources' ADD 'niceId' text DEFAULT '' NOT NULL;
-                ALTER TABLE 'siteResources' ADD 'niceId' text DEFAULT '' NOT NULL;
-                ALTER TABLE 'userOrgs' ADD 'autoProvisioned' integer DEFAULT false;
-                ALTER TABLE 'targets' ADD 'pathMatchType' text;
-                ALTER TABLE 'targets' ADD 'path' text;
-                ALTER TABLE 'resources' ADD 'headers' text;
-            `); // this diverges from the schema a bit because the schema does not have a default on niceId but was required for the migration and I dont think it will effect much down the line...
+        await db.execute(`
+            ALTER TABLE 'exitNodes' ADD 'region' text;
+            ALTER TABLE 'idpOidcConfig' ADD 'variant' text DEFAULT 'oidc' NOT NULL;
+            ALTER TABLE 'resources' ADD 'niceId' text DEFAULT '' NOT NULL;
+            ALTER TABLE 'siteResources' ADD 'niceId' text DEFAULT '' NOT NULL;
+            ALTER TABLE 'userOrgs' ADD 'autoProvisioned' integer DEFAULT false;
+            ALTER TABLE 'targets' ADD 'pathMatchType' text;
+            ALTER TABLE 'targets' ADD 'path' text;
+            ALTER TABLE 'resources' ADD 'headers' text;
+        `); // this diverges from the schema a bit because the schema does not have a default on niceId but was required for the migration and I dont think it will effect much down the line...
 
-            const usedNiceIds: string[] = [];
+        const usedNiceIds: string[] = [];
 
-            for (const resourceId of resources) {
-                // Generate a unique name and ensure it's unique
-                let niceId = "";
-                let loops = 0;
-                while (true) {
-                    if (loops > 100) {
-                        throw new Error("Could not generate a unique name");
-                    }
-
-                    niceId = generateName();
-                    if (!usedNiceIds.includes(niceId)) {
-                        usedNiceIds.push(niceId);
-                        break;
-                    }
-                    loops++;
+        for (const resourceId of resources) {
+            // Generate a unique name and ensure it's unique
+            let niceId = "";
+            let loops = 0;
+            while (true) {
+                if (loops > 100) {
+                    throw new Error("Could not generate a unique name");
                 }
-                db.prepare(
-                    `UPDATE resources SET niceId = ? WHERE resourceId = ?`
-                ).run(niceId, resourceId.resourceId);
-            }
 
-            for (const resourceId of siteResources) {
-                // Generate a unique name and ensure it's unique
-                let niceId = "";
-                let loops = 0;
-                while (true) {
-                    if (loops > 100) {
-                        throw new Error("Could not generate a unique name");
-                    }
-
-                    niceId = generateName();
-                    if (!usedNiceIds.includes(niceId)) {
-                        usedNiceIds.push(niceId);
-                        break;
-                    }
-                    loops++;
+                niceId = generateName();
+                if (!usedNiceIds.includes(niceId)) {
+                    usedNiceIds.push(niceId);
+                    break;
                 }
-                db.prepare(
-                    `UPDATE siteResources SET niceId = ? WHERE siteResourceId = ?`
-                ).run(niceId, resourceId.siteResourceId);
+                loops++;
             }
+            await db.execute({
+                sql: `UPDATE resources SET niceId = ? WHERE resourceId = ?`,
+                args: [niceId, resourceId.resourceId]
+            });
+        }
 
-            // Handle auto-provisioned users for identity providers
-            const autoProvisionIdps = db
-                .prepare(
-                    "SELECT idpId FROM idp WHERE autoProvision = 1"
+        for (const resourceId of siteResources) {
+            // Generate a unique name and ensure it's unique
+            let niceId = "";
+            let loops = 0;
+            while (true) {
+                if (loops > 100) {
+                    throw new Error("Could not generate a unique name");
+                }
+
+                niceId = generateName();
+                if (!usedNiceIds.includes(niceId)) {
+                    usedNiceIds.push(niceId);
+                    break;
+                }
+                loops++;
+            }
+            await db.execute({
+                sql: `UPDATE siteResources SET niceId = ? WHERE siteResourceId = ?`,
+                args: [niceId, resourceId.siteResourceId]
+            });
+        }
+
+        // Handle auto-provisioned users for identity providers
+        const autoProvisionIdps = await db
+            .execute(
+                "SELECT idpId FROM idp WHERE autoProvision = 1"
+            )
+            .all() as Array<{ idpId: number }>;
+
+        for (const idp of autoProvisionIdps) {
+            // Get all users with this identity provider
+            const usersWithIdp = await db
+                .execute(
+                    "SELECT id FROM user WHERE idpId = ?"
                 )
-                .all() as Array<{ idpId: number }>;
+                .all(idp.idpId) as Array<{ id: string }>;
 
-            for (const idp of autoProvisionIdps) {
-                // Get all users with this identity provider
-                const usersWithIdp = db
-                    .prepare(
-                        "SELECT id FROM user WHERE idpId = ?"
-                    )
-                    .all(idp.idpId) as Array<{ id: string }>;
-
-                // Update userOrgs to set autoProvisioned to true for these users
-                for (const user of usersWithIdp) {
-                    db.prepare(
-                        "UPDATE userOrgs SET autoProvisioned = 1 WHERE userId = ?"
-                    ).run(user.id);
-                }
+            // Update userOrgs to set autoProvisioned to true for these users
+            for (const user of usersWithIdp) {
+                await db.execute({
+                    sql: "UPDATE userOrgs SET autoProvisioned = 1 WHERE userId = ?",
+                    args: [user.id]
+                });
             }
-        })();
+        }
 
         console.log(`Migrated database`);
     } catch (e) {

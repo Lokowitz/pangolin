@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import path from "path";
 import { APP_PATH, configFilePath1, configFilePath2 } from "@server/lib/consts";
 import fs from "fs";
@@ -10,16 +10,13 @@ const location = path.join(APP_PATH, "db", "db.sqlite");
 export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
-    const db = new Database(location);
+    const db = createClient({ url: "file:" + location });
 
     try {
-        db.pragma("foreign_keys = OFF");
-        db.transaction(() => {
-            db.exec(`
-               ALTER TABLE 'sites' ADD 'dockerSocketEnabled' integer DEFAULT true NOT NULL;
-            `);
-        })(); // <-- executes the transaction immediately
-        db.pragma("foreign_keys = ON");
+        await db.execute(`
+            ALTER TABLE 'sites' ADD 'dockerSocketEnabled' integer DEFAULT true NOT NULL;
+        `);
+
         console.log(`Migrated database schema`);
     } catch (e) {
         console.log("Unable to migrate database schema");

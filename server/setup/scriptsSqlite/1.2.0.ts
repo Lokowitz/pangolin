@@ -1,6 +1,5 @@
-import { db } from "../../db/sqlite";
+import { createClient } from "@libsql/client";
 import { APP_PATH, configFilePath1, configFilePath2 } from "@server/lib/consts";
-import { sql } from "drizzle-orm";
 import fs from "fs";
 import yaml from "js-yaml";
 import path from "path";
@@ -12,12 +11,13 @@ const version = "1.2.0";
 export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
+    const location = path.join(APP_PATH, "db", "db.sqlite");
+	const db = createClient({ url: "file:" + location });
+
     try {
-        db.transaction((trx) => {
-            trx.run(
-                sql`ALTER TABLE 'resources' ADD 'enabled' integer DEFAULT true NOT NULL;`
-            );
-        });
+        await db.execute(
+            `ALTER TABLE 'resources' ADD 'enabled' integer DEFAULT true NOT NULL;`
+        );
 
         console.log(`Migrated database schema`);
     } catch (e) {

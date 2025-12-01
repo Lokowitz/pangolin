@@ -1,14 +1,17 @@
-import { db } from "../../db/sqlite";
-import { configFilePath1, configFilePath2 } from "@server/lib/consts";
+import { APP_PATH, configFilePath1, configFilePath2 } from "@server/lib/consts";
+import { createClient } from "@libsql/client";
+import path from "path";
 import fs from "fs";
 import yaml from "js-yaml";
-import { sql } from "drizzle-orm";
 import { domains, orgDomains, resources } from "@server/db";
 
 const version = "1.0.0-beta.15";
 
 export default async function migration() {
     console.log(`Running setup script ${version}...`);
+
+    const location = path.join(APP_PATH, "db", "db.sqlite");
+    const db = createClient({ url: "file:" + location });
 
     let domain = "";
 
@@ -70,25 +73,30 @@ export default async function migration() {
     }
 
     try {
-        db.transaction((trx) => {
-            trx.run(sql`CREATE TABLE 'domains' (
-	'domainId' text PRIMARY KEY NOT NULL,
-	'baseDomain' text NOT NULL,
-	'configManaged' integer DEFAULT false NOT NULL
-);`);
+        await db.execute(
+            `CREATE TABLE 'domains' (
+            'domainId' text PRIMARY KEY NOT NULL,
+            'baseDomain' text NOT NULL,
+            'configManaged' integer DEFAULT false NOT NULL
+            );`
+        );
 
-            trx.run(sql`CREATE TABLE 'orgDomains' (
-    'orgId' text NOT NULL,
-    'domainId' text NOT NULL,
-    FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade,
-    FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE cascade
-);`);
+        await db.execute(
+            `CREATE TABLE 'orgDomains' (
+            'orgId' text NOT NULL,
+            'domainId' text NOT NULL,
+            FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade,
+            FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE cascade
+            );`
+        );
 
-            trx.run(
-                sql`ALTER TABLE 'resources' ADD 'domainId' text REFERENCES domains(domainId);`
-            );
-            trx.run(sql`ALTER TABLE 'orgs' DROP COLUMN 'domain';`);
-        });
+        await db.execute(
+            `ALTER TABLE 'resources' ADD 'domainId' text REFERENCES domains(domainId);`
+        );
+
+        await db.execute(
+            `ALTER TABLE 'orgs' DROP COLUMN 'domain';`
+        );
 
         console.log(`Migrated database schema`);
     } catch (e) {
