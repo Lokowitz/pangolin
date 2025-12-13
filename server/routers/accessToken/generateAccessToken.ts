@@ -24,22 +24,15 @@ import { encodeHexLowerCase } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
 import { OpenAPITags, registry } from "@server/openApi";
 
-export const generateAccessTokenBodySchema = z
-    .object({
-        validForSeconds: z.number().int().positive().optional(), // seconds
-        title: z.string().optional(),
-        description: z.string().optional()
-    })
-    .strict();
+export const generateAccessTokenBodySchema = z.strictObject({
+    validForSeconds: z.int().positive().optional(), // seconds
+    title: z.string().optional(),
+    description: z.string().optional()
+});
 
-export const generateAccssTokenParamsSchema = z
-    .object({
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+export const generateAccssTokenParamsSchema = z.strictObject({
+    resourceId: z.string().transform(Number).pipe(z.int().positive())
+});
 
 export type GenerateAccessTokenResponse = Omit<
     ResourceAccessToken,

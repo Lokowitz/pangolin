@@ -22,12 +22,10 @@ import { sendEmail } from "@server/emails";
 import SupportEmail from "@server/emails/templates/SupportEmail";
 import config from "@server/lib/config";
 
-const bodySchema = z
-    .object({
-        body: z.string().min(1),
-        subject: z.string().min(1).max(255)
-    })
-    .strict();
+const bodySchema = z.strictObject({
+    body: z.string().min(1),
+    subject: z.string().min(1).max(255)
+});
 
 export async function sendSupportEmail(
     req: Request,

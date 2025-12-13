@@ -20,11 +20,9 @@ import license from "#private/license/license";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
 
-const bodySchema = z
-    .object({
-        licenseKey: z.string().min(1).max(255)
-    })
-    .strict();
+const bodySchema = z.strictObject({
+    licenseKey: z.string().min(1).max(255)
+});
 
 export async function activateLicense(
     req: Request,

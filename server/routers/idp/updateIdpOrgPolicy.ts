@@ -10,19 +10,15 @@ import { OpenAPITags, registry } from "@server/openApi";
 import { eq, and } from "drizzle-orm";
 import { idp, idpOrg } from "@server/db";
 
-const paramsSchema = z
-    .object({
-        idpId: z.coerce.number(),
-        orgId: z.string()
-    })
-    .strict();
+const paramsSchema = z.strictObject({
+    idpId: z.coerce.number<number>(),
+    orgId: z.string()
+});
 
-const bodySchema = z
-    .object({
-        roleMapping: z.string().optional(),
-        orgMapping: z.string().optional()
-    })
-    .strict();
+const bodySchema = z.strictObject({
+    roleMapping: z.string().optional(),
+    orgMapping: z.string().optional()
+});
 
 export type UpdateIdpOrgPolicyResponse = {};
 

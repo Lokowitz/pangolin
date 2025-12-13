@@ -10,12 +10,10 @@ import { idp, idpOrg } from "@server/db";
 import { eq, and } from "drizzle-orm";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const paramsSchema = z
-    .object({
-        idpId: z.coerce.number(),
-        orgId: z.string()
-    })
-    .strict();
+const paramsSchema = z.strictObject({
+    idpId: z.coerce.number<number>(),
+    orgId: z.string()
+});
 
 registry.registerPath({
     method: "delete",

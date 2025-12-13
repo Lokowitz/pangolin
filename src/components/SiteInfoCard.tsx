@@ -1,7 +1,6 @@
 "use client";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
 import { useSiteContext } from "@app/hooks/useSiteContext";
 import {
     InfoSection,
@@ -34,7 +33,11 @@ export default function SiteInfoCard({}: SiteInfoCardProps) {
     return (
         <Alert>
             <AlertDescription>
-                <InfoSections cols={env.flags.enableClients ? 3 : 2}>
+                <InfoSections cols={4}>
+                    <InfoSection>
+                        <InfoSectionTitle>{t("identifier")}</InfoSectionTitle>
+                        <InfoSectionContent>{site.niceId}</InfoSectionContent>
+                    </InfoSection>
                     {(site.type == "newt" || site.type == "wireguard") && (
                         <>
                             <InfoSection>
@@ -66,7 +69,7 @@ export default function SiteInfoCard({}: SiteInfoCardProps) {
                         </InfoSectionContent>
                     </InfoSection>
 
-                    {env.flags.enableClients && site.type == "newt" && (
+                    {site.type == "newt" && (
                         <InfoSection>
                             <InfoSectionTitle>Address</InfoSectionTitle>
                             <InfoSectionContent>

@@ -10,12 +10,10 @@ import { fromError } from "zod-validation-error";
 import logger from "@server/logger";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const listSiteResourcesParamsSchema = z
-    .object({
-        siteId: z.string().transform(Number).pipe(z.number().int().positive()),
-        orgId: z.string()
-    })
-    .strict();
+const listSiteResourcesParamsSchema = z.strictObject({
+    siteId: z.string().transform(Number).pipe(z.int().positive()),
+    orgId: z.string()
+});
 
 const listSiteResourcesQuerySchema = z.object({
     limit: z
@@ -23,13 +21,13 @@ const listSiteResourcesQuerySchema = z.object({
         .optional()
         .default("100")
         .transform(Number)
-        .pipe(z.number().int().positive()),
+        .pipe(z.int().positive()),
     offset: z
         .string()
         .optional()
         .default("0")
         .transform(Number)
-        .pipe(z.number().int().nonnegative())
+        .pipe(z.int().nonnegative())
 });
 
 export type ListSiteResourcesResponse = {
@@ -54,7 +52,9 @@ export async function listSiteResources(
     next: NextFunction
 ): Promise<any> {
     try {
-        const parsedParams = listSiteResourcesParamsSchema.safeParse(req.params);
+        const parsedParams = listSiteResourcesParamsSchema.safeParse(
+            req.params
+        );
         if (!parsedParams.success) {
             return next(
                 createHttpError(
@@ -85,22 +85,19 @@ export async function listSiteResources(
             .limit(1);
 
         if (site.length === 0) {
-            return next(
-                createHttpError(
-                    HttpCode.NOT_FOUND,
-                    "Site not found"
-                )
-            );
+            return next(createHttpError(HttpCode.NOT_FOUND, "Site not found"));
         }
 
         // Get site resources
         const siteResourcesList = await db
             .select()
             .from(siteResources)
-            .where(and(
-                eq(siteResources.siteId, siteId),
-                eq(siteResources.orgId, orgId)
-            ))
+            .where(
+                and(
+                    eq(siteResources.siteId, siteId),
+                    eq(siteResources.orgId, orgId)
+                )
+            )
             .limit(limit)
             .offset(offset);
 
@@ -113,6 +110,11 @@ export async function listSiteResources(
         });
     } catch (error) {
         logger.error("Error listing site resources:", error);
-        return next(createHttpError(HttpCode.INTERNAL_SERVER_ERROR, "Failed to list site resources"));
+        return next(
+            createHttpError(
+                HttpCode.INTERNAL_SERVER_ERROR,
+                "Failed to list site resources"
+            )
+        );
     }
 }

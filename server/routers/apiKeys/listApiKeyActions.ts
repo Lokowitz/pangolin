@@ -20,13 +20,13 @@ const querySchema = z.object({
         .optional()
         .default("1000")
         .transform(Number)
-        .pipe(z.number().int().positive()),
+        .pipe(z.int().positive()),
     offset: z
         .string()
         .optional()
         .default("0")
         .transform(Number)
-        .pipe(z.number().int().nonnegative())
+        .pipe(z.int().nonnegative())
 });
 
 function queryActions(apiKeyId: string) {
@@ -47,8 +47,7 @@ export type ListApiKeyActionsResponse = {
 registry.registerPath({
     method: "get",
     path: "/org/{orgId}/api-key/{apiKeyId}/actions",
-    description:
-        "List all actions set for an API key.",
+    description: "List all actions set for an API key.",
     tags: [OpenAPITags.Org, OpenAPITags.ApiKey],
     request: {
         params: paramsSchema,

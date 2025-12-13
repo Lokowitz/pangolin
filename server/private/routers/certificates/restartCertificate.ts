@@ -24,12 +24,10 @@ import stoi from "@server/lib/stoi";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const restartCertificateParamsSchema = z
-    .object({
-        certId: z.string().transform(stoi).pipe(z.number().int().positive()),
-        orgId: z.string()
-    })
-    .strict();
+const restartCertificateParamsSchema = z.strictObject({
+    certId: z.string().transform(stoi).pipe(z.int().positive()),
+    orgId: z.string()
+});
 
 registry.registerPath({
     method: "post",
@@ -38,10 +36,7 @@ registry.registerPath({
     tags: ["Certificate"],
     request: {
         params: z.object({
-            certId: z
-                .string()
-                .transform(stoi)
-                .pipe(z.number().int().positive()),
+            certId: z.string().transform(stoi).pipe(z.int().positive()),
             orgId: z.string()
         })
     },
@@ -96,7 +91,7 @@ export async function restartCertificate(
             .set({
                 status: "pending",
                 errorMessage: null,
-                lastRenewalAttempt: Math.floor(Date.now() / 1000) 
+                lastRenewalAttempt: Math.floor(Date.now() / 1000)
             })
             .where(eq(certificates.certId, certId));
 

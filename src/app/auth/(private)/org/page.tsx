@@ -9,9 +9,7 @@ import { LoginFormIDP } from "@app/components/LoginForm";
 import { ListOrgIdpsResponse } from "@server/routers/orgIdp/types";
 import { build } from "@server/build";
 import { headers } from "next/headers";
-import {
-    LoadLoginPageResponse
-} from "@server/routers/loginPage/types";
+import { LoadLoginPageResponse } from "@server/routers/loginPage/types";
 import IdpLoginButtons from "@app/components/private/IdpLoginButtons";
 import {
     Card,
@@ -156,7 +154,7 @@ export default async function OrgAuthPage(props: {
                     </Link>
                 </span>
             </div>
-            <Card className="shadow-md w-full max-w-md">
+            <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle>{t("orgAuthSignInTitle")}</CardTitle>
                     <CardDescription>

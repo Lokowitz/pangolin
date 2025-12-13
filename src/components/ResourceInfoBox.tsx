@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { InfoIcon, ShieldCheck, ShieldOff } from "lucide-react";
+import { ShieldCheck, ShieldOff, Eye, EyeOff } from "lucide-react";
 import { useResourceContext } from "@app/hooks/useResourceContext";
 import CopyToClipboard from "@app/components/CopyToClipboard";
 import {
@@ -18,7 +18,7 @@ import { useEnvContext } from "@app/hooks/useEnvContext";
 type ResourceInfoBoxType = {};
 
 export default function ResourceInfoBox({}: ResourceInfoBoxType) {
-    const { resource, authInfo } = useResourceContext();
+    const { resource, authInfo, updateResource } = useResourceContext();
     const { env } = useEnvContext();
 
     const t = useTranslations();
@@ -30,8 +30,14 @@ export default function ResourceInfoBox({}: ResourceInfoBoxType) {
             <AlertDescription>
                 {/* 4 cols because of the certs */}
                 <InfoSections
-                    cols={resource.http && env.flags.usePangolinDns ? 4 : 3}
+                    cols={resource.http && env.flags.usePangolinDns ? 5 : 4}
                 >
+                    <InfoSection>
+                        <InfoSectionTitle>{t("identifier")}</InfoSectionTitle>
+                        <InfoSectionContent>
+                            {resource.niceId}
+                        </InfoSectionContent>
+                    </InfoSection>
                     {resource.http ? (
                         <>
                             <InfoSection>
@@ -44,13 +50,13 @@ export default function ResourceInfoBox({}: ResourceInfoBoxType) {
                                     authInfo.sso ||
                                     authInfo.whitelist ||
                                     authInfo.headerAuth ? (
-                                        <div className="flex items-start space-x-2 text-green-500">
-                                            <ShieldCheck className="w-4 h-4 mt-0.5" />
+                                        <div className="flex items-start space-x-2">
+                                            <ShieldCheck className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-500" />
                                             <span>{t("protected")}</span>
                                         </div>
                                     ) : (
                                         <div className="flex items-center space-x-2 text-yellow-500">
-                                            <ShieldOff className="w-4 h-4" />
+                                            <ShieldOff className="w-4 h-4 flex-shrink-0" />
                                             <span>{t("notProtected")}</span>
                                         </div>
                                     )}
@@ -91,9 +97,7 @@ export default function ResourceInfoBox({}: ResourceInfoBoxType) {
                                     {t("protocol")}
                                 </InfoSectionTitle>
                                 <InfoSectionContent>
-                                    <span>
-                                        {resource.protocol.toUpperCase()}
-                                    </span>
+                                    {resource.protocol.toUpperCase()}
                                 </InfoSectionContent>
                             </InfoSection>
                             <InfoSection>
@@ -155,11 +159,17 @@ export default function ResourceInfoBox({}: ResourceInfoBoxType) {
                     <InfoSection>
                         <InfoSectionTitle>{t("visibility")}</InfoSectionTitle>
                         <InfoSectionContent>
-                            <span>
-                                {resource.enabled
-                                    ? t("enabled")
-                                    : t("disabled")}
-                            </span>
+                            {resource.enabled ? (
+                                <div className="flex items-center space-x-2">
+                                    <Eye className="w-4 h-4 flex-shrink-0 text-green-500" />
+                                    <span>{t("enabled")}</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center space-x-2">
+                                    <EyeOff className="w-4 h-4 flex-shrink-0 text-neutral-500" />
+                                    <span>{t("disabled")}</span>
+                                </div>
+                            )}
                         </InfoSectionContent>
                     </InfoSection>
                 </InfoSections>

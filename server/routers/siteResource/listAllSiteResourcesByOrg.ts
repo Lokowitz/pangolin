@@ -10,11 +10,9 @@ import { fromError } from "zod-validation-error";
 import logger from "@server/logger";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const listAllSiteResourcesByOrgParamsSchema = z
-    .object({
-        orgId: z.string()
-    })
-    .strict();
+const listAllSiteResourcesByOrgParamsSchema = z.strictObject({
+    orgId: z.string()
+});
 
 const listAllSiteResourcesByOrgQuerySchema = z.object({
     limit: z
@@ -22,17 +20,21 @@ const listAllSiteResourcesByOrgQuerySchema = z.object({
         .optional()
         .default("1000")
         .transform(Number)
-        .pipe(z.number().int().positive()),
+        .pipe(z.int().positive()),
     offset: z
         .string()
         .optional()
         .default("0")
         .transform(Number)
-        .pipe(z.number().int().nonnegative())
+        .pipe(z.int().nonnegative())
 });
 
 export type ListAllSiteResourcesByOrgResponse = {
-    siteResources: (SiteResource & { siteName: string, siteNiceId: string })[];
+    siteResources: (SiteResource & {
+        siteName: string;
+        siteNiceId: string;
+        siteAddress: string | null;
+    })[];
 };
 
 registry.registerPath({
@@ -53,7 +55,9 @@ export async function listAllSiteResourcesByOrg(
     next: NextFunction
 ): Promise<any> {
     try {
-        const parsedParams = listAllSiteResourcesByOrgParamsSchema.safeParse(req.params);
+        const parsedParams = listAllSiteResourcesByOrgParamsSchema.safeParse(
+            req.params
+        );
         if (!parsedParams.success) {
             return next(
                 createHttpError(
@@ -63,7 +67,9 @@ export async function listAllSiteResourcesByOrg(
             );
         }
 
-        const parsedQuery = listAllSiteResourcesByOrgQuerySchema.safeParse(req.query);
+        const parsedQuery = listAllSiteResourcesByOrgQuerySchema.safeParse(
+            req.query
+        );
         if (!parsedQuery.success) {
             return next(
                 createHttpError(
@@ -82,14 +88,18 @@ export async function listAllSiteResourcesByOrg(
                 siteResourceId: siteResources.siteResourceId,
                 siteId: siteResources.siteId,
                 orgId: siteResources.orgId,
+                niceId: siteResources.niceId,
                 name: siteResources.name,
+                mode: siteResources.mode,
                 protocol: siteResources.protocol,
                 proxyPort: siteResources.proxyPort,
                 destinationPort: siteResources.destinationPort,
-                destinationIp: siteResources.destinationIp,
+                destination: siteResources.destination,
                 enabled: siteResources.enabled,
+                alias: siteResources.alias,
                 siteName: sites.name,
-                siteNiceId: sites.niceId
+                siteNiceId: sites.niceId,
+                siteAddress: sites.address
             })
             .from(siteResources)
             .innerJoin(sites, eq(siteResources.siteId, sites.siteId))
@@ -106,6 +116,11 @@ export async function listAllSiteResourcesByOrg(
         });
     } catch (error) {
         logger.error("Error listing all site resources by org:", error);
-        return next(createHttpError(HttpCode.INTERNAL_SERVER_ERROR, "Failed to list site resources"));
+        return next(
+            createHttpError(
+                HttpCode.INTERNAL_SERVER_ERROR,
+                "Failed to list site resources"
+            )
+        );
     }
 }

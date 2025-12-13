@@ -10,10 +10,7 @@ import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import stoi from "@server/lib/stoi";
 import { sendToClient } from "#dynamic/routers/ws";
-import {
-    fetchContainers,
-    dockerSocket
-} from "../newt/dockerSocket";
+import { fetchContainers, dockerSocket } from "../newt/dockerSocket";
 import cache from "@server/lib/cache";
 
 export interface ContainerNetwork {
@@ -46,18 +43,14 @@ export interface Container {
     networks: Record<string, ContainerNetwork>;
 }
 
-const siteIdParamsSchema = z
-    .object({
-        siteId: z.string().transform(stoi).pipe(z.number().int().positive())
-    })
-    .strict();
+const siteIdParamsSchema = z.strictObject({
+    siteId: z.string().transform(stoi).pipe(z.int().positive())
+});
 
-const DockerStatusSchema = z
-    .object({
-        isAvailable: z.boolean(),
-        socketPath: z.string().optional()
-    })
-    .strict();
+const DockerStatusSchema = z.strictObject({
+    isAvailable: z.boolean(),
+    socketPath: z.string().optional()
+});
 
 function validateSiteIdParams(params: any) {
     const parsedParams = siteIdParamsSchema.safeParse(params);
@@ -165,9 +158,7 @@ async function triggerFetch(siteId: number) {
 async function queryContainers(siteId: number) {
     const { newt } = await getSiteAndNewt(siteId);
 
-    const result = cache.get(
-        `${newt.newtId}:dockerContainers`
-    ) as Container[];
+    const result = cache.get(`${newt.newtId}:dockerContainers`) as Container[];
     if (!result) {
         throw createHttpError(
             HttpCode.TOO_EARLY,

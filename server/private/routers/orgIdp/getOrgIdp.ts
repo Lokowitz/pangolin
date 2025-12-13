@@ -30,7 +30,7 @@ import { GetOrgIdpResponse } from "@server/routers/orgIdp/types";
 const paramsSchema = z
     .object({
         orgId: z.string().nonempty(),
-        idpId: z.coerce.number()
+        idpId: z.coerce.number<number>()
     })
     .strict();
 
@@ -93,7 +93,10 @@ export async function getOrgIdp(
             idpRes.idpOidcConfig!.clientId = decrypt(clientId, key);
         }
 
-        const redirectUrl = await generateOidcRedirectUrl(idpRes.idp.idpId, orgId);
+        const redirectUrl = await generateOidcRedirectUrl(
+            idpRes.idp.idpId,
+            orgId
+        );
 
         return response<GetOrgIdpResponse>(res, {
             data: {

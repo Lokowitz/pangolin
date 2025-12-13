@@ -10,14 +10,9 @@ import { fromError } from "zod-validation-error";
 import logger from "@server/logger";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const listTargetsParamsSchema = z
-    .object({
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+const listTargetsParamsSchema = z.strictObject({
+    resourceId: z.string().transform(Number).pipe(z.int().positive())
+});
 
 const listTargetsSchema = z.object({
     limit: z
@@ -25,13 +20,13 @@ const listTargetsSchema = z.object({
         .optional()
         .default("1000")
         .transform(Number)
-        .pipe(z.number().int().positive()),
+        .pipe(z.int().positive()),
     offset: z
         .string()
         .optional()
         .default("0")
         .transform(Number)
-        .pipe(z.number().int().nonnegative())
+        .pipe(z.int().nonnegative())
 });
 
 function queryTargets(resourceId: number) {
@@ -59,11 +54,12 @@ function queryTargets(resourceId: number) {
             hcMethod: targetHealthCheck.hcMethod,
             hcStatus: targetHealthCheck.hcStatus,
             hcHealth: targetHealthCheck.hcHealth,
+            hcTlsServerName: targetHealthCheck.hcTlsServerName,
             path: targets.path,
             pathMatchType: targets.pathMatchType,
             rewritePath: targets.rewritePath,
             rewritePathType: targets.rewritePathType,
-            priority: targets.priority,
+            priority: targets.priority
         })
         .from(targets)
         .leftJoin(sites, eq(sites.siteId, targets.siteId))
@@ -76,8 +72,11 @@ function queryTargets(resourceId: number) {
     return baseQuery;
 }
 
-type TargetWithParsedHeaders = Omit<Awaited<ReturnType<typeof queryTargets>>[0], 'hcHeaders'> & {
-    hcHeaders: { name: string; value: string; }[] | null;
+type TargetWithParsedHeaders = Omit<
+    Awaited<ReturnType<typeof queryTargets>>[0],
+    "hcHeaders"
+> & {
+    hcHeaders: { name: string; value: string }[] | null;
 };
 
 export type ListTargetsResponse = {
@@ -137,7 +136,7 @@ export async function listTargets(
         const totalCount = totalCountResult[0].count;
 
         // Parse hcHeaders from JSON string back to array for each target
-        const parsedTargetsList = targetsList.map(target => {
+        const parsedTargetsList = targetsList.map((target) => {
             let parsedHcHeaders = null;
             if (target.hcHeaders) {
                 try {

@@ -15,20 +15,13 @@ import { verifyPassword } from "@server/auth/password";
 import config from "@server/lib/config";
 import { logAccessAudit } from "#dynamic/lib/logAccessAudit";
 
-export const authWithPasswordBodySchema = z
-    .object({
-        password: z.string()
-    })
-    .strict();
+export const authWithPasswordBodySchema = z.strictObject({
+    password: z.string()
+});
 
-export const authWithPasswordParamsSchema = z
-    .object({
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+export const authWithPasswordParamsSchema = z.strictObject({
+    resourceId: z.string().transform(Number).pipe(z.int().positive())
+});
 
 export type AuthWithPasswordResponse = {
     session?: string;

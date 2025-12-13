@@ -46,12 +46,10 @@ export type GetOrgUserResponse = NonNullable<
     Awaited<ReturnType<typeof queryUser>>
 >;
 
-const getOrgUserParamsSchema = z
-    .object({
-        userId: z.string(),
-        orgId: z.string()
-    })
-    .strict();
+const getOrgUserParamsSchema = z.strictObject({
+    userId: z.string(),
+    orgId: z.string()
+});
 
 registry.registerPath({
     method: "get",

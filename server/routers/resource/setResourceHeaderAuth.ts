@@ -11,15 +11,13 @@ import { hashPassword } from "@server/auth/password";
 import { OpenAPITags, registry } from "@server/openApi";
 
 const setResourceAuthMethodsParamsSchema = z.object({
-    resourceId: z.string().transform(Number).pipe(z.number().int().positive())
+    resourceId: z.string().transform(Number).pipe(z.int().positive())
 });
 
-const setResourceAuthMethodsBodySchema = z
-    .object({
-        user: z.string().min(4).max(100).nullable(),
-        password: z.string().min(4).max(100).nullable()
-    })
-    .strict();
+const setResourceAuthMethodsBodySchema = z.strictObject({
+    user: z.string().min(4).max(100).nullable(),
+    password: z.string().min(4).max(100).nullable()
+});
 
 registry.registerPath({
     method: "post",
@@ -77,7 +75,9 @@ export async function setResourceHeaderAuth(
                 .where(eq(resourceHeaderAuth.resourceId, resourceId));
 
             if (user && password) {
-                const headerAuthHash = await hashPassword(Buffer.from(`${user}:${password}`).toString("base64"));
+                const headerAuthHash = await hashPassword(
+                    Buffer.from(`${user}:${password}`).toString("base64")
+                );
 
                 await trx
                     .insert(resourceHeaderAuth)

@@ -23,24 +23,22 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const paramsSchema = z.object({}).strict();
+const paramsSchema = z.strictObject({});
 
-const querySchema = z
-    .object({
-        limit: z
-            .string()
-            .optional()
-            .default("1000")
-            .transform(Number)
-            .pipe(z.number().int().nonnegative()),
-        offset: z
-            .string()
-            .optional()
-            .default("0")
-            .transform(Number)
-            .pipe(z.number().int().nonnegative())
-    })
-    .strict();
+const querySchema = z.strictObject({
+    limit: z
+        .string()
+        .optional()
+        .default("1000")
+        .transform(Number)
+        .pipe(z.int().nonnegative()),
+    offset: z
+        .string()
+        .optional()
+        .default("0")
+        .transform(Number)
+        .pipe(z.int().nonnegative())
+});
 
 async function query(limit: number, offset: number) {
     const res = await db

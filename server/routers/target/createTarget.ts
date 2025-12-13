@@ -15,57 +15,42 @@ import { pickPort } from "./helpers";
 import { isTargetValid } from "@server/lib/validators";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const createTargetParamsSchema = z
-    .object({
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+const createTargetParamsSchema = z.strictObject({
+    resourceId: z.string().transform(Number).pipe(z.int().positive())
+});
 
-const createTargetSchema = z
-    .object({
-        siteId: z.number().int().positive(),
-        ip: z.string().refine(isTargetValid),
-        method: z.string().optional().nullable(),
-        port: z.number().int().min(1).max(65535),
-        enabled: z.boolean().default(true),
-        hcEnabled: z.boolean().optional(),
-        hcPath: z.string().min(1).optional().nullable(),
-        hcScheme: z.string().optional().nullable(),
-        hcMode: z.string().optional().nullable(),
-        hcHostname: z.string().optional().nullable(),
-        hcPort: z.number().int().positive().optional().nullable(),
-        hcInterval: z.number().int().positive().min(5).optional().nullable(),
-        hcUnhealthyInterval: z
-            .number()
-            .int()
-            .positive()
-            .min(5)
-            .optional()
-            .nullable(),
-        hcTimeout: z.number().int().positive().min(1).optional().nullable(),
-        hcHeaders: z
-            .array(z.object({ name: z.string(), value: z.string() }))
-            .nullable()
-            .optional(),
-        hcFollowRedirects: z.boolean().optional().nullable(),
-        hcMethod: z.string().min(1).optional().nullable(),
-        hcStatus: z.number().int().optional().nullable(),
-        path: z.string().optional().nullable(),
-        pathMatchType: z
-            .enum(["exact", "prefix", "regex"])
-            .optional()
-            .nullable(),
-        rewritePath: z.string().optional().nullable(),
-        rewritePathType: z
-            .enum(["exact", "prefix", "regex", "stripPrefix"])
-            .optional()
-            .nullable(),
-        priority: z.number().int().min(1).max(1000).optional().nullable()
-    })
-    .strict();
+const createTargetSchema = z.strictObject({
+    siteId: z.int().positive(),
+    ip: z.string().refine(isTargetValid),
+    method: z.string().optional().nullable(),
+    port: z.int().min(1).max(65535),
+    enabled: z.boolean().default(true),
+    hcEnabled: z.boolean().optional(),
+    hcPath: z.string().min(1).optional().nullable(),
+    hcScheme: z.string().optional().nullable(),
+    hcMode: z.string().optional().nullable(),
+    hcHostname: z.string().optional().nullable(),
+    hcPort: z.int().positive().optional().nullable(),
+    hcInterval: z.int().positive().min(5).optional().nullable(),
+    hcUnhealthyInterval: z.int().positive().min(5).optional().nullable(),
+    hcTimeout: z.int().positive().min(1).optional().nullable(),
+    hcHeaders: z
+        .array(z.strictObject({ name: z.string(), value: z.string() }))
+        .nullable()
+        .optional(),
+    hcFollowRedirects: z.boolean().optional().nullable(),
+    hcMethod: z.string().min(1).optional().nullable(),
+    hcStatus: z.int().optional().nullable(),
+    hcTlsServerName: z.string().optional().nullable(),
+    path: z.string().optional().nullable(),
+    pathMatchType: z.enum(["exact", "prefix", "regex"]).optional().nullable(),
+    rewritePath: z.string().optional().nullable(),
+    rewritePathType: z
+        .enum(["exact", "prefix", "regex", "stripPrefix"])
+        .optional()
+        .nullable(),
+    priority: z.int().min(1).max(1000).optional().nullable()
+});
 
 export type CreateTargetResponse = Target & TargetHealthCheck;
 
@@ -164,7 +149,9 @@ export async function createTarget(
 
         if (existingTarget) {
             // log a warning
-            logger.warn(`Target with IP ${targetData.ip}, port ${targetData.port}, method ${targetData.method} already exists for resource ID ${resourceId}`);
+            logger.warn(
+                `Target with IP ${targetData.ip}, port ${targetData.port}, method ${targetData.method} already exists for resource ID ${resourceId}`
+            );
         }
 
         let newTarget: Target[] = [];
@@ -253,7 +240,8 @@ export async function createTarget(
                 hcFollowRedirects: targetData.hcFollowRedirects ?? null,
                 hcMethod: targetData.hcMethod ?? null,
                 hcStatus: targetData.hcStatus ?? null,
-                hcHealth: "unknown"
+                hcHealth: "unknown",
+                hcTlsServerName: targetData.hcTlsServerName ?? null
             })
             .returning();
 

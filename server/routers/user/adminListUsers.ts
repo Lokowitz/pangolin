@@ -9,22 +9,20 @@ import logger from "@server/logger";
 import { idp, users } from "@server/db";
 import { fromZodError } from "zod-validation-error";
 
-const listUsersSchema = z
-    .object({
-        limit: z
-            .string()
-            .optional()
-            .default("1000")
-            .transform(Number)
-            .pipe(z.number().int().nonnegative()),
-        offset: z
-            .string()
-            .optional()
-            .default("0")
-            .transform(Number)
-            .pipe(z.number().int().nonnegative())
-    })
-    .strict();
+const listUsersSchema = z.strictObject({
+    limit: z
+        .string()
+        .optional()
+        .default("1000")
+        .transform(Number)
+        .pipe(z.int().nonnegative()),
+    offset: z
+        .string()
+        .optional()
+        .default("0")
+        .transform(Number)
+        .pipe(z.int().nonnegative())
+});
 
 async function queryUsers(limit: number, offset: number) {
     return await db

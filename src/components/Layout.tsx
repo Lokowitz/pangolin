@@ -30,6 +30,7 @@ export async function Layout({
 }: LayoutProps) {
     const allCookies = await cookies();
     const sidebarStateCookie = allCookies.get("pangolin-sidebar-state")?.value;
+    const hasCookiePreference = sidebarStateCookie !== undefined;
 
     const initialSidebarCollapsed =
         sidebarStateCookie === "collapsed" ||
@@ -44,6 +45,7 @@ export async function Layout({
                     orgs={orgs}
                     navItems={navItems}
                     defaultSidebarCollapsed={initialSidebarCollapsed}
+                    hasCookiePreference={hasCookiePreference}
                 />
             )}
 
@@ -70,10 +72,12 @@ export async function Layout({
 
                 {/* Main content */}
                 <main className="flex-1 overflow-y-auto p-3 md:p-6 w-full">
-                    <div className={cn(
-                        "container mx-auto max-w-12xl mb-12",
-                        showHeader && "md:pt-20" // Add top padding only on desktop to account for fixed header
-                    )}>
+                    <div
+                        className={cn(
+                            "container mx-auto max-w-12xl mb-12",
+                            showHeader && "md:pt-16" // Add top padding only on desktop to account for fixed header
+                        )}
+                    >
                         {children}
                     </div>
                 </main>

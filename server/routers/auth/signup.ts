@@ -26,7 +26,7 @@ import { build } from "@server/build";
 import resend, { AudienceIds, moveEmailToAudience } from "#dynamic/lib/resend";
 
 export const signupBodySchema = z.object({
-    email: z.string().toLowerCase().email(),
+    email: z.email().toLowerCase(),
     password: passwordSchema,
     inviteToken: z.string().optional(),
     inviteId: z.string().optional(),
@@ -56,8 +56,14 @@ export async function signup(
         );
     }
 
-    const { email, password, inviteToken, inviteId, termsAcceptedTimestamp, marketingEmailConsent } =
-        parsedBody.data;
+    const {
+        email,
+        password,
+        inviteToken,
+        inviteId,
+        termsAcceptedTimestamp,
+        marketingEmailConsent
+    } = parsedBody.data;
 
     const passwordHash = await hashPassword(password);
     const userId = generateId(15);
@@ -222,7 +228,9 @@ export async function signup(
         );
         res.appendHeader("Set-Cookie", cookie);
         if (build == "saas" && marketingEmailConsent) {
-            logger.debug(`User ${email} opted in to marketing emails during signup.`);
+            logger.debug(
+                `User ${email} opted in to marketing emails during signup.`
+            );
             moveEmailToAudience(email, AudienceIds.SignUps);
         }
 

@@ -19,15 +19,13 @@ import { TierId } from "@server/lib/billing/tiers";
 
 const paramsSchema = z
     .object({
-        idpId: z.coerce.number()
+        idpId: z.coerce.number<number>()
     })
     .strict();
 
-const bodySchema = z
-    .object({
-        redirectUrl: z.string()
-    })
-    .strict();
+const bodySchema = z.strictObject({
+    redirectUrl: z.string()
+});
 
 const querySchema = z.object({
     orgId: z.string().optional() // check what actuall calls it

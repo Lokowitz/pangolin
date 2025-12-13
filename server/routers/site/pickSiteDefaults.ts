@@ -44,11 +44,9 @@ registry.registerPath({
     responses: {}
 });
 
-const pickSiteDefaultsSchema = z
-    .object({
-        orgId: z.string()
-    })
-    .strict();
+const pickSiteDefaultsSchema = z.strictObject({
+    orgId: z.string()
+});
 
 export async function pickSiteDefaults(
     req: Request,
@@ -76,7 +74,10 @@ export async function pickSiteDefaults(
 
         if (!randomExitNode) {
             return next(
-                createHttpError(HttpCode.INTERNAL_SERVER_ERROR, "No available exit node")
+                createHttpError(
+                    HttpCode.INTERNAL_SERVER_ERROR,
+                    "No available exit node"
+                )
             );
         }
 
@@ -92,7 +93,10 @@ export async function pickSiteDefaults(
         // TODO: we need to lock this subnet for some time so someone else does not take it
         const subnets = sitesQuery
             .map((site) => site.subnet)
-            .filter((subnet) => subnet && /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/.test(subnet))
+            .filter(
+                (subnet) =>
+                    subnet && /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/.test(subnet)
+            )
             .filter((subnet) => subnet !== null);
         // exclude the exit node address by replacing after the / with a site block size
         subnets.push(

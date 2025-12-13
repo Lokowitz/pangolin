@@ -10,14 +10,9 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const listResourceRolesSchema = z
-    .object({
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+const listResourceRolesSchema = z.strictObject({
+    resourceId: z.string().transform(Number).pipe(z.int().positive())
+});
 
 async function query(resourceId: number) {
     return await db

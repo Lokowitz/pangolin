@@ -11,28 +11,24 @@ import { fromZodError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 import { eq } from "drizzle-orm";
 
-const listUsersParamsSchema = z
-    .object({
-        orgId: z.string()
-    })
-    .strict();
+const listUsersParamsSchema = z.strictObject({
+    orgId: z.string()
+});
 
-const listUsersSchema = z
-    .object({
-        limit: z
-            .string()
-            .optional()
-            .default("1000")
-            .transform(Number)
-            .pipe(z.number().int().nonnegative()),
-        offset: z
-            .string()
-            .optional()
-            .default("0")
-            .transform(Number)
-            .pipe(z.number().int().nonnegative())
-    })
-    .strict();
+const listUsersSchema = z.strictObject({
+    limit: z
+        .string()
+        .optional()
+        .default("1000")
+        .transform(Number)
+        .pipe(z.int().nonnegative()),
+    offset: z
+        .string()
+        .optional()
+        .default("0")
+        .transform(Number)
+        .pipe(z.int().nonnegative())
+});
 
 async function queryUsers(orgId: string, limit: number, offset: number) {
     return await db
@@ -52,7 +48,7 @@ async function queryUsers(orgId: string, limit: number, offset: number) {
             idpId: users.idpId,
             idpType: idp.type,
             idpVariant: idpOidcConfig.variant,
-            twoFactorEnabled: users.twoFactorEnabled,
+            twoFactorEnabled: users.twoFactorEnabled
         })
         .from(users)
         .leftJoin(userOrgs, eq(users.userId, userOrgs.userId))

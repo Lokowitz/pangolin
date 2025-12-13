@@ -21,21 +21,17 @@ import { FeatureId } from "@server/lib/billing";
 import { build } from "@server/build";
 import cache from "@server/lib/cache";
 
-const inviteUserParamsSchema = z
-    .object({
-        orgId: z.string()
-    })
-    .strict();
+const inviteUserParamsSchema = z.strictObject({
+    orgId: z.string()
+});
 
-const inviteUserBodySchema = z
-    .object({
-        email: z.string().toLowerCase().email(),
-        roleId: z.number(),
-        validHours: z.number().gt(0).lte(168),
-        sendEmail: z.boolean().optional(),
-        regenerate: z.boolean().optional()
-    })
-    .strict();
+const inviteUserBodySchema = z.strictObject({
+    email: z.email().toLowerCase(),
+    roleId: z.number(),
+    validHours: z.number().gt(0).lte(168),
+    sendEmail: z.boolean().optional(),
+    regenerate: z.boolean().optional()
+});
 
 export type InviteUserBody = z.infer<typeof inviteUserBodySchema>;
 
@@ -113,12 +109,7 @@ export async function inviteUser(
         const [role] = await db
             .select()
             .from(roles)
-            .where(
-                and(
-                    eq(roles.roleId, roleId),
-                    eq(roles.orgId, orgId)
-                )
-            )
+            .where(and(eq(roles.roleId, roleId), eq(roles.orgId, orgId)))
             .limit(1);
 
         if (!role) {

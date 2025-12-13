@@ -12,11 +12,9 @@ import { fromError } from "zod-validation-error";
 import { sendToClient } from "#dynamic/routers/ws";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const deleteSiteSchema = z
-    .object({
-        siteId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const deleteSiteSchema = z.strictObject({
+    siteId: z.string().transform(Number).pipe(z.int().positive())
+});
 
 registry.registerPath({
     method: "delete",
@@ -95,8 +93,11 @@ export async function deleteSite(
                 data: {}
             };
             // Don't await this to prevent blocking the response
-            sendToClient(deletedNewtId, payload).catch(error => {
-                logger.error("Failed to send termination message to newt:", error);
+            sendToClient(deletedNewtId, payload).catch((error) => {
+                logger.error(
+                    "Failed to send termination message to newt:",
+                    error
+                );
             });
         }
 

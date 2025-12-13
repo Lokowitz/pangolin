@@ -23,13 +23,11 @@ import { fromError } from "zod-validation-error";
 import { registry } from "@server/openApi";
 import { GetCertificateResponse } from "@server/routers/certificates/types";
 
-const getCertificateSchema = z
-    .object({
-        domainId: z.string(),
-        domain: z.string().min(1).max(255),
-        orgId: z.string()
-    })
-    .strict();
+const getCertificateSchema = z.strictObject({
+    domainId: z.string(),
+    domain: z.string().min(1).max(255),
+    orgId: z.string()
+});
 
 async function query(domainId: string, domain: string) {
     const [domainRecord] = await db
@@ -44,8 +42,8 @@ async function query(domainId: string, domain: string) {
 
     let existing: any[] = [];
     if (domainRecord.type == "ns") {
-        const domainLevelDown = domain.split('.').slice(1).join('.');
-    
+        const domainLevelDown = domain.split(".").slice(1).join(".");
+
         existing = await db
             .select({
                 certId: certificates.certId,
@@ -66,7 +64,7 @@ async function query(domainId: string, domain: string) {
                     eq(certificates.wildcard, true), // only NS domains can have wildcard certs
                     or(
                         eq(certificates.domain, domain),
-                        eq(certificates.domain, domainLevelDown), 
+                        eq(certificates.domain, domainLevelDown)
                     )
                 )
             );
@@ -104,8 +102,7 @@ registry.registerPath({
     tags: ["Certificate"],
     request: {
         params: z.object({
-            domainId: z
-                .string(),
+            domainId: z.string(),
             domain: z.string().min(1).max(255),
             orgId: z.string()
         })
@@ -135,7 +132,9 @@ export async function getCertificate(
 
         if (!cert) {
             logger.warn(`Certificate not found for domain: ${domainId}`);
-            return next(createHttpError(HttpCode.NOT_FOUND, "Certificate not found"));
+            return next(
+                createHttpError(HttpCode.NOT_FOUND, "Certificate not found")
+            );
         }
 
         return response<GetCertificateResponse>(res, {

@@ -10,12 +10,10 @@ import { and, eq } from "drizzle-orm";
 import { usageService } from "@server/lib/billing/usageService";
 import { FeatureId } from "@server/lib/billing";
 
-const paramsSchema = z
-    .object({
-        domainId: z.string(),
-        orgId: z.string()
-    })
-    .strict();
+const paramsSchema = z.strictObject({
+    domainId: z.string(),
+    orgId: z.string()
+});
 
 export type DeleteAccountDomainResponse = {
     success: boolean;
@@ -50,10 +48,7 @@ export async function deleteAccountDomain(
                         eq(orgDomains.domainId, domainId)
                     )
                 )
-                .innerJoin(
-                    domains,
-                    eq(orgDomains.domainId, domains.domainId)
-                );
+                .innerJoin(domains, eq(orgDomains.domainId, domains.domainId));
 
             if (!existing) {
                 return next(

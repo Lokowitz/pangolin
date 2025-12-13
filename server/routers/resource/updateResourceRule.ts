@@ -16,28 +16,22 @@ import {
 import { OpenAPITags, registry } from "@server/openApi";
 
 // Define Zod schema for request parameters validation
-const updateResourceRuleParamsSchema = z
-    .object({
-        ruleId: z.string().transform(Number).pipe(z.number().int().positive()),
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+const updateResourceRuleParamsSchema = z.strictObject({
+    ruleId: z.string().transform(Number).pipe(z.int().positive()),
+    resourceId: z.string().transform(Number).pipe(z.int().positive())
+});
 
 // Define Zod schema for request body validation
 const updateResourceRuleSchema = z
-    .object({
+    .strictObject({
         action: z.enum(["ACCEPT", "DROP", "PASS"]).optional(),
         match: z.enum(["CIDR", "IP", "PATH", "COUNTRY"]).optional(),
         value: z.string().min(1).optional(),
-        priority: z.number().int(),
+        priority: z.int(),
         enabled: z.boolean().optional()
     })
-    .strict()
     .refine((data) => Object.keys(data).length > 0, {
-        message: "At least one field must be provided for update"
+        error: "At least one field must be provided for update"
     });
 
 registry.registerPath({

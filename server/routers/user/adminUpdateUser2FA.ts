@@ -10,17 +10,13 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const updateUser2FAParamsSchema = z
-    .object({
-        userId: z.string()
-    })
-    .strict();
+const updateUser2FAParamsSchema = z.strictObject({
+    userId: z.string()
+});
 
-const updateUser2FABodySchema = z
-    .object({
-        twoFactorSetupRequested: z.boolean()
-    })
-    .strict();
+const updateUser2FABodySchema = z.strictObject({
+    twoFactorSetupRequested: z.boolean()
+});
 
 export type UpdateUser2FAResponse = {
     userId: string;
@@ -94,13 +90,15 @@ export async function updateUser2FA(
             );
         }
 
-        logger.debug(`Updating 2FA for user ${userId} to ${twoFactorSetupRequested}`);
+        logger.debug(
+            `Updating 2FA for user ${userId} to ${twoFactorSetupRequested}`
+        );
 
         if (twoFactorSetupRequested) {
             await db
                 .update(users)
                 .set({
-                    twoFactorSetupRequested: true,
+                    twoFactorSetupRequested: true
                 })
                 .where(eq(users.userId, userId));
         } else {

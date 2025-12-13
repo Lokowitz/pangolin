@@ -78,115 +78,73 @@ import { verifyResourceAccessToken } from "@server/auth/verifyResourceAccessToke
 import semver from "semver";
 
 // Zod schemas for request validation
-const getResourceByDomainParamsSchema = z
-    .object({
-        domain: z.string().min(1, "Domain is required")
-    })
-    .strict();
+const getResourceByDomainParamsSchema = z.strictObject({
+    domain: z.string().min(1, "Domain is required")
+});
 
-const getUserSessionParamsSchema = z
-    .object({
-        userSessionId: z.string().min(1, "User session ID is required")
-    })
-    .strict();
+const getUserSessionParamsSchema = z.strictObject({
+    userSessionId: z.string().min(1, "User session ID is required")
+});
 
-const getUserOrgRoleParamsSchema = z
-    .object({
-        userId: z.string().min(1, "User ID is required"),
-        orgId: z.string().min(1, "Organization ID is required")
-    })
-    .strict();
+const getUserOrgRoleParamsSchema = z.strictObject({
+    userId: z.string().min(1, "User ID is required"),
+    orgId: z.string().min(1, "Organization ID is required")
+});
 
-const getRoleResourceAccessParamsSchema = z
-    .object({
-        roleId: z
-            .string()
-            .transform(Number)
-            .pipe(
-                z.number().int().positive("Role ID must be a positive integer")
-            ),
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(
-                z
-                    .number()
-                    .int()
-                    .positive("Resource ID must be a positive integer")
-            )
-    })
-    .strict();
+const getRoleResourceAccessParamsSchema = z.strictObject({
+    roleId: z
+        .string()
+        .transform(Number)
+        .pipe(z.int().positive("Role ID must be a positive integer")),
+    resourceId: z
+        .string()
+        .transform(Number)
+        .pipe(z.int().positive("Resource ID must be a positive integer"))
+});
 
-const getUserResourceAccessParamsSchema = z
-    .object({
-        userId: z.string().min(1, "User ID is required"),
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(
-                z
-                    .number()
-                    .int()
-                    .positive("Resource ID must be a positive integer")
-            )
-    })
-    .strict();
+const getUserResourceAccessParamsSchema = z.strictObject({
+    userId: z.string().min(1, "User ID is required"),
+    resourceId: z
+        .string()
+        .transform(Number)
+        .pipe(z.int().positive("Resource ID must be a positive integer"))
+});
 
-const getResourceRulesParamsSchema = z
-    .object({
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(
-                z
-                    .number()
-                    .int()
-                    .positive("Resource ID must be a positive integer")
-            )
-    })
-    .strict();
+const getResourceRulesParamsSchema = z.strictObject({
+    resourceId: z
+        .string()
+        .transform(Number)
+        .pipe(z.int().positive("Resource ID must be a positive integer"))
+});
 
-const validateResourceSessionTokenParamsSchema = z
-    .object({
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(
-                z
-                    .number()
-                    .int()
-                    .positive("Resource ID must be a positive integer")
-            )
-    })
-    .strict();
+const validateResourceSessionTokenParamsSchema = z.strictObject({
+    resourceId: z
+        .string()
+        .transform(Number)
+        .pipe(z.int().positive("Resource ID must be a positive integer"))
+});
 
-const validateResourceSessionTokenBodySchema = z
-    .object({
-        token: z.string().min(1, "Token is required")
-    })
-    .strict();
+const validateResourceSessionTokenBodySchema = z.strictObject({
+    token: z.string().min(1, "Token is required")
+});
 
-const validateResourceAccessTokenBodySchema = z
-    .object({
-        accessTokenId: z.string().optional(),
-        resourceId: z.number().optional(),
-        accessToken: z.string()
-    })
-    .strict();
+const validateResourceAccessTokenBodySchema = z.strictObject({
+    accessTokenId: z.string().optional(),
+    resourceId: z.number().optional(),
+    accessToken: z.string()
+});
 
 // Certificates by domains query validation
-const getCertificatesByDomainsQuerySchema = z
-    .object({
-        // Accept domains as string or array (domains or domains[])
-        domains: z
-            .union([z.array(z.string().min(1)), z.string().min(1)])
-            .optional(),
-        // Handle array format from query parameters (domains[])
-        "domains[]": z
-            .union([z.array(z.string().min(1)), z.string().min(1)])
-            .optional()
-    })
-    .strict();
+const getCertificatesByDomainsQuerySchema = z.strictObject({
+    // Accept domains as string or array (domains or domains[])
+    domains: z
+        .union([z.array(z.string().min(1)), z.string().min(1)])
+        .optional(),
+    // Handle array format from query parameters (domains[])
+    "domains[]": z
+        .union([z.array(z.string().min(1)), z.string().min(1)])
+        .optional()
+});
 
 // Type exports for request schemas
 export type GetResourceByDomainParams = z.infer<
@@ -593,11 +551,9 @@ hybridRouter.get(
     }
 );
 
-const getOrgLoginPageParamsSchema = z
-    .object({
-        orgId: z.string().min(1)
-    })
-    .strict();
+const getOrgLoginPageParamsSchema = z.strictObject({
+    orgId: z.string().min(1)
+});
 
 hybridRouter.get(
     "/org/:orgId/login-page",
@@ -1073,7 +1029,7 @@ hybridRouter.get(
                 );
             }
 
-            let rules = await db
+            const rules = await db
                 .select()
                 .from(resourceRules)
                 .where(eq(resourceRules.resourceId, resourceId));
@@ -1399,7 +1355,7 @@ const updateHolePunchSchema = z.object({
     port: z.number(),
     timestamp: z.number(),
     reachableAt: z.string().optional(),
-    publicKey: z.string().optional()
+    publicKey: z.string() // this is the client public key
 });
 hybridRouter.post(
     "/gerbil/update-hole-punch",
@@ -1438,8 +1394,16 @@ hybridRouter.post(
                 );
             }
 
-            const { olmId, newtId, ip, port, timestamp, token, reachableAt } =
-                parsedParams.data;
+            const {
+                olmId,
+                newtId,
+                ip,
+                port,
+                timestamp,
+                token,
+                publicKey,
+                reachableAt
+            } = parsedParams.data;
 
             const destinations = await updateAndGenerateEndpointDestinations(
                 olmId,
@@ -1448,6 +1412,7 @@ hybridRouter.post(
                 port,
                 timestamp,
                 token,
+                publicKey,
                 exitNode,
                 true
             );

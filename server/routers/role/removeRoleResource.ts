@@ -9,20 +9,13 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const removeRoleResourceParamsSchema = z
-    .object({
-        roleId: z.string().transform(Number).pipe(z.number().int().positive())
-    })
-    .strict();
+const removeRoleResourceParamsSchema = z.strictObject({
+    roleId: z.string().transform(Number).pipe(z.int().positive())
+});
 
-const removeRoleResourceSchema = z
-    .object({
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+const removeRoleResourceSchema = z.strictObject({
+    resourceId: z.string().transform(Number).pipe(z.int().positive())
+});
 
 export async function removeRoleResource(
     req: Request,

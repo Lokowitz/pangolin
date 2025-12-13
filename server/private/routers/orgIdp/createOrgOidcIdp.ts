@@ -29,24 +29,22 @@ import { getOrgTierData } from "#private/lib/billing";
 import { TierId } from "@server/lib/billing/tiers";
 import { CreateOrgIdpResponse } from "@server/routers/orgIdp/types";
 
-const paramsSchema = z.object({ orgId: z.string().nonempty() }).strict();
+const paramsSchema = z.strictObject({ orgId: z.string().nonempty() });
 
-const bodySchema = z
-    .object({
-        name: z.string().nonempty(),
-        clientId: z.string().nonempty(),
-        clientSecret: z.string().nonempty(),
-        authUrl: z.string().url(),
-        tokenUrl: z.string().url(),
-        identifierPath: z.string().nonempty(),
-        emailPath: z.string().optional(),
-        namePath: z.string().optional(),
-        scopes: z.string().nonempty(),
-        autoProvision: z.boolean().optional(),
-        variant: z.enum(["oidc", "google", "azure"]).optional().default("oidc"),
-        roleMapping: z.string().optional()
-    })
-    .strict();
+const bodySchema = z.strictObject({
+    name: z.string().nonempty(),
+    clientId: z.string().nonempty(),
+    clientSecret: z.string().nonempty(),
+    authUrl: z.url(),
+    tokenUrl: z.url(),
+    identifierPath: z.string().nonempty(),
+    emailPath: z.string().optional(),
+    namePath: z.string().optional(),
+    scopes: z.string().nonempty(),
+    autoProvision: z.boolean().optional(),
+    variant: z.enum(["oidc", "google", "azure"]).optional().default("oidc"),
+    roleMapping: z.string().optional()
+});
 
 // registry.registerPath({
 //     method: "put",
@@ -160,7 +158,10 @@ export async function createOrgOidcIdp(
             });
         });
 
-        const redirectUrl = await generateOidcRedirectUrl(idpId as number, orgId);
+        const redirectUrl = await generateOidcRedirectUrl(
+            idpId as number,
+            orgId
+        );
 
         return response<CreateOrgIdpResponse>(res, {
             data: {

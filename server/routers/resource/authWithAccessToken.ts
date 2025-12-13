@@ -15,22 +15,18 @@ import config from "@server/lib/config";
 import stoi from "@server/lib/stoi";
 import { logAccessAudit } from "#dynamic/lib/logAccessAudit";
 
-const authWithAccessTokenBodySchema = z
-    .object({
-        accessToken: z.string(),
-        accessTokenId: z.string().optional()
-    })
-    .strict();
+const authWithAccessTokenBodySchema = z.strictObject({
+    accessToken: z.string(),
+    accessTokenId: z.string().optional()
+});
 
-const authWithAccessTokenParamsSchema = z
-    .object({
-        resourceId: z
-            .string()
-            .optional()
-            .transform(stoi)
-            .pipe(z.number().int().positive().optional())
-    })
-    .strict();
+const authWithAccessTokenParamsSchema = z.strictObject({
+    resourceId: z
+        .string()
+        .optional()
+        .transform(stoi)
+        .pipe(z.int().positive().optional())
+});
 
 export type AuthWithAccessTokenResponse = {
     session?: string;

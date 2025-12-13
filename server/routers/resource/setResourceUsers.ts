@@ -10,20 +10,13 @@ import { fromError } from "zod-validation-error";
 import { eq } from "drizzle-orm";
 import { OpenAPITags, registry } from "@server/openApi";
 
-const setUserResourcesBodySchema = z
-    .object({
-        userIds: z.array(z.string())
-    })
-    .strict();
+const setUserResourcesBodySchema = z.strictObject({
+    userIds: z.array(z.string())
+});
 
-const setUserResourcesParamsSchema = z
-    .object({
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+const setUserResourcesParamsSchema = z.strictObject({
+    resourceId: z.string().transform(Number).pipe(z.int().positive())
+});
 
 registry.registerPath({
     method: "post",

@@ -1,6 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { db, Domain, domains, OrgDomains, orgDomains, dnsRecords } from "@server/db";
+import {
+    db,
+    Domain,
+    domains,
+    OrgDomains,
+    orgDomains,
+    dnsRecords
+} from "@server/db";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
 import createHttpError from "http-errors";
@@ -15,21 +22,16 @@ import { isSecondLevelDomain, isValidDomain } from "@server/lib/validators";
 import { build } from "@server/build";
 import config from "@server/lib/config";
 
-const paramsSchema = z
-    .object({
-        orgId: z.string()
-    })
-    .strict();
+const paramsSchema = z.strictObject({
+    orgId: z.string()
+});
 
-const bodySchema = z
-    .object({
-        type: z.enum(["ns", "cname", "wildcard"]),
-        baseDomain: subdomainSchema,
-        certResolver: z.string().optional().nullable(),
-        preferWildcardCert: z.boolean().optional().nullable() // optional, only for wildcard
-    })
-    .strict();
-
+const bodySchema = z.strictObject({
+    type: z.enum(["ns", "cname", "wildcard"]),
+    baseDomain: subdomainSchema,
+    certResolver: z.string().optional().nullable(),
+    preferWildcardCert: z.boolean().optional().nullable() // optional, only for wildcard
+});
 
 export type CreateDomainResponse = {
     domainId: string;
@@ -76,7 +78,8 @@ export async function createOrgDomain(
         }
 
         const { orgId } = parsedParams.data;
-        const { type, baseDomain, certResolver, preferWildcardCert } = parsedBody.data;
+        const { type, baseDomain, certResolver, preferWildcardCert } =
+            parsedBody.data;
 
         if (build == "oss") {
             if (type !== "wildcard") {
@@ -282,7 +285,7 @@ export async function createOrgDomain(
             // TODO: This needs to be cross region and not hardcoded
             if (type === "ns") {
                 nsRecords = config.getRawConfig().dns.nameservers as string[];
-                
+
                 // Save NS records to database
                 for (const nsValue of nsRecords) {
                     recordsToInsert.push({
@@ -304,7 +307,7 @@ export async function createOrgDomain(
                         baseDomain: `_acme-challenge.${baseDomain}`
                     }
                 ];
-                
+
                 // Save CNAME records to database
                 for (const cnameRecord of cnameRecords) {
                     recordsToInsert.push({
@@ -326,7 +329,7 @@ export async function createOrgDomain(
                         baseDomain: `${baseDomain}`
                     }
                 ];
-                
+
                 // Save A records to database
                 for (const aRecord of aRecords) {
                     recordsToInsert.push({

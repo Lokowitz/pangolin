@@ -19,30 +19,26 @@ import { isIpInCidr } from "@server/lib/ip";
 import { verifyExitNodeOrgAccess } from "#dynamic/lib/exitNodes";
 import { build } from "@server/build";
 
-const createSiteParamsSchema = z
-    .object({
-        orgId: z.string()
-    })
-    .strict();
+const createSiteParamsSchema = z.strictObject({
+    orgId: z.string()
+});
 
-const createSiteSchema = z
-    .object({
-        name: z.string().min(1).max(255),
-        exitNodeId: z.number().int().positive().optional(),
-        // subdomain: z
-        //     .string()
-        //     .min(1)
-        //     .max(255)
-        //     .transform((val) => val.toLowerCase())
-        //     .optional(),
-        pubKey: z.string().optional(),
-        subnet: z.string().optional(),
-        newtId: z.string().optional(),
-        secret: z.string().optional(),
-        address: z.string().optional(),
-        type: z.enum(["newt", "wireguard", "local"])
-    })
-    .strict();
+const createSiteSchema = z.strictObject({
+    name: z.string().min(1).max(255),
+    exitNodeId: z.int().positive().optional(),
+    // subdomain: z
+    //     .string()
+    //     .min(1)
+    //     .max(255)
+    //     .transform((val) => val.toLowerCase())
+    //     .optional(),
+    pubKey: z.string().optional(),
+    subnet: z.string().optional(),
+    newtId: z.string().optional(),
+    secret: z.string().optional(),
+    address: z.string().optional(),
+    type: z.enum(["newt", "wireguard", "local"])
+});
 // .refine((data) => {
 //     if (data.type === "local") {
 //         return !config.getRawConfig().flags?.disable_local_sites;

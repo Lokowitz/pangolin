@@ -62,10 +62,10 @@ import { isTargetValid } from "@server/lib/validators";
 import { listExitNodes } from "#private/lib/exitNodes";
 
 const bodySchema = z.object({
-    email: z.string().toLowerCase().email(),
+    email: z.email().toLowerCase(),
     ip: z.string().refine(isTargetValid),
     method: z.enum(["http", "https"]),
-    port: z.number().int().min(1).max(65535),
+    port: z.int().min(1).max(65535),
     pincode: z
         .string()
         .regex(/^\d{6}$/)
@@ -395,7 +395,8 @@ export async function quickStart(
                 .values({
                     targetId: newTarget[0].targetId,
                     hcEnabled: false
-                }).returning();
+                })
+                .returning();
 
             // add the new target to the targetIps array
             targetIps.push(`${ip}/32`);
@@ -406,7 +407,12 @@ export async function quickStart(
                 .where(eq(newts.siteId, siteId!))
                 .limit(1);
 
-            await addTargets(newt.newtId, newTarget, newHealthcheck, resource.protocol);
+            await addTargets(
+                newt.newtId,
+                newTarget,
+                newHealthcheck,
+                resource.protocol
+            );
 
             // Set resource pincode if provided
             if (pincode) {

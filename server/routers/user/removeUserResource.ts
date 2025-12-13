@@ -9,15 +9,10 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 
-const removeUserResourceSchema = z
-    .object({
-        userId: z.string(),
-        resourceId: z
-            .string()
-            .transform(Number)
-            .pipe(z.number().int().positive())
-    })
-    .strict();
+const removeUserResourceSchema = z.strictObject({
+    userId: z.string(),
+    resourceId: z.string().transform(Number).pipe(z.int().positive())
+});
 
 export async function removeUserResource(
     req: Request,

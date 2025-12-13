@@ -25,11 +25,9 @@ import stripe from "#private/lib/stripe";
 import { getLineItems, getStandardFeaturePriceSet } from "@server/lib/billing";
 import { getTierPriceSet, TierId } from "@server/lib/billing/tiers";
 
-const createCheckoutSessionSchema = z
-    .object({
-        orgId: z.string()
-    })
-    .strict();
+const createCheckoutSessionSchema = z.strictObject({
+    orgId: z.string()
+});
 
 export async function createCheckoutSession(
     req: Request,
@@ -74,7 +72,7 @@ export async function createCheckoutSession(
             billing_address_collection: "required",
             line_items: [
                 {
-                    price: standardTierPrice, // Use the standard tier 
+                    price: standardTierPrice, // Use the standard tier
                     quantity: 1
                 },
                 ...getLineItems(getStandardFeaturePriceSet())

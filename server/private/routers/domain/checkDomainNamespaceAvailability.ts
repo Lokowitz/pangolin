@@ -23,13 +23,11 @@ import { db, domainNamespaces, resources } from "@server/db";
 import { inArray } from "drizzle-orm";
 import { CheckDomainAvailabilityResponse } from "@server/routers/domain/types";
 
-const paramsSchema = z.object({}).strict();
+const paramsSchema = z.strictObject({});
 
-const querySchema = z
-    .object({
-        subdomain: z.string()
-    })
-    .strict();
+const querySchema = z.strictObject({
+    subdomain: z.string()
+});
 
 registry.registerPath({
     method: "get",

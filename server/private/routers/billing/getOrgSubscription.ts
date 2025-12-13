@@ -33,11 +33,9 @@ import {
     SubscriptionItem
 } from "@server/db";
 
-const getOrgSchema = z
-    .object({
-        orgId: z.string()
-    })
-    .strict();
+const getOrgSchema = z.strictObject({
+    orgId: z.string()
+});
 
 registry.registerPath({
     method: "get",
