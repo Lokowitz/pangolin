@@ -55,8 +55,6 @@ export function pullEnv(): Env {
                 process.env.FLAGS_DISABLE_BASIC_WIREGUARD_SITES === "true"
                     ? true
                     : false,
-            enableClients:
-                process.env.FLAGS_ENABLE_CLIENTS === "true" ? true : false,
             hideSupporterKey:
                 process.env.HIDE_SUPPORTER_KEY === "true" ? true : false,
             usePangolinDns:
@@ -66,6 +64,10 @@ export function pullEnv(): Env {
         branding: {
             appName: process.env.BRANDING_APP_NAME as string,
             background_image_path: process.env.BACKGROUND_IMAGE_PATH as string,
+            hideAuthLayoutFooter:
+                process.env.BRANDING_HIDE_AUTH_LAYOUT_FOOTER === "true"
+                    ? true
+                    : false,
             logo: {
                 lightPath: process.env.BRANDING_LOGO_LIGHT_PATH as string,
                 darkPath: process.env.BRANDING_LOGO_DARK_PATH as string,
@@ -87,11 +89,9 @@ export function pullEnv(): Env {
                 }
             },
             loginPage: {
-                titleText: process.env.LOGIN_PAGE_TITLE_TEXT as string,
                 subtitleText: process.env.LOGIN_PAGE_SUBTITLE_TEXT as string
             },
             signupPage: {
-                titleText: process.env.SIGNUP_PAGE_TITLE_TEXT as string,
                 subtitleText: process.env.SIGNUP_PAGE_SUBTITLE_TEXT as string
             },
             resourceAuthPage: {

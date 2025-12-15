@@ -1,38 +1,31 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { SidebarNav } from "@app/components/SidebarNav";
-import { OrgSelector } from "@app/components/OrgSelector";
-import { cn } from "@app/lib/cn";
-import { ListUserOrgsResponse } from "@server/routers/org";
-import SupporterStatus from "@app/components/SupporterStatus";
-import {
-    ExternalLink,
-    Server,
-    BookOpenText,
-    Zap,
-    CreditCard,
-    FileText,
-    TicketCheck
-} from "lucide-react";
-import { FaDiscord, FaGithub } from "react-icons/fa";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useUserContext } from "@app/hooks/useUserContext";
-import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
-import { useEnvContext } from "@app/hooks/useEnvContext";
-import { useTranslations } from "next-intl";
 import type { SidebarNavSection } from "@app/app/navigation";
+import { OrgSelector } from "@app/components/OrgSelector";
+import { SidebarNav } from "@app/components/SidebarNav";
+import SupporterStatus from "@app/components/SupporterStatus";
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger
 } from "@app/components/ui/tooltip";
+import { useEnvContext } from "@app/hooks/useEnvContext";
+import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
+import { useUserContext } from "@app/hooks/useUserContext";
+import { cn } from "@app/lib/cn";
 import { build } from "@server/build";
+import { ListUserOrgsResponse } from "@server/routers/org";
+import { ExternalLink, Server } from "lucide-react";
+import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { FaGithub } from "react-icons/fa";
 import SidebarLicenseButton from "./SidebarLicenseButton";
 import { SidebarSupportButton } from "./SidebarSupportButton";
-import dynamic from "next/dynamic";
+import { is } from "drizzle-orm";
 
 const ProductUpdates = dynamic(() => import("./ProductUpdates"), {
     ssr: false
@@ -43,21 +36,24 @@ interface LayoutSidebarProps {
     orgs?: ListUserOrgsResponse["orgs"];
     navItems: SidebarNavSection[];
     defaultSidebarCollapsed: boolean;
+    hasCookiePreference: boolean;
 }
 
 export function LayoutSidebar({
     orgId,
-    orgs,
+    orgs = [],
     navItems,
-    defaultSidebarCollapsed
+    defaultSidebarCollapsed,
+    hasCookiePreference
 }: LayoutSidebarProps) {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
         defaultSidebarCollapsed
     );
+    const [hasManualToggle, setHasManualToggle] = useState(hasCookiePreference);
     const pathname = usePathname();
     const isAdminPage = pathname?.startsWith("/admin");
     const { user } = useUserContext();
-    const { isUnlocked } = useLicenseStatusContext();
+    const { isUnlocked, licenseStatus } = useLicenseStatusContext();
     const { env } = useEnvContext();
     const t = useTranslations();
 
@@ -68,9 +64,26 @@ export function LayoutSidebar({
         }
     };
 
+    // Auto-collapse sidebar at 1650px or less, but only if no cookie preference exists
     useEffect(() => {
-        setSidebarStateCookie(isSidebarCollapsed);
-    }, [isSidebarCollapsed]);
+        if (hasManualToggle) {
+            return; // Don't auto-collapse if user has manually toggled
+        }
+
+        const handleResize = () => {
+            // print inner width
+            if (typeof window !== "undefined") {
+                const shouldCollapse = window.innerWidth <= 1650;
+                setIsSidebarCollapsed(shouldCollapse);
+            }
+        };
+
+        // Set initial state based on window width
+        handleResize();
+
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [hasManualToggle]);
 
     function loadFooterLinks(): { text: string; href?: string }[] | undefined {
         if (!isUnlocked()) {
@@ -85,6 +98,10 @@ export function LayoutSidebar({
         }
     }
 
+    const currentOrg = orgs.find((org) => org.orgId === orgId);
+    const canShowProductUpdates =
+        user.serverAdmin || Boolean(currentOrg?.isOwner || currentOrg?.isAdmin);
+
     return (
         <div
             className={cn(
@@ -92,14 +109,14 @@ export function LayoutSidebar({
                 isSidebarCollapsed ? "w-16" : "w-64"
             )}
         >
+            <div className="p-4 shrink-0">
+                <OrgSelector
+                    orgId={orgId}
+                    orgs={orgs}
+                    isCollapsed={isSidebarCollapsed}
+                />
+            </div>
             <div className="flex-1 overflow-y-auto">
-                <div className="p-4">
-                    <OrgSelector
-                        orgId={orgId}
-                        orgs={orgs}
-                        isCollapsed={isSidebarCollapsed}
-                    />
-                </div>
                 <div className="px-2 pt-1">
                     {!isAdminPage && user.serverAdmin && (
                         <div className="pb-4">
@@ -138,8 +155,12 @@ export function LayoutSidebar({
                 </div>
             </div>
 
-            <div className="p-4 flex flex-col gap-4 shrink-0">
-                <ProductUpdates isCollapsed={isSidebarCollapsed} />
+            <div className="p-4 pt-1 flex flex-col shrink-0">
+                {canShowProductUpdates && (
+                    <div className="mb-3">
+                        <ProductUpdates isCollapsed={isSidebarCollapsed} />
+                    </div>
+                )}
 
                 {build === "enterprise" && (
                     <div className="mb-3">
@@ -206,6 +227,18 @@ export function LayoutSidebar({
                                         <FaGithub size={12} />
                                     </Link>
                                 </div>
+                                {build === "enterprise" &&
+                                isUnlocked() &&
+                                licenseStatus?.tier === "personal" ? (
+                                    <div className="text-xs text-muted-foreground text-center">
+                                        {t("personalUseOnly")}
+                                    </div>
+                                ) : null}
+                                {build === "enterprise" && !isUnlocked() ? (
+                                    <div className="text-xs text-muted-foreground text-center">
+                                        {t("unlicensed")}
+                                    </div>
+                                ) : null}
                                 {env?.app?.version && (
                                     <div className="text-xs text-muted-foreground text-center">
                                         <Link
@@ -230,9 +263,12 @@ export function LayoutSidebar({
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button
-                            onClick={() =>
-                                setIsSidebarCollapsed(!isSidebarCollapsed)
-                            }
+                            onClick={() => {
+                                const newCollapsedState = !isSidebarCollapsed;
+                                setIsSidebarCollapsed(newCollapsedState);
+                                setHasManualToggle(true);
+                                setSidebarStateCookie(newCollapsedState);
+                            }}
                             className="cursor-pointer absolute -right-2.5 top-1/2 transform -translate-y-1/2 w-2 h-8 rounded-full flex items-center justify-center transition-all duration-200 ease-in-out hover:scale-110 group z-1"
                             aria-label={
                                 isSidebarCollapsed

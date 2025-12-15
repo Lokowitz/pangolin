@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import { ExtendedColumnDef } from "@app/components/ui/data-table";
 import { OrgApiKeysDataTable } from "@app/components/OrgApiKeysDataTable";
 import {
     DropdownMenu,
@@ -88,9 +89,11 @@ export default function OrgApiKeysTable({
             });
     };
 
-    const columns: ColumnDef<OrgApiKeyRow>[] = [
+    const columns: ExtendedColumnDef<OrgApiKeyRow>[] = [
         {
             accessorKey: "name",
+            enableHiding: false,
+            friendlyName: t("name"),
             header: ({ column }) => {
                 return (
                     <Button
@@ -107,7 +110,8 @@ export default function OrgApiKeysTable({
         },
         {
             accessorKey: "key",
-            header: t("key"),
+            friendlyName: t("key"),
+            header: () => <span className="p-3">{t("key")}</span>,
             cell: ({ row }) => {
                 const r = row.original;
                 return <span className="font-mono">{r.key}</span>;
@@ -115,7 +119,8 @@ export default function OrgApiKeysTable({
         },
         {
             accessorKey: "createdAt",
-            header: t("createdAt"),
+            friendlyName: t("createdAt"),
+            header: () => <span className="p-3">{t("createdAt")}</span>,
             cell: ({ row }) => {
                 const r = row.original;
                 return <span>{moment(r.createdAt).format("lll")}</span>;
@@ -123,10 +128,12 @@ export default function OrgApiKeysTable({
         },
         {
             id: "actions",
+            enableHiding: false,
+            header: () => <span className="p-3"></span>,
             cell: ({ row }) => {
                 const r = row.original;
                 return (
-                    <div className="flex items-center justify-end">
+                    <div className="flex items-center gap-2 justify-end">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -142,7 +149,9 @@ export default function OrgApiKeysTable({
                                         setSelected(r);
                                     }}
                                 >
-                                    <Link href={`/${orgId}/settings/api-keys/${r.id}`}>
+                                    <Link
+                                        href={`/${orgId}/settings/api-keys/${r.id}`}
+                                    >
                                         {t("viewSettings")}
                                     </Link>
                                 </DropdownMenuItem>
@@ -158,13 +167,8 @@ export default function OrgApiKeysTable({
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-
                         <Link href={`/${orgId}/settings/api-keys/${r.id}`}>
-                            <Button
-                                variant={"secondary"}
-                                className="ml-2"
-                                size="sm"
-                            >
+                            <Button variant={"outline"}>
                                 {t("edit")}
                                 <ArrowRight className="ml-2 w-4 h-4" />
                             </Button>
@@ -185,14 +189,10 @@ export default function OrgApiKeysTable({
                         setSelected(null);
                     }}
                     dialog={
-                        <div>
-                            <p>
-                                {t("apiKeysQuestionRemove")}
-                            </p>
+                        <div className="space-y-2">
+                            <p>{t("apiKeysQuestionRemove")}</p>
 
-                            <p>
-                                {t("apiKeysMessageRemove")}
-                            </p>
+                            <p>{t("apiKeysMessageRemove")}</p>
                         </div>
                     }
                     buttonText={t("apiKeysDeleteConfirm")}

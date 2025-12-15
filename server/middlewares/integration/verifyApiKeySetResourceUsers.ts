@@ -11,7 +11,10 @@ export async function verifyApiKeySetResourceUsers(
     next: NextFunction
 ) {
     const apiKey = req.apiKey;
-    const userIds = req.body.userIds;
+    const singleUserId =
+        req.params.userId || req.body.userId || req.query.userId;
+    const { userIds } = req.body;
+    const allUserIds = userIds || (singleUserId ? [singleUserId] : []);
 
     if (!apiKey) {
         return next(
@@ -33,11 +36,7 @@ export async function verifyApiKeySetResourceUsers(
         );
     }
 
-    if (!userIds) {
-        return next(createHttpError(HttpCode.BAD_REQUEST, "Invalid user IDs"));
-    }
-
-    if (userIds.length === 0) {
+    if (allUserIds.length === 0) {
         return next();
     }
 
@@ -48,12 +47,12 @@ export async function verifyApiKeySetResourceUsers(
             .from(userOrgs)
             .where(
                 and(
-                    inArray(userOrgs.userId, userIds),
+                    inArray(userOrgs.userId, allUserIds),
                     eq(userOrgs.orgId, orgId)
                 )
             );
 
-        if (userOrgsData.length !== userIds.length) {
+        if (userOrgsData.length !== allUserIds.length) {
             return next(
                 createHttpError(
                     HttpCode.FORBIDDEN,

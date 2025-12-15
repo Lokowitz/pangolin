@@ -19,8 +19,8 @@ import logger from "@server/logger";
 import { fromZodError } from "zod-validation-error";
 
 const getOrgParamsSchema = z.strictObject({
-        orgId: z.string()
-    });
+    orgId: z.string()
+});
 
 export type GetOrgOverviewResponse = {
     orgName: string;
@@ -130,7 +130,7 @@ export async function getOrgOverview(
                 numSites,
                 numUsers,
                 numResources,
-                isAdmin: role.name === "Admin",
+                isAdmin: role.isAdmin || false,
                 isOwner: req.userOrg?.isOwner || false
             },
             success: true,

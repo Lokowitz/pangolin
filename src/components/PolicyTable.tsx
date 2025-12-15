@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import { ExtendedColumnDef } from "@app/components/ui/data-table";
 import { Button } from "@app/components/ui/button";
 import {
     ArrowUpDown,
@@ -34,37 +35,18 @@ interface Props {
     onEdit: (policy: PolicyRow) => void;
 }
 
-export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props) {
+export default function PolicyTable({
+    policies,
+    onDelete,
+    onAdd,
+    onEdit
+}: Props) {
     const t = useTranslations();
-    const columns: ColumnDef<PolicyRow>[] = [
-        {
-            id: "dots",
-            cell: ({ row }) => {
-                const r = row.original;
-
-                return (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">{t('openMenu')}</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                                onClick={() => {
-                                    onDelete(r.orgId);
-                                }}
-                            >
-                                <span className="text-red-500">{t('delete')}</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                );
-            }
-        },
+    const columns: ExtendedColumnDef<PolicyRow>[] = [
         {
             accessorKey: "orgId",
+            enableHiding: false,
+            friendlyName: t("orgId"),
             header: ({ column }) => {
                 return (
                     <Button
@@ -73,7 +55,7 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
                             column.toggleSorting(column.getIsSorted() === "asc")
                         }
                     >
-                        {t('orgId')}
+                        {t("orgId")}
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
@@ -81,6 +63,7 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
         },
         {
             accessorKey: "roleMapping",
+            friendlyName: t("roleMapping"),
             header: ({ column }) => {
                 return (
                     <Button
@@ -89,7 +72,7 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
                             column.toggleSorting(column.getIsSorted() === "asc")
                         }
                     >
-                        {t('roleMapping')}
+                        {t("roleMapping")}
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
@@ -98,16 +81,21 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
                 const mapping = row.original.roleMapping;
                 return mapping ? (
                     <InfoPopup
-                        text={mapping.length > 50 ? `${mapping.substring(0, 50)}...` : mapping}
+                        text={
+                            mapping.length > 50
+                                ? `${mapping.substring(0, 50)}...`
+                                : mapping
+                        }
                         info={mapping}
                     />
                 ) : (
-                    "--"
+                    "-"
                 );
             }
         },
         {
             accessorKey: "orgMapping",
+            friendlyName: t("orgMapping"),
             header: ({ column }) => {
                 return (
                     <Button
@@ -116,7 +104,7 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
                             column.toggleSorting(column.getIsSorted() === "asc")
                         }
                     >
-                        {t('orgMapping')}
+                        {t("orgMapping")}
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
@@ -125,26 +113,52 @@ export default function PolicyTable({ policies, onDelete, onAdd, onEdit }: Props
                 const mapping = row.original.orgMapping;
                 return mapping ? (
                     <InfoPopup
-                        text={mapping.length > 50 ? `${mapping.substring(0, 50)}...` : mapping}
+                        text={
+                            mapping.length > 50
+                                ? `${mapping.substring(0, 50)}...`
+                                : mapping
+                        }
                         info={mapping}
                     />
                 ) : (
-                    "--"
+                    "-"
                 );
             }
         },
         {
             id: "actions",
+            enableHiding: false,
+            header: () => <span className="p-3"></span>,
             cell: ({ row }) => {
                 const policy = row.original;
                 return (
-                    <div className="flex items-center justify-end">
+                    <div className="flex items-center gap-2 justify-end">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">
+                                        {t("openMenu")}
+                                    </span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                    onClick={() => {
+                                        onDelete(policy.orgId);
+                                    }}
+                                >
+                                    <span className="text-red-500">
+                                        {t("delete")}
+                                    </span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button
-                            variant={"secondary"}
-                            className="ml-2"
+                            variant={"outline"}
                             onClick={() => onEdit(policy)}
                         >
-                            {t('edit')}
+                            {t("edit")}
                         </Button>
                     </div>
                 );

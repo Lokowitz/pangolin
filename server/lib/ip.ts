@@ -1,7 +1,15 @@
-import { db } from "@server/db";
+import {
+    clientSitesAssociationsCache,
+    db,
+    SiteResource,
+    siteResources,
+    Transaction
+} from "@server/db";
 import { clients, orgs, sites } from "@server/db";
 import { and, eq, isNotNull } from "drizzle-orm";
 import config from "@server/lib/config";
+import z from "zod";
+import logger from "@server/logger";
 
 interface IPRange {
     start: bigint;
@@ -106,6 +114,70 @@ function bigIntToIp(num: bigint, version: IPVersion): string {
             .map((h) => (h === "0000" ? "0" : h.replace(/^0+/, "")))
             .join(":");
     }
+}
+
+/**
+ * Parses an endpoint string (ip:port) handling both IPv4 and IPv6 addresses.
+ * IPv6 addresses may be bracketed like [::1]:8080 or unbracketed like ::1:8080.
+ * For unbracketed IPv6, the last colon-separated segment is treated as the port.
+ *
+ * @param endpoint The endpoint string to parse (e.g., "192.168.1.1:8080" or "[::1]:8080" or "2607:fea8::1:8080")
+ * @returns An object with ip and port, or null if parsing fails
+ */
+export function parseEndpoint(
+    endpoint: string
+): { ip: string; port: number } | null {
+    if (!endpoint) return null;
+
+    // Check for bracketed IPv6 format: [ip]:port
+    const bracketedMatch = endpoint.match(/^\[([^\]]+)\]:(\d+)$/);
+    if (bracketedMatch) {
+        const ip = bracketedMatch[1];
+        const port = parseInt(bracketedMatch[2], 10);
+        if (isNaN(port)) return null;
+        return { ip, port };
+    }
+
+    // Check if this looks like IPv6 (contains multiple colons)
+    const colonCount = (endpoint.match(/:/g) || []).length;
+
+    if (colonCount > 1) {
+        // This is IPv6 - the port is after the last colon
+        const lastColonIndex = endpoint.lastIndexOf(":");
+        const ip = endpoint.substring(0, lastColonIndex);
+        const portStr = endpoint.substring(lastColonIndex + 1);
+        const port = parseInt(portStr, 10);
+        if (isNaN(port)) return null;
+        return { ip, port };
+    }
+
+    // IPv4 format: ip:port
+    if (colonCount === 1) {
+        const [ip, portStr] = endpoint.split(":");
+        const port = parseInt(portStr, 10);
+        if (isNaN(port)) return null;
+        return { ip, port };
+    }
+
+    return null;
+}
+
+/**
+ * Formats an IP and port into a consistent endpoint string.
+ * IPv6 addresses are wrapped in brackets for proper parsing.
+ *
+ * @param ip The IP address (IPv4 or IPv6)
+ * @param port The port number
+ * @returns Formatted endpoint string
+ */
+export function formatEndpoint(ip: string, port: number): string {
+    // Check if this is IPv6 (contains colons)
+    if (ip.includes(":")) {
+        // Remove brackets if already present
+        const cleanIp = ip.replace(/^\[|\]$/g, "");
+        return `[${cleanIp}]:${port}`;
+    }
+    return `${ip}:${port}`;
 }
 
 /**
@@ -236,9 +308,13 @@ export function isIpInCidr(ip: string, cidr: string): boolean {
 }
 
 export async function getNextAvailableClientSubnet(
-    orgId: string
+    orgId: string,
+    transaction: Transaction | typeof db = db
 ): Promise<string> {
-    const [org] = await db.select().from(orgs).where(eq(orgs.orgId, orgId));
+    const [org] = await transaction
+        .select()
+        .from(orgs)
+        .where(eq(orgs.orgId, orgId));
 
     if (!org) {
         throw new Error(`Organization with ID ${orgId} not found`);
@@ -248,14 +324,14 @@ export async function getNextAvailableClientSubnet(
         throw new Error(`Organization with ID ${orgId} has no subnet defined`);
     }
 
-    const existingAddressesSites = await db
+    const existingAddressesSites = await transaction
         .select({
             address: sites.address
         })
         .from(sites)
         .where(and(isNotNull(sites.address), eq(sites.orgId, orgId)));
 
-    const existingAddressesClients = await db
+    const existingAddressesClients = await transaction
         .select({
             address: clients.subnet
         })
@@ -275,6 +351,56 @@ export async function getNextAvailableClientSubnet(
     if (!subnet) {
         throw new Error("No available subnets remaining in space");
     }
+
+    return subnet;
+}
+
+export async function getNextAvailableAliasAddress(
+    orgId: string
+): Promise<string> {
+    const [org] = await db.select().from(orgs).where(eq(orgs.orgId, orgId));
+
+    if (!org) {
+        throw new Error(`Organization with ID ${orgId} not found`);
+    }
+
+    if (!org.subnet) {
+        throw new Error(`Organization with ID ${orgId} has no subnet defined`);
+    }
+
+    if (!org.utilitySubnet) {
+        throw new Error(
+            `Organization with ID ${orgId} has no utility subnet defined`
+        );
+    }
+
+    const existingAddresses = await db
+        .select({
+            aliasAddress: siteResources.aliasAddress
+        })
+        .from(siteResources)
+        .where(
+            and(
+                isNotNull(siteResources.aliasAddress),
+                eq(siteResources.orgId, orgId)
+            )
+        );
+
+    const addresses = [
+        ...existingAddresses.map(
+            (site) => `${site.aliasAddress?.split("/")[0]}/32`
+        ),
+        // reserve a /29 for the dns server and other stuff
+        `${org.utilitySubnet.split("/")[0]}/29`
+    ].filter((address) => address !== null) as string[];
+
+    let subnet = findNextAvailableCidr(addresses, 32, org.utilitySubnet);
+    if (!subnet) {
+        throw new Error("No available subnets remaining in space");
+    }
+
+    // remove the cidr
+    subnet = subnet.split("/")[0];
 
     return subnet;
 }
@@ -299,4 +425,120 @@ export async function getNextAvailableOrgSubnet(): Promise<string> {
     }
 
     return subnet;
+}
+
+export function generateRemoteSubnets(
+    allSiteResources: SiteResource[]
+): string[] {
+    const remoteSubnets = allSiteResources
+        .filter((sr) => {
+            if (sr.mode === "cidr") {
+                // check if its a valid CIDR using zod
+                const cidrSchema = z.union([z.cidrv4(), z.cidrv6()]);
+                const parseResult = cidrSchema.safeParse(sr.destination);
+                return parseResult.success;
+            }
+            if (sr.mode === "host") {
+                // check if its a valid IP using zod
+                const ipSchema = z.union([z.ipv4(), z.ipv6()]);
+                const parseResult = ipSchema.safeParse(sr.destination);
+                return parseResult.success;
+            }
+            return false;
+        })
+        .map((sr) => {
+            if (sr.mode === "cidr") return sr.destination;
+            if (sr.mode === "host") {
+                return `${sr.destination}/32`;
+            }
+            return ""; // This should never be reached due to filtering, but satisfies TypeScript
+        })
+        .filter((subnet) => subnet !== ""); // Remove empty strings just to be safe
+    // remove duplicates
+    return Array.from(new Set(remoteSubnets));
+}
+
+export type Alias = { alias: string | null; aliasAddress: string | null };
+
+export function generateAliasConfig(allSiteResources: SiteResource[]): Alias[] {
+    return allSiteResources
+        .filter((sr) => sr.alias && sr.aliasAddress && sr.mode == "host")
+        .map((sr) => ({
+            alias: sr.alias,
+            aliasAddress: sr.aliasAddress
+        }));
+}
+
+export type SubnetProxyTarget = {
+    sourcePrefix: string; // must be a cidr
+    destPrefix: string; // must be a cidr
+    rewriteTo?: string; // must be a cidr
+    portRange?: {
+        min: number;
+        max: number;
+    }[];
+};
+
+export function generateSubnetProxyTargets(
+    siteResource: SiteResource,
+    clients: {
+        clientId: number;
+        pubKey: string | null;
+        subnet: string | null;
+    }[]
+): SubnetProxyTarget[] {
+    const targets: SubnetProxyTarget[] = [];
+
+    if (clients.length === 0) {
+        logger.debug(
+            `No clients have access to site resource ${siteResource.siteResourceId}, skipping target generation.`
+        );
+        return [];
+    }
+
+    for (const clientSite of clients) {
+        if (!clientSite.subnet) {
+            logger.debug(
+                `Client ${clientSite.clientId} has no subnet, skipping for site resource ${siteResource.siteResourceId}.`
+            );
+            continue;
+        }
+
+        const clientPrefix = `${clientSite.subnet.split("/")[0]}/32`;
+
+        if (siteResource.mode == "host") {
+            let destination = siteResource.destination;
+            // check if this is a valid ip
+            const ipSchema = z.union([z.ipv4(), z.ipv6()]);
+            if (ipSchema.safeParse(destination).success) {
+                destination = `${destination}/32`;
+
+                targets.push({
+                    sourcePrefix: clientPrefix,
+                    destPrefix: destination
+                });
+            }
+
+            if (siteResource.alias && siteResource.aliasAddress) {
+                // also push a match for the alias address
+                targets.push({
+                    sourcePrefix: clientPrefix,
+                    destPrefix: `${siteResource.aliasAddress}/32`,
+                    rewriteTo: destination
+                });
+            }
+        } else if (siteResource.mode == "cidr") {
+            targets.push({
+                sourcePrefix: clientPrefix,
+                destPrefix: siteResource.destination
+            });
+        }
+    }
+
+    // print a nice representation of the targets
+    // logger.debug(
+    //     `Generated subnet proxy targets for: ${JSON.stringify(targets, null, 2)}`
+    // );
+
+    return targets;
 }

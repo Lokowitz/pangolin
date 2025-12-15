@@ -20,25 +20,25 @@ import { verifyExitNodeOrgAccess } from "#dynamic/lib/exitNodes";
 import { build } from "@server/build";
 
 const createSiteParamsSchema = z.strictObject({
-        orgId: z.string()
-    });
+    orgId: z.string()
+});
 
 const createSiteSchema = z.strictObject({
-        name: z.string().min(1).max(255),
-        exitNodeId: z.int().positive().optional(),
-        // subdomain: z
-        //     .string()
-        //     .min(1)
-        //     .max(255)
-        //     .transform((val) => val.toLowerCase())
-        //     .optional(),
-        pubKey: z.string().optional(),
-        subnet: z.string().optional(),
-        newtId: z.string().optional(),
-        secret: z.string().optional(),
-        address: z.string().optional(),
-        type: z.enum(["newt", "wireguard", "local"])
-    });
+    name: z.string().min(1).max(255),
+    exitNodeId: z.int().positive().optional(),
+    // subdomain: z
+    //     .string()
+    //     .min(1)
+    //     .max(255)
+    //     .transform((val) => val.toLowerCase())
+    //     .optional(),
+    pubKey: z.string().optional(),
+    subnet: z.string().optional(),
+    newtId: z.string().optional(),
+    secret: z.string().optional(),
+    address: z.string().optional(),
+    type: z.enum(["newt", "wireguard", "local"])
+});
 // .refine((data) => {
 //     if (data.type === "local") {
 //         return !config.getRawConfig().flags?.disable_local_sites;
@@ -193,6 +193,62 @@ export async function createSite(
                     createHttpError(
                         HttpCode.CONFLICT,
                         `Subnet ${updatedAddress} already exists in clients`
+                    )
+                );
+            }
+        }
+
+        if (subnet && exitNodeId) {
+            //make sure the subnet is in the range of the exit node if provided
+            const [exitNode] = await db
+                .select()
+                .from(exitNodes)
+                .where(eq(exitNodes.exitNodeId, exitNodeId));
+
+            if (!exitNode) {
+                return next(
+                    createHttpError(HttpCode.NOT_FOUND, "Exit node not found")
+                );
+            }
+
+            if (!exitNode.address) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        "Exit node has no subnet defined"
+                    )
+                );
+            }
+
+            const subnetIp = subnet.split("/")[0];
+
+            if (!isIpInCidr(subnetIp, exitNode.address)) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        "Subnet is not in the CIDR range of the exit node address."
+                    )
+                );
+            }
+
+            // lets also make sure there is no overlap with other sites on the exit node
+            const sitesQuery = await db
+                .select({
+                    subnet: sites.subnet
+                })
+                .from(sites)
+                .where(
+                    and(
+                        eq(sites.exitNodeId, exitNodeId),
+                        eq(sites.subnet, subnet)
+                    )
+                );
+
+            if (sitesQuery.length > 0) {
+                return next(
+                    createHttpError(
+                        HttpCode.CONFLICT,
+                        `Subnet ${subnet} overlaps with an existing site on this exit node. Please restart site creation.`
                     )
                 );
             }

@@ -11,27 +11,28 @@ export default async function migration() {
     const db = createClient({ url: "file:" + location });
 
     const resourceSiteMap = new Map<number, number>();
-	let firstSiteId: number = 1;
+    let firstSiteId: number = 1;
 
-	try {
-		// Get the first siteId to use as default
-		const firstSiteResult = await db.execute("SELECT siteId FROM sites LIMIT 1");
-		const firstSite = (firstSiteResult.rows?.[0] as unknown) as { siteId: number } | undefined;
+    try {
+        // Get the first siteId to use as default
+        const firstSite = db
+            .prepare("SELECT siteId FROM sites LIMIT 1")
+            .get() as { siteId: number } | undefined;
+        if (firstSite) {
+            firstSiteId = firstSite.siteId;
+        }
 
-		if (firstSite) {
-			firstSiteId = firstSite.siteId;
-		}
-
-		const resourcesResult = await db.execute("SELECT resourceId, siteId FROM resources WHERE siteId IS NOT NULL");
-		const resources = (resourcesResult.rows as unknown) as Array<{ resourceId: number; siteId: number }>;
-
-		for (const resource of resources) {
-			resourceSiteMap.set(resource.resourceId, resource.siteId);
-		}
-		
-	} catch (e) {
-		console.log("Error getting resources:", e);
-	}
+        const resources = db
+            .prepare(
+                "SELECT resourceId, siteId FROM resources WHERE siteId IS NOT NULL"
+            )
+            .all() as Array<{ resourceId: number; siteId: number }>;
+        for (const resource of resources) {
+            resourceSiteMap.set(resource.resourceId, resource.siteId);
+        }
+    } catch (e) {
+        console.log("Error getting resources:", e);
+    }
 
     try {
         await db.execute(`CREATE TABLE 'setupTokens' (

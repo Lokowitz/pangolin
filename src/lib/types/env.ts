@@ -30,14 +30,14 @@ export type Env = {
         allowRawResources: boolean;
         disableLocalSites: boolean;
         disableBasicWireguardSites: boolean;
-        enableClients: boolean;
         hideSupporterKey: boolean;
         usePangolinDns: boolean;
     };
     branding: {
         appName?: string;
         background_image_path?: string;
-        logo: {
+        hideAuthLayoutFooter?: boolean;
+        logo?: {
             lightPath?: string;
             darkPath?: string;
             authPage?: {
@@ -50,11 +50,9 @@ export type Env = {
             };
         };
         loginPage: {
-            titleText?: string;
             subtitleText?: string;
         };
         signupPage: {
-            titleText?: string;
             subtitleText?: string;
         };
         resourceAuthPage: {

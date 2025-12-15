@@ -30,8 +30,7 @@ import {
     verifyUserHasAction,
     verifyUserIsServerAdmin,
     verifySiteAccess,
-    verifyClientAccess,
-    verifyClientsEnabled,
+    verifyClientAccess
 } from "@server/middlewares";
 import { ActionsEnum } from "@server/auth/actions";
 import {
@@ -410,7 +409,8 @@ authenticated.get(
 
 authenticated.post(
     "/re-key/:clientId/regenerate-client-secret",
-    verifyClientsEnabled,
+    verifyValidLicense,
+    verifyValidSubscription,
     verifyClientAccess,
     verifyUserHasAction(ActionsEnum.reGenerateSecret),
     reKey.reGenerateClientSecret
@@ -418,15 +418,18 @@ authenticated.post(
 
 authenticated.post(
     "/re-key/:siteId/regenerate-site-secret",
+    verifyValidLicense,
+    verifyValidSubscription,
     verifySiteAccess,
     verifyUserHasAction(ActionsEnum.reGenerateSecret),
     reKey.reGenerateSiteSecret
 );
 
 authenticated.put(
-    "/re-key/:orgId/reGenerate-remote-exit-node-secret",
+    "/re-key/:orgId/regenerate-remote-exit-node-secret",
     verifyValidLicense,
+    verifyValidSubscription,
     verifyOrgAccess,
-    verifyUserHasAction(ActionsEnum.updateRemoteExitNode),
+    verifyUserHasAction(ActionsEnum.reGenerateSecret),
     reKey.reGenerateExitNodeSecret
 );

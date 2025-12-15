@@ -13,8 +13,6 @@ export async function verifyApiKeySiteResourceAccess(
     try {
         const apiKey = req.apiKey;
         const siteResourceId = parseInt(req.params.siteResourceId);
-        const siteId = parseInt(req.params.siteId);
-        const orgId = req.params.orgId;
 
         if (!apiKey) {
             return next(
@@ -22,11 +20,11 @@ export async function verifyApiKeySiteResourceAccess(
             );
         }
 
-        if (!siteResourceId || !siteId || !orgId) {
+        if (!siteResourceId) {
             return next(
                 createHttpError(
                     HttpCode.BAD_REQUEST,
-                    "Missing required parameters"
+                    "Missing siteResourceId parameter"
                 )
             );
         }
@@ -40,19 +38,12 @@ export async function verifyApiKeySiteResourceAccess(
         const [siteResource] = await db
             .select()
             .from(siteResources)
-            .where(and(
-                eq(siteResources.siteResourceId, siteResourceId),
-                eq(siteResources.siteId, siteId),
-                eq(siteResources.orgId, orgId)
-            ))
+            .where(and(eq(siteResources.siteResourceId, siteResourceId)))
             .limit(1);
 
         if (!siteResource) {
             return next(
-                createHttpError(
-                    HttpCode.NOT_FOUND,
-                    "Site resource not found"
-                )
+                createHttpError(HttpCode.NOT_FOUND, "Site resource not found")
             );
         }
 
@@ -64,11 +55,11 @@ export async function verifyApiKeySiteResourceAccess(
                 .where(
                     and(
                         eq(apiKeyOrg.apiKeyId, apiKey.apiKeyId),
-                        eq(apiKeyOrg.orgId, orgId)
+                        eq(apiKeyOrg.orgId, siteResource.orgId)
                     )
                 )
                 .limit(1);
-            
+
             if (apiKeyOrgRes.length === 0) {
                 return next(
                     createHttpError(
@@ -77,12 +68,11 @@ export async function verifyApiKeySiteResourceAccess(
                     )
                 );
             }
-            
+
             req.apiKeyOrg = apiKeyOrgRes[0];
         }
 
         // Attach the siteResource to the request for use in the next middleware/route
-        // @ts-ignore - Extending Request type
         req.siteResource = siteResource;
 
         return next();
