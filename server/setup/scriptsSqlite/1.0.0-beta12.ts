@@ -1,11 +1,16 @@
-import { db } from "../../db/sqlite";
-import { configFilePath1, configFilePath2 } from "@server/lib/consts";
-import { sql } from "drizzle-orm";
+import { APP_PATH, configFilePath1, configFilePath2 } from "@server/lib/consts";
+import { createClient } from "@libsql/client";
+import path from "path";
 import fs from "fs";
 import yaml from "js-yaml";
 
+const version = "1.0.0-beta.12";
+
 export default async function migration() {
-    console.log("Running setup script 1.0.0-beta.12...");
+    console.log(`Running setup script ${version}...`);
+
+    const location = path.join(APP_PATH, "db", "db.sqlite");
+    const db = createClient({ url: "file:" + location });
 
     try {
         // Determine which config file exists
@@ -47,9 +52,9 @@ export default async function migration() {
     }
 
     try {
-        db.transaction((trx) => {
-            trx.run(sql`ALTER TABLE 'resources' ADD 'isBaseDomain' integer;`);
-        });
+        await db.execute(
+            `ALTER TABLE 'resources' ADD 'isBaseDomain' integer;`
+        );
 
         console.log(`Added new column: isBaseDomain`);
     } catch (e) {

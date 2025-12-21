@@ -1,5 +1,5 @@
 import { APP_PATH } from "@server/lib/consts";
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import path from "path";
 
 const version = "1.12.0";
@@ -8,109 +8,98 @@ export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
     const location = path.join(APP_PATH, "db", "db.sqlite");
-    const db = new Database(location);
+    const db = createClient({ url: "file:" + location });
 
     try {
-        db.pragma("foreign_keys = OFF");
-
-        db.transaction(() => {
-            db.prepare(
-                `UPDATE 'resourceRules' SET match = 'COUNTRY' WHERE match = 'GEOIP'`
-            ).run();
-
-            db.prepare(
-                `
-        CREATE TABLE 'accessAuditLog' (
-            'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-            'timestamp' integer NOT NULL,
-            'orgId' text NOT NULL,
-            'actorType' text,
-            'actor' text,
-            'actorId' text,
-            'resourceId' integer,
-            'ip' text,
-            'location' text,
-            'type' text NOT NULL,
-            'action' integer NOT NULL,
-            'userAgent' text,
-            'metadata' text,
-            FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+        await db.execute(
+            `UPDATE 'resourceRules' SET match = 'COUNTRY' WHERE match = 'GEOIP'`
         );
-        `
-            ).run();
 
-            db.prepare(
-                `CREATE INDEX 'idx_identityAuditLog_timestamp' ON 'accessAuditLog' ('timestamp');`
-            ).run();
-            db.prepare(
-                `CREATE INDEX 'idx_identityAuditLog_org_timestamp' ON 'accessAuditLog' ('orgId','timestamp');`
-            ).run();
-
-            db.prepare(
-                `
-        CREATE TABLE 'actionAuditLog' (
-            'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-            'timestamp' integer NOT NULL,
-            'orgId' text NOT NULL,
-            'actorType' text NOT NULL,
-            'actor' text NOT NULL,
-            'actorId' text NOT NULL,
-            'action' text NOT NULL,
-            'metadata' text,
-            FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+        await db.execute(
+            `CREATE TABLE 'accessAuditLog' (
+                'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+                'timestamp' integer NOT NULL,
+                'orgId' text NOT NULL,
+                'actorType' text,
+                'actor' text,
+                'actorId' text,
+                'resourceId' integer,
+                'ip' text,
+                'location' text,
+                'type' text NOT NULL,
+                'action' integer NOT NULL,
+                'userAgent' text,
+                'metadata' text,
+                FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+            );`
         );
-        `
-            ).run();
 
-            db.prepare(
-                `CREATE INDEX 'idx_actionAuditLog_timestamp' ON 'actionAuditLog' ('timestamp');`
-            ).run();
-            db.prepare(
-                `CREATE INDEX 'idx_actionAuditLog_org_timestamp' ON 'actionAuditLog' ('orgId','timestamp');`
-            ).run();
-
-            db.prepare(
-                `
-        CREATE TABLE 'dnsRecords' (
-            'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-            'domainId' text NOT NULL,
-            'recordType' text NOT NULL,
-            'baseDomain' text,
-            'value' text NOT NULL,
-            'verified' integer DEFAULT false NOT NULL,
-            FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE cascade
+        await db.execute(
+            `CREATE INDEX 'idx_identityAuditLog_timestamp' ON 'accessAuditLog' ('timestamp');`
         );
-        `
-            ).run();
-
-            db.prepare(
-                `
-        CREATE TABLE 'requestAuditLog' (
-            'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-            'timestamp' integer NOT NULL,
-            'orgId' text,
-            'action' integer NOT NULL,
-            'reason' integer NOT NULL,
-            'actorType' text,
-            'actor' text,
-            'actorId' text,
-            'resourceId' integer,
-            'ip' text,
-            'location' text,
-            'userAgent' text,
-            'metadata' text,
-            'headers' text,
-            'query' text,
-            'originalRequestURL' text,
-            'scheme' text,
-            'host' text,
-            'path' text,
-            'method' text,
-            'tls' integer,
-            FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+        await db.execute(
+            `CREATE INDEX 'idx_identityAuditLog_org_timestamp' ON 'accessAuditLog' ('orgId','timestamp');`
         );
-        `
-            ).run();
+
+        await db.execute(
+            `CREATE TABLE 'actionAuditLog' (
+                'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+                'timestamp' integer NOT NULL,
+                'orgId' text NOT NULL,
+                'actorType' text NOT NULL,
+                'actor' text NOT NULL,
+                'actorId' text NOT NULL,
+                'action' text NOT NULL,
+                'metadata' text,
+                FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+            );`
+        );
+
+        await db.execute(
+            `CREATE INDEX 'idx_actionAuditLog_timestamp' ON 'actionAuditLog' ('timestamp');`
+        );
+        await db.execute(
+            `CREATE INDEX 'idx_actionAuditLog_org_timestamp' ON 'actionAuditLog' ('orgId','timestamp');`
+        );
+
+        await db.execute(
+            `CREATE TABLE 'dnsRecords' (
+                'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+                'domainId' text NOT NULL,
+                'recordType' text NOT NULL,
+                'baseDomain' text,
+                'value' text NOT NULL,
+                'verified' integer DEFAULT false NOT NULL,
+                FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE cascade
+            );`
+        );
+
+        await db.execute(
+            `CREATE TABLE 'requestAuditLog' (
+                'id' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+                'timestamp' integer NOT NULL,
+                'orgId' text,
+                'action' integer NOT NULL,
+                'reason' integer NOT NULL,
+                'actorType' text,
+                'actor' text,
+                'actorId' text,
+                'resourceId' integer,
+                'ip' text,
+                'location' text,
+                'userAgent' text,
+                'metadata' text,
+                'headers' text,
+                'query' text,
+                'originalRequestURL' text,
+                'scheme' text,
+                'host' text,
+                'path' text,
+                'method' text,
+                'tls' integer,
+                FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+            );`
+        );
 
             db.prepare(
                 `
@@ -124,16 +113,15 @@ export default async function migration() {
                 'contents' text NOT NULL,
                 'message' text,
                 FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
+            );`
         );
-        `
-            ).run();
 
-            db.prepare(
-                `CREATE INDEX 'idx_requestAuditLog_timestamp' ON 'requestAuditLog' ('timestamp');`
-            ).run();
-            db.prepare(
-                `CREATE INDEX 'idx_requestAuditLog_org_timestamp' ON 'requestAuditLog' ('orgId','timestamp');`
-            ).run();
+        await db.execute(
+            `CREATE INDEX 'idx_requestAuditLog_timestamp' ON 'requestAuditLog' ('timestamp');`
+        );
+        await db.execute(
+            `CREATE INDEX 'idx_requestAuditLog_org_timestamp' ON 'requestAuditLog' ('orgId','timestamp');`
+        );
 
             db.prepare(
                 `
@@ -223,25 +211,40 @@ export default async function migration() {
                 baseDomain: string;
             }[];
 
-            for (const domain of domains) {
-                // insert two records into the dnsRecords table for each domain
-                const insert = db.prepare(
-                    `INSERT INTO 'dnsRecords' (domainId, recordType, baseDomain, value, verified) VALUES (?, 'A', ?, ?, 1)`
-                );
-                insert.run(
+        // get all of the domains
+        const result = await db.execute("SELECT domainId, baseDomain FROM domains");
+        const domains = (result.rows as unknown) as {
+            domainId: string;
+            baseDomain: string;
+        }[];
+
+        for (const domain of domains) {
+
+            // erster Record: *.domain.tld
+            await db.execute({
+                sql: `INSERT INTO dnsRecords
+                        (domainId, recordType, baseDomain, value, verified)
+                    VALUES (?, 'A', ?, ?, 1)`,
+                args: [
                     domain.domainId,
                     `*.${domain.baseDomain}`,
-                    `Server IP Address`
-                );
-                insert.run(
+                    "Server IP Address"
+                ],
+            });
+
+            // zweiter Record: domain.tld
+            await db.execute({
+                sql: `INSERT INTO dnsRecords
+                        (domainId, recordType, baseDomain, value, verified)
+                    VALUES (?, 'A', ?, ?, 1)`,
+                args: [
                     domain.domainId,
                     `${domain.baseDomain}`,
-                    `Server IP Address`
-                );
-            }
-        })();
+                    "Server IP Address"
+                ],
+            });
+        }
 
-        db.pragma("foreign_keys = ON");
 
         console.log(`Migrated database`);
     } catch (e) {

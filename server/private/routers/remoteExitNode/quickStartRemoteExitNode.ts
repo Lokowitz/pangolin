@@ -17,7 +17,7 @@ import HttpCode from "@server/types/HttpCode";
 import { remoteExitNodes } from "@server/db";
 import createHttpError from "http-errors";
 import response from "@server/lib/response";
-import { SqliteError } from "better-sqlite3";
+import { LibsqlError } from "@libsql/client";
 import moment from "moment";
 import { generateId } from "@server/auth/sessions/app";
 import { hashPassword } from "@server/auth/password";
@@ -84,7 +84,7 @@ export async function quickStartRemoteExitNode(
             status: HttpCode.OK
         });
     } catch (e) {
-        if (e instanceof SqliteError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
+        if (e instanceof LibsqlError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
             return next(
                 createHttpError(
                     HttpCode.BAD_REQUEST,

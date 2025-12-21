@@ -1,11 +1,11 @@
 #! /usr/bin/env node
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { migrate } from "drizzle-orm/libsql/migrator";
 import { db, exists } from "../db/sqlite";
 import path from "path";
 import semver from "semver";
 import { versionMigrations } from "../db/sqlite";
 import { __DIRNAME, APP_PATH, APP_VERSION } from "@server/lib/consts";
-import { SqliteError } from "better-sqlite3";
+import { LibsqlError } from "@libsql/client";
 import fs from "fs";
 import m1 from "./scriptsSqlite/1.0.0-beta1";
 import m2 from "./scriptsSqlite/1.0.0-beta2";
@@ -180,7 +180,7 @@ async function executeScripts() {
                 );
             } catch (e) {
                 if (
-                    e instanceof SqliteError &&
+                    e instanceof LibsqlError &&
                     e.code === "SQLITE_CONSTRAINT_UNIQUE"
                 ) {
                     console.error("Migration has already run! Skipping...");

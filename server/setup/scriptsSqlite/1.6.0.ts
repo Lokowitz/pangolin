@@ -1,5 +1,5 @@
 import { APP_PATH, configFilePath1, configFilePath2 } from "@server/lib/consts";
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import fs from "fs";
 import yaml from "js-yaml";
 import path from "path";
@@ -10,17 +10,14 @@ export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
     const location = path.join(APP_PATH, "db", "db.sqlite");
-    const db = new Database(location);
+    const db = createClient({ url: "file:" + location });
 
     try {
-        db.pragma("foreign_keys = OFF");
-        db.transaction(() => {
-            db.exec(`
-              UPDATE 'user' SET email = LOWER(email);
-              UPDATE 'user' SET username = LOWER(username);
-            `);
-        })(); // <-- executes the transaction immediately
-        db.pragma("foreign_keys = ON");
+        await db.execute(`
+            UPDATE 'user' SET email = LOWER(email);
+            UPDATE 'user' SET username = LOWER(username);
+        `);
+
         console.log(`Migrated database schema`);
     } catch (e) {
         console.log("Unable to make all usernames and emails lowercase");

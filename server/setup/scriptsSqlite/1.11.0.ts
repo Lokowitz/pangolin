@@ -1,5 +1,5 @@
 import { APP_PATH } from "@server/lib/consts";
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import path from "path";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { randomUUID } from "crypto";
@@ -10,7 +10,7 @@ export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
     const location = path.join(APP_PATH, "db", "db.sqlite");
-    const db = new Database(location);
+    const db = createClient({ url: "file:" + location });
 
     db.transaction(() => {
         db.prepare(
@@ -34,8 +34,7 @@ export default async function migration() {
         `
         ).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'certificates' (
             'certId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
             'domain' text NOT NULL,
@@ -53,15 +52,11 @@ export default async function migration() {
             'keyFile' text,
             FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `CREATE UNIQUE INDEX 'certificates_domain_unique' ON 'certificates' ('domain');`
-        ).run();
+        db.prepare(`CREATE UNIQUE INDEX 'certificates_domain_unique' ON 'certificates' ('domain');`).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'customers' (
             'customerId' text PRIMARY KEY NOT NULL,
             'orgId' text NOT NULL,
@@ -73,11 +68,9 @@ export default async function migration() {
             'updatedAt' integer NOT NULL,
             FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'dnsChallenges' (
             'dnsChallengeId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
             'domain' text NOT NULL,
@@ -87,32 +80,26 @@ export default async function migration() {
             'expiresAt' integer NOT NULL,
             'completed' integer DEFAULT false
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'domainNamespaces' (
             'domainNamespaceId' text PRIMARY KEY NOT NULL,
             'domainId' text NOT NULL,
             FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE set null
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'exitNodeOrgs' (
             'exitNodeId' integer NOT NULL,
             'orgId' text NOT NULL,
             FOREIGN KEY ('exitNodeId') REFERENCES 'exitNodes'('exitNodeId') ON UPDATE no action ON DELETE cascade,
             FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'loginPage' (
             'loginPageId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
             'subdomain' text,
@@ -122,33 +109,27 @@ export default async function migration() {
             FOREIGN KEY ('exitNodeId') REFERENCES 'exitNodes'('exitNodeId') ON UPDATE no action ON DELETE set null,
             FOREIGN KEY ('domainId') REFERENCES 'domains'('domainId') ON UPDATE no action ON DELETE set null
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'loginPageOrg' (
             'loginPageId' integer NOT NULL,
             'orgId' text NOT NULL,
             FOREIGN KEY ('loginPageId') REFERENCES 'loginPage'('loginPageId') ON UPDATE no action ON DELETE cascade,
             FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'remoteExitNodeSession' (
             'id' text PRIMARY KEY NOT NULL,
             'remoteExitNodeId' text NOT NULL,
             'expiresAt' integer NOT NULL,
             FOREIGN KEY ('remoteExitNodeId') REFERENCES 'remoteExitNode'('id') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'remoteExitNode' (
             'id' text PRIMARY KEY NOT NULL,
             'secretHash' text NOT NULL,
@@ -157,11 +138,9 @@ export default async function migration() {
             'exitNodeId' integer,
             FOREIGN KEY ('exitNodeId') REFERENCES 'exitNodes'('exitNodeId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'sessionTransferToken' (
             'token' text PRIMARY KEY NOT NULL,
             'sessionId' text NOT NULL,
@@ -169,11 +148,9 @@ export default async function migration() {
             'expiresAt' integer NOT NULL,
             FOREIGN KEY ('sessionId') REFERENCES 'session'('id') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'subscriptionItems' (
             'subscriptionItemId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
             'subscriptionId' text NOT NULL,
@@ -188,11 +165,9 @@ export default async function migration() {
             'name' text,
             FOREIGN KEY ('subscriptionId') REFERENCES 'subscriptions'('subscriptionId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'subscriptions' (
             'subscriptionId' text PRIMARY KEY NOT NULL,
             'customerId' text NOT NULL,
@@ -203,11 +178,9 @@ export default async function migration() {
             'billingCycleAnchor' integer,
             FOREIGN KEY ('customerId') REFERENCES 'customers'('customerId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'usage' (
             'usageId' text PRIMARY KEY NOT NULL,
             'featureId' text NOT NULL,
@@ -221,11 +194,9 @@ export default async function migration() {
             'nextRolloverAt' integer,
             FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'usageNotifications' (
             'notificationId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
             'orgId' text NOT NULL,
@@ -235,22 +206,18 @@ export default async function migration() {
             'sentAt' integer NOT NULL,
             FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'resourceHeaderAuth' (
             'headerAuthId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
             'resourceId' integer NOT NULL,
             'headerAuthHash' text NOT NULL,
             FOREIGN KEY ('resourceId') REFERENCES 'resources'('resourceId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'targetHealthCheck' (
             'targetHealthCheckId' integer PRIMARY KEY AUTOINCREMENT NOT NULL,
             'targetId' integer NOT NULL,
@@ -270,13 +237,11 @@ export default async function migration() {
             'hcHealth' text DEFAULT 'unknown',
             FOREIGN KEY ('targetId') REFERENCES 'targets'('targetId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
-        db.prepare(`DROP TABLE 'limits';`).run();
+    await db.execute(`DROP TABLE 'limits';`);
 
-        db.prepare(
-            `
+        db.prepare(`
         CREATE TABLE 'limits' (
             'limitId' text PRIMARY KEY NOT NULL,
             'featureId' text NOT NULL,
@@ -285,49 +250,43 @@ export default async function migration() {
             'description' text,
             FOREIGN KEY ('orgId') REFERENCES 'orgs'('orgId') ON UPDATE no action ON DELETE cascade
         );
-        `
-        ).run();
+        `).run();
 
         db.prepare(`ALTER TABLE 'orgs' ADD 'settings' text;`).run();
         db.prepare(`ALTER TABLE 'targets' ADD 'rewritePath' text;`).run();
         db.prepare(`ALTER TABLE 'targets' ADD 'rewritePathType' text;`).run();
-        db.prepare(
-            `ALTER TABLE 'targets' ADD 'priority' integer DEFAULT 100 NOT NULL;`
-        ).run();
+        db.prepare(`ALTER TABLE 'targets' ADD 'priority' integer DEFAULT 100 NOT NULL;`).run();
 
-        const webauthnCredentials = db
-            .prepare(
-                `SELECT credentialId, publicKey, userId, signCount, transports, name, lastUsed, dateCreated FROM 'webauthnCredentials'`
+    const webauthnCredentialsResult = await db.execute(`SELECT credentialId, publicKey, userId, signCount, transports, name, lastUsed, dateCreated FROM 'webauthnCredentials'`);
+    const webauthnCredentials = (webauthnCredentialsResult.rows as unknown) as {
+        credentialId: string;
+        publicKey: string;
+        userId: string;
+        signCount: number;
+        transports: string | null;
+        name: string | null;
+        lastUsed: string;
+        dateCreated: string;
+    }[];
+
+        db.prepare(`DELETE FROM 'webauthnCredentials';`).run(); 
+
+    for (const webauthnCredential of webauthnCredentials) {
+        const newCredentialId = isoBase64URL.fromBuffer(
+            new Uint8Array(
+                Buffer.from(webauthnCredential.credentialId, "base64")
             )
-            .all() as {
-            credentialId: string;
-            publicKey: string;
-            userId: string;
-            signCount: number;
-            transports: string | null;
-            name: string | null;
-            lastUsed: string;
-            dateCreated: string;
-        }[];
+        );
+        const newPublicKey = isoBase64URL.fromBuffer(
+            new Uint8Array(
+                Buffer.from(webauthnCredential.publicKey, "base64")
+            )
+        );
 
-        db.prepare(`DELETE FROM 'webauthnCredentials';`).run();
-
-        for (const webauthnCredential of webauthnCredentials) {
-            const newCredentialId = isoBase64URL.fromBuffer(
-                new Uint8Array(
-                    Buffer.from(webauthnCredential.credentialId, "base64")
-                )
-            );
-            const newPublicKey = isoBase64URL.fromBuffer(
-                new Uint8Array(
-                    Buffer.from(webauthnCredential.publicKey, "base64")
-                )
-            );
-
-            // Insert the updated record with converted values
-            db.prepare(
-                `INSERT INTO 'webauthnCredentials' (credentialId, publicKey, userId, signCount, transports, name, lastUsed, dateCreated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-            ).run(
+        // Insert the updated record with converted values
+        await db.execute({
+            sql: `INSERT INTO 'webauthnCredentials' (credentialId, publicKey, userId, signCount, transports, name, lastUsed, dateCreated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [
                 newCredentialId,
                 newPublicKey,
                 webauthnCredential.userId,
@@ -336,47 +295,48 @@ export default async function migration() {
                 webauthnCredential.name,
                 webauthnCredential.lastUsed,
                 webauthnCredential.dateCreated
-            );
-        }
+            ]
+        });
+    }
 
-        // 1. Add the column (nullable or with placeholder) if it doesn’t exist yet
-        db.prepare(
-            `ALTER TABLE resources ADD COLUMN resourceGuid TEXT DEFAULT 'PLACEHOLDER';`
-        ).run();
+    // 1. Add the column (nullable or with placeholder) if it doesn’t exist yet
+    await db.execute(
+        `ALTER TABLE resources ADD COLUMN resourceGuid TEXT DEFAULT 'PLACEHOLDER';`
+    );
 
         // 2. Select all rows
-        const resources = db
-            .prepare(`SELECT resourceId FROM resources`)
-            .all() as {
+        const resources = db.prepare(`SELECT resourceId FROM resources`).all() as {
             resourceId: number;
         }[];
 
-        // 3. Prefill with random UUIDs
-        const updateStmt = db.prepare(
-            `UPDATE resources SET resourceGuid = ? WHERE resourceId = ?`
-        );
+    // 3. Prefill with random UUIDs
+    const updateStmt = await db.execute(
+        `UPDATE resources SET resourceGuid = ? WHERE resourceId = ?`
+    );
 
-        for (const row of resources) {
-            updateStmt.run(randomUUID(), row.resourceId);
-        }
+    for (const row of resources) {
+        await db.execute({
+            sql: `UPDATE resources SET resourceGuid = ? WHERE resourceId = ?`,
+            args: [randomUUID(), row.resourceId]
+        });
+    }
 
-        // get all of the targets
-        const targets = db.prepare(`SELECT targetId FROM targets`).all() as {
-            targetId: number;
-        }[];
+    // get all of the targets
+    const targetsResult = await db.execute(`SELECT targetId FROM targets`);
+    const targets = (targetsResult.rows as unknown) as {
+        targetId: number;
+    }[];
 
-        const insertTargetHealthCheckStmt = db.prepare(
-            `INSERT INTO targetHealthCheck (targetId) VALUES (?)`
-        );
+    for (const target of targets) {
+        await db.execute({
+            sql: `INSERT INTO targetHealthCheck (targetId) VALUES (?)`,
+            args: [target.targetId]
+        });
+    }
 
-        for (const target of targets) {
-            insertTargetHealthCheckStmt.run(target.targetId);
-        }
-
-        db.prepare(
-            `CREATE UNIQUE INDEX resources_resourceGuid_unique ON resources ('resourceGuid');`
-        ).run();
-    })();
+    await db.execute(
+        `CREATE UNIQUE INDEX resources_resourceGuid_unique ON resources ('resourceGuid');`
+    );
 
     console.log(`${version} migration complete`);
 }

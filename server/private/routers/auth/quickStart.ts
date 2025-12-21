@@ -42,7 +42,7 @@ import { users } from "@server/db";
 import { fromError } from "zod-validation-error";
 import createHttpError from "http-errors";
 import response from "@server/lib/response";
-import { SqliteError } from "better-sqlite3";
+import { LibsqlError } from "@libsql/client";
 import { eq, and, sql } from "drizzle-orm";
 import moment from "moment";
 import { generateId } from "@server/auth/sessions/app";
@@ -490,7 +490,7 @@ export async function quickStart(
             status: HttpCode.OK
         });
     } catch (e) {
-        if (e instanceof SqliteError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
+        if (e instanceof LibsqlError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
             if (config.getRawConfig().app.log_failed_attempts) {
                 logger.info(
                     `Account already exists with that email. Email: ${email}. IP: ${req.ip}.`
