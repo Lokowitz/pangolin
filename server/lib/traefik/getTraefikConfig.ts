@@ -59,6 +59,7 @@ export async function getTraefikConfig(
             headers: resources.headers,
             proxyProtocol: resources.proxyProtocol,
             proxyProtocolVersion: resources.proxyProtocolVersion,
+
             // Target fields
             targetId: targets.targetId,
             targetEnabled: targets.enabled,
@@ -184,7 +185,6 @@ export async function getTraefikConfig(
             });
         }
 
-        // Add target with its associated site data
         resourcesMap.get(key).targets.push({
             resourceId: row.resourceId,
             targetId: row.targetId,
@@ -289,12 +289,12 @@ export async function getTraefikConfig(
                 certResolver: resolverName,
                 ...(preferWildcard
                     ? {
-                          domains: [
-                              {
-                                  main: wildCard
-                              }
-                          ]
-                      }
+                        domains: [
+                            {
+                                main: wildCard
+                            }
+                        ]
+                    }
                     : {})
             };
 
@@ -535,14 +535,14 @@ export async function getTraefikConfig(
                     })(),
                     ...(resource.stickySession
                         ? {
-                              sticky: {
-                                  cookie: {
-                                      name: "p_sticky", // TODO: make this configurable via config.yml like other cookies
-                                      secure: resource.ssl,
-                                      httpOnly: true
-                                  }
-                              }
-                          }
+                            sticky: {
+                                cookie: {
+                                    name: "p_sticky", // TODO: make this configurable via config.yml like other cookies
+                                    secure: resource.ssl,
+                                    httpOnly: true
+                                }
+                            }
+                        }
                         : {})
                 }
             };
@@ -645,18 +645,18 @@ export async function getTraefikConfig(
                     })(),
                     ...(resource.proxyProtocol && protocol == "tcp"
                         ? {
-                              serversTransport: `${ppPrefix}${resource.proxyProtocolVersion || 1}@file` // TODO: does @file here cause issues?
-                          }
+                            serversTransport: `${ppPrefix}${resource.proxyProtocolVersion || 1}@file` // TODO: does @file here cause issues?
+                        }
                         : {}),
                     ...(resource.stickySession
                         ? {
-                              sticky: {
-                                  ipStrategy: {
-                                      depth: 0,
-                                      sourcePort: true
-                                  }
-                              }
-                          }
+                            sticky: {
+                                ipStrategy: {
+                                    depth: 0,
+                                    sourcePort: true
+                                }
+                            }
+                        }
                         : {})
                 }
             };

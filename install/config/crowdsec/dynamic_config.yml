@@ -1,5 +1,9 @@
 http:
   middlewares:
+    badger:
+      plugin:
+        badger:
+          disableForwardAuth: true
     redirect-to-https:
       redirectScheme:
         scheme: https
@@ -44,7 +48,7 @@ http:
           crowdsecAppsecUnreachableBlock: true # Block on unreachable
           crowdsecAppsecBodyLimit: 10485760
           crowdsecLapiKey: "PUT_YOUR_BOUNCER_KEY_HERE_OR_IT_WILL_NOT_WORK" # CrowdSec API key which you noted down later
-          crowdsecLapiHost: crowdsec:8080 # CrowdSec  
+          crowdsecLapiHost: crowdsec:8080 # CrowdSec
           crowdsecLapiScheme: http # CrowdSec API scheme
           forwardedHeadersTrustedIPs: # Forwarded headers trusted IPs
             - "0.0.0.0/0" # All IP addresses are trusted for forwarded headers (CHANGE MADE HERE)
@@ -63,6 +67,7 @@ http:
         - web
       middlewares:
         - redirect-to-https
+        - badger
 
     # Next.js router (handles everything except API and WebSocket paths)
     next-router:
@@ -72,6 +77,7 @@ http:
         - websecure
       middlewares:
         - security-headers # Add security headers middleware
+        - badger
       tls:
         certResolver: letsencrypt
 
@@ -83,6 +89,7 @@ http:
         - websecure
       middlewares:
         - security-headers # Add security headers middleware
+        - badger
       tls:
         certResolver: letsencrypt
 
@@ -94,6 +101,7 @@ http:
         - websecure
       middlewares:
         - security-headers # Add security headers middleware
+        - badger
       tls:
         certResolver: letsencrypt
 
@@ -107,3 +115,12 @@ http:
       loadBalancer:
         servers:
           - url: "http://pangolin:3000"  # API/WebSocket server
+
+tcp:
+  serversTransports:
+    pp-transport-v1:
+      proxyProtocol:
+        version: 1
+    pp-transport-v2:
+      proxyProtocol:
+        version: 2
