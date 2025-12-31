@@ -25,7 +25,7 @@ import { createElement, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@app/components/ui/input";
-import { InfoIcon, Terminal } from "lucide-react";
+import { ChevronDown, ChevronUp, InfoIcon, Terminal } from "lucide-react";
 import { Button } from "@app/components/ui/button";
 import CopyTextBox from "@app/components/CopyTextBox";
 import CopyToClipboard from "@app/components/CopyToClipboard";
@@ -204,6 +204,7 @@ export default function Page() {
     const [createLoading, setCreateLoading] = useState(false);
     const [acceptClients, setAcceptClients] = useState(true);
     const [newtVersion, setNewtVersion] = useState("latest");
+    const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
     const [siteDefaults, setSiteDefaults] =
         useState<PickSiteDefaultsResponse | null>(null);
@@ -674,6 +675,26 @@ WantedBy=default.target`
                                 </SettingsSectionTitle>
                             </SettingsSectionHeader>
                             <SettingsSectionBody>
+                                {tunnelTypes.length > 1 && (
+                                    <>
+                                        <div className="mb-2">
+                                            <span className="text-sm font-medium">
+                                                {t("type")}
+                                            </span>
+                                        </div>
+                                        <StrategySelect
+                                            options={tunnelTypes}
+                                            defaultValue={form.getValues(
+                                                "method"
+                                            )}
+                                            onChange={(value) => {
+                                                form.setValue("method", value);
+                                            }}
+                                            cols={3}
+                                        />
+                                    </>
+                                )}
+
                                 <Form {...form}>
                                     <form
                                         onKeyDown={(e) => {
@@ -707,67 +728,72 @@ WantedBy=default.target`
                                                 </FormItem>
                                             )}
                                         />
-                                        {form.watch("method") === "newt" && (
-                                            <FormField
-                                                control={form.control}
-                                                name="clientAddress"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>
-                                                            {t("siteAddress")}
-                                                        </FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                autoComplete="off"
-                                                                value={
-                                                                    clientAddress
-                                                                }
-                                                                onChange={(
-                                                                    e
-                                                                ) => {
-                                                                    setClientAddress(
-                                                                        e.target
-                                                                            .value
-                                                                    );
-                                                                    field.onChange(
-                                                                        e.target
-                                                                            .value
-                                                                    );
-                                                                }}
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                        <FormDescription>
-                                                            {t(
-                                                                "siteAddressDescription"
-                                                            )}
-                                                        </FormDescription>
-                                                    </FormItem>
+                                        <div className="flex items-center justify-end md:col-start-2">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setShowAdvancedSettings(
+                                                        !showAdvancedSettings
+                                                    )
+                                                }
+                                                className="flex items-center gap-2"
+                                            >
+                                                {showAdvancedSettings ? (
+                                                    <ChevronUp className="h-4 w-4" />
+                                                ) : (
+                                                    <ChevronDown className="h-4 w-4" />
                                                 )}
-                                            />
-                                        )}
+                                                {t("advancedSettings")}
+                                            </Button>
+                                        </div>
+                                        {form.watch("method") === "newt" &&
+                                            showAdvancedSettings && (
+                                                <FormField
+                                                    control={form.control}
+                                                    name="clientAddress"
+                                                    render={({ field }) => (
+                                                        <FormItem className="md:col-start-1 md:col-span-2">
+                                                            <FormLabel>
+                                                                {t(
+                                                                    "siteAddress"
+                                                                )}
+                                                            </FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    autoComplete="off"
+                                                                    value={
+                                                                        clientAddress
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) => {
+                                                                        setClientAddress(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        );
+                                                                        field.onChange(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        );
+                                                                    }}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                            <FormDescription>
+                                                                {t(
+                                                                    "siteAddressDescription"
+                                                                )}
+                                                            </FormDescription>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            )}
                                     </form>
                                 </Form>
-
-                                {tunnelTypes.length > 1 && (
-                                    <>
-                                        <div className="mb-2">
-                                            <span className="text-sm font-medium">
-                                                {t("type")}
-                                            </span>
-                                        </div>
-                                        <StrategySelect
-                                            options={tunnelTypes}
-                                            defaultValue={form.getValues(
-                                                "method"
-                                            )}
-                                            onChange={(value) => {
-                                                form.setValue("method", value);
-                                            }}
-                                            cols={3}
-                                        />
-                                    </>
-                                )}
                             </SettingsSectionBody>
                         </SettingsSection>
 
@@ -819,18 +845,6 @@ WantedBy=default.target`
                                                 </InfoSectionContent>
                                             </InfoSection>
                                         </InfoSections>
-
-                                        <Alert variant="neutral" className="">
-                                            <InfoIcon className="h-4 w-4" />
-                                            <AlertTitle className="font-semibold">
-                                                {t("siteCredentialsSave")}
-                                            </AlertTitle>
-                                            <AlertDescription>
-                                                {t(
-                                                    "siteCredentialsSaveDescription"
-                                                )}
-                                            </AlertDescription>
-                                        </Alert>
 
                                         {/* <Form {...form}> */}
                                         {/*     <form */}
@@ -897,7 +911,7 @@ WantedBy=default.target`
                                                                 ? "squareOutlinePrimary"
                                                                 : "squareOutline"
                                                         }
-                                                        className={`flex-1 min-w-[120px] ${platform === os ? "bg-primary/10" : ""} shadow-none`}
+                                                        className={`flex-1 min-w-30 ${platform === os ? "bg-primary/10" : ""} shadow-none`}
                                                         onClick={() => {
                                                             setPlatform(os);
                                                         }}
@@ -928,7 +942,7 @@ WantedBy=default.target`
                                                                     ? "squareOutlinePrimary"
                                                                     : "squareOutline"
                                                             }
-                                                            className={`flex-1 min-w-[120px] ${architecture === arch ? "bg-primary/10" : ""} shadow-none`}
+                                                            className={`flex-1 min-w-30 ${architecture === arch ? "bg-primary/10" : ""} shadow-none`}
                                                             onClick={() =>
                                                                 setArchitecture(
                                                                     arch
@@ -1067,17 +1081,6 @@ WantedBy=default.target`
                                             </div>
                                         </div>
                                     </div>
-                                    <Alert variant="neutral">
-                                        <InfoIcon className="h-4 w-4" />
-                                        <AlertTitle className="font-semibold">
-                                            {t("siteCredentialsSave")}
-                                        </AlertTitle>
-                                        <AlertDescription>
-                                            {t(
-                                                "siteCredentialsSaveDescription"
-                                            )}
-                                        </AlertDescription>
-                                    </Alert>
                                 </SettingsSectionBody>
                             </SettingsSection>
                         )}

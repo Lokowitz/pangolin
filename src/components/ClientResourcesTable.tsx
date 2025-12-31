@@ -41,6 +41,9 @@ export type InternalResourceRow = {
     // destinationPort: number | null;
     alias: string | null;
     niceId: string;
+    tcpPortRangeString: string | null;
+    udpPortRangeString: string | null;
+    disableIcmp: boolean;
 };
 
 type ClientResourcesTableProps = {
@@ -96,14 +99,12 @@ export default function ClientResourcesTable({
         siteId: number
     ) => {
         try {
-            await api
-                .delete(`/org/${orgId}/site/${siteId}/resource/${resourceId}`)
-                .then(() => {
-                    startTransition(() => {
-                        router.refresh();
-                        setIsDeleteModalOpen(false);
-                    });
+            await api.delete(`/site-resource/${resourceId}`).then(() => {
+                startTransition(() => {
+                    router.refresh();
+                    setIsDeleteModalOpen(false);
                 });
+            });
         } catch (e) {
             console.error(t("resourceErrorDelete"), e);
             toast({
@@ -314,6 +315,9 @@ export default function ClientResourcesTable({
                 defaultSort={defaultSort}
                 enableColumnVisibility={true}
                 persistColumnVisibility="internal-resources"
+                columnVisibility={{
+                    niceId: false
+                }}
                 stickyLeftColumn="name"
                 stickyRightColumn="actions"
             />
@@ -324,9 +328,13 @@ export default function ClientResourcesTable({
                     setOpen={setIsEditDialogOpen}
                     resource={editingResource}
                     orgId={orgId}
+                    sites={sites}
                     onSuccess={() => {
-                        router.refresh();
-                        setEditingResource(null);
+                        // Delay refresh to allow modal to close smoothly
+                        setTimeout(() => {
+                            router.refresh();
+                            setEditingResource(null);
+                        }, 150);
                     }}
                 />
             )}
@@ -337,7 +345,10 @@ export default function ClientResourcesTable({
                 orgId={orgId}
                 sites={sites}
                 onSuccess={() => {
-                    router.refresh();
+                    // Delay refresh to allow modal to close smoothly
+                    setTimeout(() => {
+                        router.refresh();
+                    }, 150);
                 }}
             />
         </>

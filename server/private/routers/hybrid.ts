@@ -36,8 +36,11 @@ import {
     LoginPage,
     resourceHeaderAuth,
     ResourceHeaderAuth,
+    resourceHeaderAuthExtendedCompatibility,
+    ResourceHeaderAuthExtendedCompatibility,
     orgs,
-    requestAuditLog
+    requestAuditLog,
+    Org
 } from "@server/db";
 import {
     resources,
@@ -77,6 +80,7 @@ import { maxmindLookup } from "@server/db/maxmind";
 import { verifyResourceAccessToken } from "@server/auth/verifyResourceAccessToken";
 import semver from "semver";
 import { maxmindAsnLookup } from "@server/db/maxmindAsn";
+import { checkOrgAccessPolicy } from "@server/lib/checkOrgAccessPolicy";
 
 // Zod schemas for request validation
 const getResourceByDomainParamsSchema = z.strictObject({
@@ -90,6 +94,12 @@ const getUserSessionParamsSchema = z.strictObject({
 const getUserOrgRoleParamsSchema = z.strictObject({
     userId: z.string().min(1, "User ID is required"),
     orgId: z.string().min(1, "Organization ID is required")
+});
+
+const getUserOrgSessionVerifySchema = z.strictObject({
+    userId: z.string().min(1, "User ID is required"),
+    orgId: z.string().min(1, "Organization ID is required"),
+    sessionId: z.string().min(1, "Session ID is required")
 });
 
 const getRoleResourceAccessParamsSchema = z.strictObject({
@@ -175,6 +185,8 @@ export type ResourceWithAuth = {
     pincode: ResourcePincode | null;
     password: ResourcePassword | null;
     headerAuth: ResourceHeaderAuth | null;
+    headerAuthExtendedCompatibility: ResourceHeaderAuthExtendedCompatibility | null;
+    org: Org
 };
 
 export type UserSessionWithUser = {
@@ -235,7 +247,8 @@ hybridRouter.get(
                 ["newt", "local", "wireguard"], // Allow them to use all the site types
                 true, // But don't allow domain namespace resources
                 false, // Dont include login pages,
-                true // allow raw resources
+                true, // allow raw resources
+                false // dont generate maintenance page
             );
 
             return response(res, {
@@ -498,6 +511,14 @@ hybridRouter.get(
                     resourceHeaderAuth,
                     eq(resourceHeaderAuth.resourceId, resources.resourceId)
                 )
+                .leftJoin(
+                    resourceHeaderAuthExtendedCompatibility,
+                    eq(
+                        resourceHeaderAuthExtendedCompatibility.resourceId,
+                        resources.resourceId
+                    )
+                )
+                .innerJoin(orgs, eq(orgs.orgId, resources.orgId))
                 .where(eq(resources.fullDomain, domain))
                 .limit(1);
 
@@ -530,7 +551,10 @@ hybridRouter.get(
                 resource: result.resources,
                 pincode: result.resourcePincode,
                 password: result.resourcePassword,
-                headerAuth: result.resourceHeaderAuth
+                headerAuth: result.resourceHeaderAuth,
+                headerAuthExtendedCompatibility:
+                    result.resourceHeaderAuthExtendedCompatibility,
+                org: result.orgs
             };
 
             return response<ResourceWithAuth>(res, {
@@ -594,6 +618,16 @@ hybridRouter.get(
                 )
                 .limit(1);
 
+            if (!result) {
+                return response<LoginPage | null>(res, {
+                    data: null,
+                    success: true,
+                    error: false,
+                    message: "Login page not found",
+                    status: HttpCode.OK
+                });
+            }
+
             if (
                 await checkExitNodeOrg(
                     remoteExitNode.exitNodeId,
@@ -607,16 +641,6 @@ hybridRouter.get(
                         "Exit node not allowed for this organization"
                     )
                 );
-            }
-
-            if (!result) {
-                return response<LoginPage | null>(res, {
-                    data: null,
-                    success: true,
-                    error: false,
-                    message: "Login page not found",
-                    status: HttpCode.OK
-                });
             }
 
             return response<LoginPage>(res, {
@@ -796,6 +820,69 @@ hybridRouter.get(
                 message: result
                     ? "User org role retrieved successfully"
                     : "User org role not found",
+                status: HttpCode.OK
+            });
+        } catch (error) {
+            logger.error(error);
+            return next(
+                createHttpError(
+                    HttpCode.INTERNAL_SERVER_ERROR,
+                    "Failed to get user org role"
+                )
+            );
+        }
+    }
+);
+
+// Get user organization role
+hybridRouter.get(
+    "/user/:userId/org/:orgId/session/:sessionId/verify",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const parsedParams = getUserOrgSessionVerifySchema.safeParse(
+                req.params
+            );
+            if (!parsedParams.success) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        fromError(parsedParams.error).toString()
+                    )
+                );
+            }
+
+            const { userId, orgId, sessionId } = parsedParams.data;
+            const remoteExitNode = req.remoteExitNode;
+
+            if (!remoteExitNode || !remoteExitNode.exitNodeId) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        "Remote exit node not found"
+                    )
+                );
+            }
+
+            if (await checkExitNodeOrg(remoteExitNode.exitNodeId, orgId)) {
+                return next(
+                    createHttpError(
+                        HttpCode.UNAUTHORIZED,
+                        "User is not authorized to access this organization"
+                    )
+                );
+            }
+
+            const accessPolicy = await checkOrgAccessPolicy({
+                orgId,
+                userId,
+                sessionId
+            });
+
+            return response(res, {
+                data: accessPolicy,
+                success: true,
+                error: false,
+                message: "User org access policy retrieved successfully",
                 status: HttpCode.OK
             });
         } catch (error) {

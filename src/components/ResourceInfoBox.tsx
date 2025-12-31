@@ -41,6 +41,12 @@ export default function ResourceInfoBox({}: ResourceInfoBoxType) {
                     {resource.http ? (
                         <>
                             <InfoSection>
+                                <InfoSectionTitle>URL</InfoSectionTitle>
+                                <InfoSectionContent>
+                                    <CopyToClipboard text={fullUrl} isLink={true} />
+                                </InfoSectionContent>
+                            </InfoSection>
+                            <InfoSection>
                                 <InfoSectionTitle>
                                     {t("authentication")}
                                 </InfoSectionTitle>
@@ -60,15 +66,6 @@ export default function ResourceInfoBox({}: ResourceInfoBoxType) {
                                             <span>{t("notProtected")}</span>
                                         </div>
                                     )}
-                                </InfoSectionContent>
-                            </InfoSection>
-                            <InfoSection>
-                                <InfoSectionTitle>URL</InfoSectionTitle>
-                                <InfoSectionContent>
-                                    <CopyToClipboard
-                                        text={fullUrl}
-                                        isLink={true}
-                                    />
                                 </InfoSectionContent>
                             </InfoSection>
                             {/* {isEnabled && (

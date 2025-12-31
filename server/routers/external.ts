@@ -48,7 +48,6 @@ import createHttpError from "http-errors";
 import { build } from "@server/build";
 import { createStore } from "#dynamic/lib/rateLimitStore";
 import { logActionAudit } from "#dynamic/middlewares";
-import { log } from "console";
 
 // Root routes
 export const unauthenticated = Router();
@@ -239,9 +238,8 @@ authenticated.get(
 
 // Site Resource endpoints
 authenticated.put(
-    "/org/:orgId/site/:siteId/resource",
+    "/org/:orgId/site-resource",
     verifyOrgAccess,
-    verifySiteAccess,
     verifyUserHasAction(ActionsEnum.createSiteResource),
     logActionAudit(ActionsEnum.createSiteResource),
     siteResource.createSiteResource
@@ -263,18 +261,14 @@ authenticated.get(
 );
 
 authenticated.get(
-    "/org/:orgId/site/:siteId/resource/:siteResourceId",
-    verifyOrgAccess,
-    verifySiteAccess,
+    "/site-resource/:siteResourceId",
     verifySiteResourceAccess,
     verifyUserHasAction(ActionsEnum.getSiteResource),
     siteResource.getSiteResource
 );
 
 authenticated.post(
-    "/org/:orgId/site/:siteId/resource/:siteResourceId",
-    verifyOrgAccess,
-    verifySiteAccess,
+    "/site-resource/:siteResourceId",
     verifySiteResourceAccess,
     verifyUserHasAction(ActionsEnum.updateSiteResource),
     logActionAudit(ActionsEnum.updateSiteResource),
@@ -282,9 +276,7 @@ authenticated.post(
 );
 
 authenticated.delete(
-    "/org/:orgId/site/:siteId/resource/:siteResourceId",
-    verifyOrgAccess,
-    verifySiteAccess,
+    "/site-resource/:siteResourceId",
     verifySiteResourceAccess,
     verifyUserHasAction(ActionsEnum.deleteSiteResource),
     logActionAudit(ActionsEnum.deleteSiteResource),

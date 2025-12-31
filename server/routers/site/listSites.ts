@@ -1,5 +1,6 @@
 import { db, exitNodes, newts } from "@server/db";
 import { orgs, roleSites, sites, userSites } from "@server/db";
+import { remoteExitNodes } from "@server/db";
 import logger from "@server/logger";
 import HttpCode from "@server/types/HttpCode";
 import response from "@server/lib/response";
@@ -38,12 +39,12 @@ async function getLatestNewtVersion(): Promise<string | null> {
             return null;
         }
 
-        const tags = await response.json();
+        let tags = await response.json();
         if (!Array.isArray(tags) || tags.length === 0) {
             logger.warn("No tags found for Newt repository");
             return null;
         }
-
+        tags = tags.filter((version) => !version.name.includes("rc"));
         const latestVersion = tags[0].name;
 
         cache.set("latestNewtVersion", latestVersion);
@@ -104,12 +105,17 @@ function querySites(orgId: string, accessibleSiteIds: number[]) {
             newtVersion: newts.version,
             exitNodeId: sites.exitNodeId,
             exitNodeName: exitNodes.name,
-            exitNodeEndpoint: exitNodes.endpoint
+            exitNodeEndpoint: exitNodes.endpoint,
+            remoteExitNodeId: remoteExitNodes.remoteExitNodeId
         })
         .from(sites)
         .leftJoin(orgs, eq(sites.orgId, orgs.orgId))
         .leftJoin(newts, eq(newts.siteId, sites.siteId))
         .leftJoin(exitNodes, eq(exitNodes.exitNodeId, sites.exitNodeId))
+        .leftJoin(
+            remoteExitNodes,
+            eq(remoteExitNodes.exitNodeId, sites.exitNodeId)
+        )
         .where(
             and(
                 inArray(sites.siteId, accessibleSiteIds),

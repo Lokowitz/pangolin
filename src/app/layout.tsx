@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Geist, Inter, Manrope, Open_Sans } from "next/font/google";
 import { ThemeProvider } from "@app/providers/ThemeProvider";
 import EnvProvider from "@app/providers/EnvProvider";
 import { pullEnv } from "@app/lib/pullEnv";
@@ -22,6 +22,7 @@ import { TopLoader } from "@app/components/Toploader";
 import Script from "next/script";
 import { TanstackQueryProvider } from "@app/components/TanstackQueryProvider";
 import { TailwindIndicator } from "@app/components/TailwindIndicator";
+import { ViewportHeightFix } from "@app/components/ViewportHeightFix";
 
 export const metadata: Metadata = {
     title: `Dashboard - ${process.env.BRANDING_APP_NAME || "Pangolin"}`,
@@ -30,7 +31,9 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const font = Inter({ subsets: ["latin"] });
+const font = Inter({
+    subsets: ["latin"]
+});
 
 export default async function RootLayout({
     children
@@ -75,7 +78,7 @@ export default async function RootLayout({
 
     return (
         <html suppressHydrationWarning lang={locale}>
-            <body className={`${font.className} h-screen overflow-hidden`}>
+            <body className={`${font.className} h-screen-safe overflow-hidden`}>
                 <TopLoader />
                 {build === "saas" && (
                     <Script
@@ -84,6 +87,7 @@ export default async function RootLayout({
                         strategy="afterInteractive"
                     />
                 )}
+                <ViewportHeightFix />
                 <NextIntlClientProvider>
                     <ThemeProvider
                         attribute="class"

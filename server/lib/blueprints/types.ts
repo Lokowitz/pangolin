@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { portRangeStringSchema } from "@server/lib/ip";
+import { MaintenanceSchema } from "#dynamic/lib/blueprints/MaintenanceSchema";
 
 export const SiteSchema = z.object({
     name: z.string().min(1).max(100),
@@ -55,7 +57,8 @@ export const AuthSchema = z.object({
     "basic-auth": z
         .object({
             user: z.string().min(1),
-            password: z.string().min(1)
+            password: z.string().min(1),
+            extendedCompatibility: z.boolean().default(true)
         })
         .optional(),
     "sso-enabled": z.boolean().optional().default(false),
@@ -108,32 +111,30 @@ export const RuleSchema = z
     .refine(
         (rule) => {
             if (rule.match === "country") {
-                // Check if it's a valid 2-letter country code
-                return /^[A-Z]{2}$/.test(rule.value);
+                // Check if it's a valid 2-letter country code or "ALL"
+                return /^[A-Z]{2}$/.test(rule.value) || rule.value === "ALL";
             }
             return true;
         },
         {
             path: ["value"],
             message:
-                "Value must be a 2-letter country code when match is 'country'"
+                "Value must be a 2-letter country code or 'ALL' when match is 'country'"
         }
     )
     .refine(
         (rule) => {
             if (rule.match === "asn") {
-                // Check if it's either AS<number> format or just a number
+                // Check if it's either AS<number> format or "ALL"
                 const asNumberPattern = /^AS\d+$/i;
-                const isASFormat = asNumberPattern.test(rule.value);
-                const isNumeric = /^\d+$/.test(rule.value);
-                return isASFormat || isNumeric;
+                return asNumberPattern.test(rule.value) || rule.value === "ALL";
             }
             return true;
         },
         {
             path: ["value"],
             message:
-                "Value must be either 'AS<number>' format or a number when match is 'asn'"
+                "Value must be 'AS<number>' format or 'ALL' when match is 'asn'"
         }
     );
 
@@ -156,7 +157,8 @@ export const ResourceSchema = z
         "host-header": z.string().optional(),
         "tls-server-name": z.string().optional(),
         headers: z.array(HeaderSchema).optional(),
-        rules: z.array(RuleSchema).optional()
+        rules: z.array(RuleSchema).optional(),
+        maintenance: MaintenanceSchema.optional()
     })
     .refine(
         (resource) => {
@@ -282,6 +284,9 @@ export const ClientResourceSchema = z
         // destinationPort: z.int().positive().optional(),
         destination: z.string().min(1),
         // enabled: z.boolean().default(true),
+        "tcp-ports": portRangeStringSchema.optional().default("*"),
+        "udp-ports": portRangeStringSchema.optional().default("*"),
+        "disable-icmp": z.boolean().optional().default(false),
         alias: z
             .string()
             .regex(
