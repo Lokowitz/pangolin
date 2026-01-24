@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { db } from "@server/db";
+import { db, type Role } from "@server/db";
 import { roles } from "@server/db";
 import { eq } from "drizzle-orm";
 import response from "@server/lib/response";
@@ -8,6 +8,8 @@ import HttpCode from "@server/types/HttpCode";
 import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
+import { isLicensedOrSubscribed } from "#dynamic/lib/isLicencedOrSubscribed";
+import { OpenAPITags, registry } from "@server/openApi";
 
 const updateRoleParamsSchema = z.strictObject({
     roleId: z.string().transform(Number).pipe(z.int().positive())
@@ -16,11 +18,34 @@ const updateRoleParamsSchema = z.strictObject({
 const updateRoleBodySchema = z
     .strictObject({
         name: z.string().min(1).max(255).optional(),
-        description: z.string().optional()
+        description: z.string().optional(),
+        requireDeviceApproval: z.boolean().optional()
     })
     .refine((data) => Object.keys(data).length > 0, {
         error: "At least one field must be provided for update"
     });
+
+export type UpdateRoleBody = z.infer<typeof updateRoleBodySchema>;
+
+export type UpdateRoleResponse = Role;
+
+registry.registerPath({
+    method: "post",
+    path: "/role/{roleId}",
+    description: "Update a role.",
+    tags: [OpenAPITags.Role],
+    request: {
+        params: updateRoleParamsSchema,
+        body: {
+            content: {
+                "application/json": {
+                    schema: updateRoleBodySchema
+                }
+            }
+        }
+    },
+    responses: {}
+});
 
 export async function updateRole(
     req: Request,
@@ -73,6 +98,21 @@ export async function updateRole(
                     `Cannot update a Admin role`
                 )
             );
+        }
+
+        const orgId = role[0].orgId;
+        if (!orgId) {
+            return next(
+                createHttpError(
+                    HttpCode.BAD_REQUEST,
+                    "Role does not have an organization ID"
+                )
+            );
+        }
+
+        const isLicensed = await isLicensedOrSubscribed(orgId);
+        if (!isLicensed) {
+            updateData.requireDeviceApproval = undefined;
         }
 
         const updatedRole = await db

@@ -5,7 +5,8 @@ import {
     roleClients,
     sites,
     userClients,
-    clientSitesAssociationsCache
+    clientSitesAssociationsCache,
+    currentFingerprint
 } from "@server/db";
 import logger from "@server/logger";
 import HttpCode from "@server/types/HttpCode";
@@ -27,6 +28,7 @@ import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 import NodeCache from "node-cache";
 import semver from "semver";
+import { getUserDeviceName } from "@server/db/names";
 
 const olmVersionCache = new NodeCache({ stdTTL: 3600 });
 
@@ -136,12 +138,25 @@ function queryClients(
             username: users.username,
             userEmail: users.email,
             niceId: clients.niceId,
-            agent: olms.agent
+            agent: olms.agent,
+            approvalState: clients.approvalState,
+            olmArchived: olms.archived,
+            archived: clients.archived,
+            blocked: clients.blocked,
+            deviceModel: currentFingerprint.deviceModel,
+            fingerprintPlatform: currentFingerprint.platform,
+            fingerprintOsVersion: currentFingerprint.osVersion,
+            fingerprintKernelVersion: currentFingerprint.kernelVersion,
+            fingerprintArch: currentFingerprint.arch,
+            fingerprintSerialNumber: currentFingerprint.serialNumber,
+            fingerprintUsername: currentFingerprint.username,
+            fingerprintHostname: currentFingerprint.hostname
         })
         .from(clients)
         .leftJoin(orgs, eq(clients.orgId, orgs.orgId))
         .leftJoin(olms, eq(clients.clientId, olms.clientId))
         .leftJoin(users, eq(clients.userId, users.userId))
+        .leftJoin(currentFingerprint, eq(olms.olmId, currentFingerprint.olmId))
         .where(and(...conditions));
 }
 
@@ -160,21 +175,19 @@ async function getSiteAssociations(clientIds: number[]) {
         .where(inArray(clientSitesAssociationsCache.clientId, clientIds));
 }
 
-type OlmWithUpdateAvailable = Awaited<ReturnType<typeof queryClients>>[0] & {
+type ClientWithSites = Awaited<ReturnType<typeof queryClients>>[0] & {
+    sites: Array<{
+        siteId: number;
+        siteName: string | null;
+        siteNiceId: string | null;
+    }>;
     olmUpdateAvailable?: boolean;
 };
 
+type OlmWithUpdateAvailable = ClientWithSites;
+
 export type ListClientsResponse = {
-    clients: Array<
-        Awaited<ReturnType<typeof queryClients>>[0] & {
-            sites: Array<{
-                siteId: number;
-                siteName: string | null;
-                siteNiceId: string | null;
-            }>;
-            olmUpdateAvailable?: boolean;
-        }
-    >;
+    clients: Array<ClientWithSites>;
     pagination: { total: number; limit: number; offset: number };
 };
 
@@ -304,11 +317,16 @@ export async function listClients(
             >
         );
 
-        // Merge clients with their site associations
-        const clientsWithSites = clientsList.map((client) => ({
-            ...client,
-            sites: sitesByClient[client.clientId] || []
-        }));
+        // Merge clients with their site associations and replace name with device name
+        const clientsWithSites = clientsList.map((client) => {
+            const model = client.deviceModel || null;
+            const newName = getUserDeviceName(model, client.name);
+            return {
+                ...client,
+                name: newName,
+                sites: sitesByClient[client.clientId] || []
+            };
+        });
 
         const latestOlVersionPromise = getLatestOlmVersion();
 
@@ -347,7 +365,7 @@ export async function listClients(
 
         return response<ListClientsResponse>(res, {
             data: {
-                clients: clientsWithSites,
+                clients: olmsWithUpdates,
                 pagination: {
                     total: totalCount,
                     limit,

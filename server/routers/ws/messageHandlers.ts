@@ -5,7 +5,8 @@ import {
     handleDockerStatusMessage,
     handleDockerContainersMessage,
     handleNewtPingRequestMessage,
-    handleApplyBlueprintMessage
+    handleApplyBlueprintMessage,
+    handleNewtPingMessage
 } from "../newt";
 import {
     handleOlmRegisterMessage,
@@ -13,7 +14,8 @@ import {
     handleOlmPingMessage,
     startOlmOfflineChecker,
     handleOlmServerPeerAddMessage,
-    handleOlmUnRelayMessage
+    handleOlmUnRelayMessage,
+    handleOlmDisconnecingMessage
 } from "../olm";
 import { handleHealthcheckStatusMessage } from "../target";
 import { MessageHandler } from "./types";
@@ -24,6 +26,8 @@ export const messageHandlers: Record<string, MessageHandler> = {
     "olm/wg/relay": handleOlmRelayMessage,
     "olm/wg/unrelay": handleOlmUnRelayMessage,
     "olm/ping": handleOlmPingMessage,
+    "olm/disconnecting": handleOlmDisconnecingMessage,
+    "newt/ping": handleNewtPingMessage,
     "newt/wg/register": handleNewtRegisterMessage,
     "newt/wg/get-config": handleGetConfigMessage,
     "newt/receive-bandwidth": handleReceiveBandwidthMessage,

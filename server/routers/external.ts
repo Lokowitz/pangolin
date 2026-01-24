@@ -18,6 +18,7 @@ import * as apiKeys from "./apiKeys";
 import * as logs from "./auditLogs";
 import * as newt from "./newt";
 import * as olm from "./olm";
+import * as serverInfo from "./serverInfo";
 import HttpCode from "@server/types/HttpCode";
 import {
     verifyAccessTokenAccess,
@@ -172,6 +173,38 @@ authenticated.delete(
     verifyUserHasAction(ActionsEnum.deleteClient),
     logActionAudit(ActionsEnum.deleteClient),
     client.deleteClient
+);
+
+authenticated.post(
+    "/client/:clientId/archive",
+    verifyClientAccess,
+    verifyUserHasAction(ActionsEnum.archiveClient),
+    logActionAudit(ActionsEnum.archiveClient),
+    client.archiveClient
+);
+
+authenticated.post(
+    "/client/:clientId/unarchive",
+    verifyClientAccess,
+    verifyUserHasAction(ActionsEnum.unarchiveClient),
+    logActionAudit(ActionsEnum.unarchiveClient),
+    client.unarchiveClient
+);
+
+authenticated.post(
+    "/client/:clientId/block",
+    verifyClientAccess,
+    verifyUserHasAction(ActionsEnum.blockClient),
+    logActionAudit(ActionsEnum.blockClient),
+    client.blockClient
+);
+
+authenticated.post(
+    "/client/:clientId/unblock",
+    verifyClientAccess,
+    verifyUserHasAction(ActionsEnum.unblockClient),
+    logActionAudit(ActionsEnum.unblockClient),
+    client.unblockClient
 );
 
 authenticated.post(
@@ -554,6 +587,14 @@ authenticated.get(
     verifyUserHasAction(ActionsEnum.listRoles),
     role.listRoles
 );
+
+authenticated.post(
+    "/role/:roleId",
+    verifyRoleAccess,
+    verifyUserHasAction(ActionsEnum.updateRole),
+    logActionAudit(ActionsEnum.updateRole),
+    role.updateRole
+);
 // authenticated.get(
 //     "/role/:roleId",
 //     verifyRoleAccess,
@@ -671,6 +712,8 @@ authenticated.get(
 );
 
 authenticated.get(`/org/:orgId/overview`, verifyOrgAccess, org.getOrgOverview);
+
+authenticated.get(`/server-info`, serverInfo.getServerInfo);
 
 authenticated.post(
     `/supporter-key/validate`,
@@ -808,11 +851,18 @@ authenticated.put("/user/:userId/olm", verifyIsLoggedInUser, olm.createUserOlm);
 
 authenticated.get("/user/:userId/olms", verifyIsLoggedInUser, olm.listUserOlms);
 
-authenticated.delete(
-    "/user/:userId/olm/:olmId",
+authenticated.post(
+    "/user/:userId/olm/:olmId/archive",
     verifyIsLoggedInUser,
     verifyOlmAccess,
-    olm.deleteUserOlm
+    olm.archiveUserOlm
+);
+
+authenticated.post(
+    "/user/:userId/olm/:olmId/unarchive",
+    verifyIsLoggedInUser,
+    verifyOlmAccess,
+    olm.unarchiveUserOlm
 );
 
 authenticated.get(
@@ -820,6 +870,12 @@ authenticated.get(
     verifyIsLoggedInUser,
     verifyOlmAccess,
     olm.getUserOlm
+);
+
+authenticated.post(
+    "/user/:userId/olm/recover",
+    verifyIsLoggedInUser,
+    olm.recoverOlmWithFingerprint
 );
 
 authenticated.put(
@@ -1068,6 +1124,21 @@ authRouter.post(
     auth.login
 );
 authRouter.post("/logout", auth.logout);
+authRouter.post(
+    "/lookup-user",
+    rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 15,
+        keyGenerator: (req) =>
+            `lookupUser:${req.body.identifier || ipKeyGenerator(req.ip || "")}`,
+        handler: (req, res, next) => {
+            const message = `You can only lookup users ${15} times every ${15} minutes. Please try again later.`;
+            return next(createHttpError(HttpCode.TOO_MANY_REQUESTS, message));
+        },
+        store: createStore()
+    }),
+    auth.lookupUser
+);
 authRouter.post(
     "/newt/get-token",
     rateLimit({

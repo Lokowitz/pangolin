@@ -28,13 +28,36 @@ import { eq, InferInsertModel } from "drizzle-orm";
 import { getOrgTierData } from "#private/lib/billing";
 import { TierId } from "@server/lib/billing/tiers";
 import { build } from "@server/build";
+import config from "@server/private/lib/config";
 
 const paramsSchema = z.strictObject({
     orgId: z.string()
 });
 
 const bodySchema = z.strictObject({
-    logoUrl: z.url(),
+    logoUrl: z
+        .union([
+            z.string().length(0),
+            z.url().refine(
+                async (url) => {
+                    try {
+                        const response = await fetch(url);
+                        return (
+                            response.status === 200 &&
+                            (
+                                response.headers.get("content-type") ?? ""
+                            ).startsWith("image/")
+                        );
+                    } catch (error) {
+                        return false;
+                    }
+                },
+                {
+                    error: "Invalid logo URL, must be a valid image URL"
+                }
+            )
+        ])
+        .optional(),
     logoWidth: z.coerce.number<number>().min(1),
     logoHeight: z.coerce.number<number>().min(1),
     resourceTitle: z.string(),
@@ -94,8 +117,14 @@ export async function upsertLoginPageBranding(
             typeof loginPageBranding
         >;
 
-        if (build !== "saas") {
-            // org branding settings are only considered in the saas build
+        if ((updateData.logoUrl ?? "").trim().length === 0) {
+            updateData.logoUrl = undefined;
+        }
+
+        if (
+            build !== "saas" &&
+            !config.getRawPrivateConfig().flags.use_org_only_idp
+        ) {
             const { orgTitle, orgSubtitle, ...rest } = updateData;
             updateData = rest;
         }

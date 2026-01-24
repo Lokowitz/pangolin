@@ -24,6 +24,7 @@ import * as generateLicense from "./generatedLicense";
 import * as logs from "#private/routers/auditLogs";
 import * as misc from "#private/routers/misc";
 import * as reKey from "#private/routers/re-key";
+import * as approval from "#private/routers/approvals";
 
 import {
     verifyOrgAccess,
@@ -312,6 +313,31 @@ authenticated.get(
 );
 
 authenticated.get(
+    "/org/:orgId/approvals",
+    verifyValidLicense,
+    verifyOrgAccess,
+    verifyUserHasAction(ActionsEnum.listApprovals),
+    logActionAudit(ActionsEnum.listApprovals),
+    approval.listApprovals
+);
+
+authenticated.get(
+    "/org/:orgId/approvals/count",
+    verifyOrgAccess,
+    verifyUserHasAction(ActionsEnum.listApprovals),
+    approval.countApprovals
+);
+
+authenticated.put(
+    "/org/:orgId/approvals/:approvalId",
+    verifyValidLicense,
+    verifyOrgAccess,
+    verifyUserHasAction(ActionsEnum.updateApprovals),
+    logActionAudit(ActionsEnum.updateApprovals),
+    approval.processPendingApproval
+);
+
+authenticated.get(
     "/org/:orgId/login-page-branding",
     verifyValidLicense,
     verifyOrgAccess,
@@ -436,18 +462,18 @@ authenticated.get(
 
 authenticated.post(
     "/re-key/:clientId/regenerate-client-secret",
+    verifyClientAccess, // this is first to set the org id
     verifyValidLicense,
     verifyValidSubscription,
-    verifyClientAccess,
     verifyUserHasAction(ActionsEnum.reGenerateSecret),
     reKey.reGenerateClientSecret
 );
 
 authenticated.post(
     "/re-key/:siteId/regenerate-site-secret",
+    verifySiteAccess, // this is first to set the org id
     verifyValidLicense,
     verifyValidSubscription,
-    verifySiteAccess,
     verifyUserHasAction(ActionsEnum.reGenerateSecret),
     reKey.reGenerateSiteSecret
 );

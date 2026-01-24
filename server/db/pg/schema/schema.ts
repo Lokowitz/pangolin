@@ -365,7 +365,8 @@ export const roles = pgTable("roles", {
         .notNull(),
     isAdmin: boolean("isAdmin"),
     name: varchar("name").notNull(),
-    description: varchar("description")
+    description: varchar("description"),
+    requireDeviceApproval: boolean("requireDeviceApproval").default(false)
 });
 
 export const roleActions = pgTable("roleActions", {
@@ -591,7 +592,8 @@ export const idp = pgTable("idp", {
     type: varchar("type").notNull(),
     defaultRoleMapping: varchar("defaultRoleMapping"),
     defaultOrgMapping: varchar("defaultOrgMapping"),
-    autoProvision: boolean("autoProvision").notNull().default(false)
+    autoProvision: boolean("autoProvision").notNull().default(false),
+    tags: text("tags")
 });
 
 export const idpOidcConfig = pgTable("idpOidcConfig", {
@@ -688,7 +690,12 @@ export const clients = pgTable("clients", {
     online: boolean("online").notNull().default(false),
     // endpoint: varchar("endpoint"),
     lastHolePunch: integer("lastHolePunch"),
-    maxConnections: integer("maxConnections")
+    maxConnections: integer("maxConnections"),
+    archived: boolean("archived").notNull().default(false),
+    blocked: boolean("blocked").notNull().default(false),
+    approvalState: varchar("approvalState").$type<
+        "pending" | "approved" | "denied"
+    >()
 });
 
 export const clientSitesAssociationsCache = pgTable(
@@ -712,6 +719,16 @@ export const clientSiteResourcesAssociationsCache = pgTable(
     }
 );
 
+export const clientPostureSnapshots = pgTable("clientPostureSnapshots", {
+    snapshotId: serial("snapshotId").primaryKey(),
+
+    clientId: integer("clientId").references(() => clients.clientId, {
+        onDelete: "cascade"
+    }),
+
+    collectedAt: integer("collectedAt").notNull()
+});
+
 export const olms = pgTable("olms", {
     olmId: varchar("id").primaryKey(),
     secretHash: varchar("secretHash").notNull(),
@@ -726,7 +743,118 @@ export const olms = pgTable("olms", {
     userId: text("userId").references(() => users.userId, {
         // optionally tied to a user and in this case delete when the user deletes
         onDelete: "cascade"
-    })
+    }),
+    archived: boolean("archived").notNull().default(false)
+});
+
+export const currentFingerprint = pgTable("currentFingerprint", {
+    fingerprintId: serial("id").primaryKey(),
+
+    olmId: text("olmId")
+        .references(() => olms.olmId, { onDelete: "cascade" })
+        .notNull(),
+
+    firstSeen: integer("firstSeen").notNull(),
+    lastSeen: integer("lastSeen").notNull(),
+    lastCollectedAt: integer("lastCollectedAt").notNull(),
+
+    username: text("username"),
+    hostname: text("hostname"),
+    platform: text("platform"),
+    osVersion: text("osVersion"),
+    kernelVersion: text("kernelVersion"),
+    arch: text("arch"),
+    deviceModel: text("deviceModel"),
+    serialNumber: text("serialNumber"),
+    platformFingerprint: varchar("platformFingerprint"),
+
+    // Platform-agnostic checks
+
+    biometricsEnabled: boolean("biometricsEnabled").notNull().default(false),
+    diskEncrypted: boolean("diskEncrypted").notNull().default(false),
+    firewallEnabled: boolean("firewallEnabled").notNull().default(false),
+    autoUpdatesEnabled: boolean("autoUpdatesEnabled").notNull().default(false),
+    tpmAvailable: boolean("tpmAvailable").notNull().default(false),
+
+    // Windows-specific posture check information
+
+    windowsAntivirusEnabled: boolean("windowsAntivirusEnabled")
+        .notNull()
+        .default(false),
+
+    // macOS-specific posture check information
+
+    macosSipEnabled: boolean("macosSipEnabled").notNull().default(false),
+    macosGatekeeperEnabled: boolean("macosGatekeeperEnabled")
+        .notNull()
+        .default(false),
+    macosFirewallStealthMode: boolean("macosFirewallStealthMode")
+        .notNull()
+        .default(false),
+
+    // Linux-specific posture check information
+
+    linuxAppArmorEnabled: boolean("linuxAppArmorEnabled")
+        .notNull()
+        .default(false),
+    linuxSELinuxEnabled: boolean("linuxSELinuxEnabled").notNull().default(false)
+});
+
+export const fingerprintSnapshots = pgTable("fingerprintSnapshots", {
+    snapshotId: serial("id").primaryKey(),
+
+    fingerprintId: integer("fingerprintId").references(
+        () => currentFingerprint.fingerprintId,
+        {
+            onDelete: "set null"
+        }
+    ),
+
+    username: text("username"),
+    hostname: text("hostname"),
+    platform: text("platform"),
+    osVersion: text("osVersion"),
+    kernelVersion: text("kernelVersion"),
+    arch: text("arch"),
+    deviceModel: text("deviceModel"),
+    serialNumber: text("serialNumber"),
+    platformFingerprint: varchar("platformFingerprint"),
+
+    // Platform-agnostic checks
+
+    biometricsEnabled: boolean("biometricsEnabled").notNull().default(false),
+    diskEncrypted: boolean("diskEncrypted").notNull().default(false),
+    firewallEnabled: boolean("firewallEnabled").notNull().default(false),
+    autoUpdatesEnabled: boolean("autoUpdatesEnabled").notNull().default(false),
+    tpmAvailable: boolean("tpmAvailable").notNull().default(false),
+
+    // Windows-specific posture check information
+
+    windowsAntivirusEnabled: boolean("windowsAntivirusEnabled")
+        .notNull()
+        .default(false),
+
+    // macOS-specific posture check information
+
+    macosSipEnabled: boolean("macosSipEnabled").notNull().default(false),
+    macosGatekeeperEnabled: boolean("macosGatekeeperEnabled")
+        .notNull()
+        .default(false),
+    macosFirewallStealthMode: boolean("macosFirewallStealthMode")
+        .notNull()
+        .default(false),
+
+    // Linux-specific posture check information
+
+    linuxAppArmorEnabled: boolean("linuxAppArmorEnabled")
+        .notNull()
+        .default(false),
+    linuxSELinuxEnabled: boolean("linuxSELinuxEnabled")
+        .notNull()
+        .default(false),
+
+    hash: text("hash").notNull(),
+    collectedAt: integer("collectedAt").notNull()
 });
 
 export const olmSessions = pgTable("clientSession", {

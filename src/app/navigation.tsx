@@ -1,27 +1,28 @@
 import { SidebarNavItem } from "@app/components/SidebarNav";
+import { Env } from "@app/lib/types/env";
 import { build } from "@server/build";
 import {
-    Settings,
-    Users,
-    Link as LinkIcon,
-    Waypoints,
+    ChartLine,
     Combine,
+    CreditCard,
     Fingerprint,
+    Globe,
+    GlobeLock,
     KeyRound,
+    Laptop,
+    Link as LinkIcon,
+    Logs, // Added from 'dev' branch
+    MonitorUp,
+    ReceiptText,
+    ScanEye, // Added from 'dev' branch
+    Server,
+    Settings,
+    SquareMousePointer,
     TicketCheck,
     User,
-    Globe, // Added from 'dev' branch
-    MonitorUp, // Added from 'dev' branch
-    Server,
-    ReceiptText,
-    CreditCard,
-    Logs,
-    SquareMousePointer,
-    ScanEye,
-    GlobeLock,
-    Smartphone,
-    Laptop,
-    ChartLine
+    UserCog,
+    Users,
+    Waypoints
 } from "lucide-react";
 
 export type SidebarNavSection = {
@@ -39,7 +40,7 @@ export const orgLangingNavItems: SidebarNavItem[] = [
     }
 ];
 
-export const orgNavSections = (): SidebarNavSection[] => [
+export const orgNavSections = (env?: Env): SidebarNavSection[] => [
     {
         heading: "sidebarGeneral",
         items: [
@@ -60,15 +61,13 @@ export const orgNavSections = (): SidebarNavSection[] => [
                     {
                         title: "sidebarClientResources",
                         href: "/{orgId}/settings/resources/client",
-                        icon: <GlobeLock className="size-4 flex-none" />,
-                        isBeta: true
+                        icon: <GlobeLock className="size-4 flex-none" />
                     }
                 ]
             },
             {
                 title: "sidebarClients",
                 icon: <MonitorUp className="size-4 flex-none" />,
-                isBeta: true,
                 items: [
                     {
                         href: "/{orgId}/settings/clients/user",
@@ -92,8 +91,7 @@ export const orgNavSections = (): SidebarNavSection[] => [
                       {
                           title: "sidebarRemoteExitNodes",
                           href: "/{orgId}/settings/remote-exit-nodes",
-                          icon: <Server className="size-4 flex-none" />,
-                          showEE: true
+                          icon: <Server className="size-4 flex-none" />
                       }
                   ]
                 : [])
@@ -123,13 +121,21 @@ export const orgNavSections = (): SidebarNavSection[] => [
                 href: "/{orgId}/settings/access/roles",
                 icon: <Users className="size-4 flex-none" />
             },
-            ...(build == "saas"
+            ...(build === "saas" || env?.flags.useOrgOnlyIdp
                 ? [
                       {
                           title: "sidebarIdentityProviders",
                           href: "/{orgId}/settings/idp",
-                          icon: <Fingerprint className="size-4 flex-none" />,
-                          showEE: true
+                          icon: <Fingerprint className="size-4 flex-none" />
+                      }
+                  ]
+                : []),
+            ...(build !== "oss"
+                ? [
+                      {
+                          title: "sidebarApprovals",
+                          href: "/{orgId}/settings/access/approvals",
+                          icon: <UserCog className="size-4 flex-none" />
                       }
                   ]
                 : []),
@@ -228,7 +234,7 @@ export const orgNavSections = (): SidebarNavSection[] => [
     }
 ];
 
-export const adminNavSections: SidebarNavSection[] = [
+export const adminNavSections = (env?: Env): SidebarNavSection[] => [
     {
         heading: "sidebarAdmin",
         items: [
@@ -242,11 +248,15 @@ export const adminNavSections: SidebarNavSection[] = [
                 href: "/admin/api-keys",
                 icon: <KeyRound className="size-4 flex-none" />
             },
-            {
-                title: "sidebarIdentityProviders",
-                href: "/admin/idp",
-                icon: <Fingerprint className="size-4 flex-none" />
-            },
+            ...(build === "oss" || !env?.flags.useOrgOnlyIdp
+                ? [
+                      {
+                          title: "sidebarIdentityProviders",
+                          href: "/admin/idp",
+                          icon: <Fingerprint className="size-4 flex-none" />
+                      }
+                  ]
+                : []),
             ...(build == "enterprise"
                 ? [
                       {

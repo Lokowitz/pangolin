@@ -1,7 +1,7 @@
+import { disconnectClient, getClientConfigVersion } from "#dynamic/routers/ws";
 import { db } from "@server/db";
-import { disconnectClient } from "#dynamic/routers/ws";
 import { MessageHandler } from "@server/routers/ws";
-import { clients, Olm } from "@server/db";
+import { clients, olms, Olm } from "@server/db";
 import { eq, lt, isNull, and, or } from "drizzle-orm";
 import logger from "@server/logger";
 import { validateSessionToken } from "@server/auth/sessions/app";
@@ -9,6 +9,9 @@ import { checkOrgAccessPolicy } from "#dynamic/lib/checkOrgAccessPolicy";
 import { sendTerminateClient } from "../client/terminate";
 import { encodeHexLowerCase } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
+import { sendOlmSyncMessage } from "./sync";
+import { OlmErrorCodes } from "./error";
+import { handleFingerprintInsertion } from "./fingerprintingUtils";
 
 // Track if the offline checker interval is running
 let offlineCheckerInterval: NodeJS.Timeout | null = null;
@@ -63,6 +66,7 @@ export const startOlmOfflineChecker = (): void => {
                 try {
                     await sendTerminateClient(
                         offlineClient.clientId,
+                        OlmErrorCodes.TERMINATED_INACTIVITY,
                         offlineClient.olmId
                     ); // terminate first
                     // wait a moment to ensure the message is sent
@@ -101,59 +105,11 @@ export const handleOlmPingMessage: MessageHandler = async (context) => {
     const { message, client: c, sendToClient } = context;
     const olm = c as Olm;
 
-    const { userToken } = message.data;
+    const { userToken, fingerprint, postures } = message.data;
 
     if (!olm) {
         logger.warn("Olm not found");
         return;
-    }
-
-    if (olm.userId) {
-        // we need to check a user token to make sure its still valid
-        const { session: userSession, user } =
-            await validateSessionToken(userToken);
-        if (!userSession || !user) {
-            logger.warn("Invalid user session for olm ping");
-            return; // by returning here we just ignore the ping and the setInterval will force it to disconnect
-        }
-        if (user.userId !== olm.userId) {
-            logger.warn("User ID mismatch for olm ping");
-            return;
-        }
-
-        // get the client
-        const [client] = await db
-            .select()
-            .from(clients)
-            .where(
-                and(
-                    eq(clients.olmId, olm.olmId),
-                    eq(clients.userId, olm.userId)
-                )
-            )
-            .limit(1);
-
-        if (!client) {
-            logger.warn("Client not found for olm ping");
-            return;
-        }
-
-        const sessionId = encodeHexLowerCase(
-            sha256(new TextEncoder().encode(userToken))
-        );
-
-        const policyCheck = await checkOrgAccessPolicy({
-            orgId: client.orgId,
-            userId: olm.userId,
-            sessionId // this is the user token passed in the message
-        });
-
-        if (!policyCheck.allowed) {
-            logger.warn(
-                `Olm user ${olm.userId} does not pass access policies for org ${client.orgId}: ${policyCheck.error}`
-            );
-            return;
-        }
     }
 
     if (!olm.clientId) {
@@ -162,17 +118,108 @@ export const handleOlmPingMessage: MessageHandler = async (context) => {
     }
 
     try {
+        // get the client
+        const [client] = await db
+            .select()
+            .from(clients)
+            .where(eq(clients.clientId, olm.clientId))
+            .limit(1);
+
+        if (!client) {
+            logger.warn("Client not found for olm ping");
+            return;
+        }
+
+        if (client.blocked) {
+            // NOTE: by returning we dont update the lastPing, so the offline checker will eventually disconnect them
+            logger.debug(
+                `Blocked client ${client.clientId} attempted olm ping`
+            );
+            return;
+        }
+
+        if (olm.userId) {
+            // we need to check a user token to make sure its still valid
+            const { session: userSession, user } =
+                await validateSessionToken(userToken);
+            if (!userSession || !user) {
+                logger.warn("Invalid user session for olm ping");
+                return; // by returning here we just ignore the ping and the setInterval will force it to disconnect
+            }
+            if (user.userId !== olm.userId) {
+                logger.warn("User ID mismatch for olm ping");
+                return;
+            }
+            if (user.userId !== client.userId) {
+                logger.warn("Client user ID mismatch for olm ping");
+                return;
+            }
+
+            const sessionId = encodeHexLowerCase(
+                sha256(new TextEncoder().encode(userToken))
+            );
+
+            const policyCheck = await checkOrgAccessPolicy({
+                orgId: client.orgId,
+                userId: olm.userId,
+                sessionId // this is the user token passed in the message
+            });
+
+            if (!policyCheck.allowed) {
+                logger.warn(
+                    `Olm user ${olm.userId} does not pass access policies for org ${client.orgId}: ${policyCheck.error}`
+                );
+                return;
+            }
+        }
+
+        // get the version
+        logger.debug(
+            `handleOlmPingMessage: About to get config version for olmId: ${olm.olmId}`
+        );
+        const configVersion = await getClientConfigVersion(olm.olmId);
+        logger.debug(
+            `handleOlmPingMessage: Got config version: ${configVersion} (type: ${typeof configVersion})`
+        );
+
+        if (configVersion == null || configVersion === undefined) {
+            logger.debug(
+                `handleOlmPingMessage: could not get config version from server for olmId: ${olm.olmId}`
+            );
+        }
+
+        if (
+            message.configVersion != null &&
+            configVersion != null &&
+            configVersion != message.configVersion
+        ) {
+            logger.debug(
+                `handleOlmPingMessage: Olm ping with outdated config version: ${message.configVersion} (current: ${configVersion})`
+            );
+            await sendOlmSyncMessage(olm, client);
+        }
+
         // Update the client's last ping timestamp
         await db
             .update(clients)
             .set({
                 lastPing: Math.floor(Date.now() / 1000),
-                online: true
+                online: true,
+                archived: false
             })
             .where(eq(clients.clientId, olm.clientId));
+
+        if (olm.archived) {
+            await db
+                .update(olms)
+                .set({ archived: false })
+                .where(eq(olms.olmId, olm.olmId));
+        }
     } catch (error) {
         logger.error("Error handling ping message", { error });
     }
+
+    await handleFingerprintInsertion(olm, fingerprint, postures);
 
     return {
         message: {

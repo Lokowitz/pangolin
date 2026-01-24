@@ -36,10 +36,11 @@ import {
 import type { ResourceContextType } from "@app/contexts/resourceContext";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useOrgContext } from "@app/hooks/useOrgContext";
+import { usePaidStatus } from "@app/hooks/usePaidStatus";
 import { useResourceContext } from "@app/hooks/useResourceContext";
-import { useSubscriptionStatusContext } from "@app/hooks/useSubscriptionStatusContext";
 import { toast } from "@app/hooks/useToast";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
+import { getUserDisplayName } from "@app/lib/getUserDisplayName";
 import { orgQueries, resourceQueries } from "@app/lib/queries";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { build } from "@server/build";
@@ -95,7 +96,7 @@ export default function ResourceAuthenticationPage() {
     const router = useRouter();
     const t = useTranslations();
 
-    const subscription = useSubscriptionStatusContext();
+    const { isPaidUser } = usePaidStatus();
 
     const queryClient = useQueryClient();
     const { data: resourceRoles = [], isLoading: isLoadingResourceRoles } =
@@ -129,7 +130,8 @@ export default function ResourceAuthenticationPage() {
     );
     const { data: orgIdps = [], isLoading: isLoadingOrgIdps } = useQuery(
         orgQueries.identityProviders({
-            orgId: org.org.orgId
+            orgId: org.org.orgId,
+            useOrgOnlyIdp: env.flags.useOrgOnlyIdp
         })
     );
 
@@ -153,13 +155,16 @@ export default function ResourceAuthenticationPage() {
     const allUsers = useMemo(() => {
         return orgUsers.map((user) => ({
             id: user.id.toString(),
-            text: `${user.email || user.username}${user.type !== UserType.Internal ? ` (${user.idpName})` : ""}`
+            text: `${getUserDisplayName({
+                email: user.email,
+                username: user.username
+            })}${user.type !== UserType.Internal ? ` (${user.idpName})` : ""}`
         }));
     }, [orgUsers]);
 
     const allIdps = useMemo(() => {
         if (build === "saas") {
-            if (subscription?.subscribed) {
+            if (isPaidUser) {
                 return orgIdps.map((idp) => ({
                     id: idp.idpId,
                     text: idp.name
@@ -228,7 +233,10 @@ export default function ResourceAuthenticationPage() {
             "users",
             resourceUsers.map((i) => ({
                 id: i.userId.toString(),
-                text: `${i.email || i.username}${i.type !== UserType.Internal ? ` (${i.idpName})` : ""}`
+                text: `${getUserDisplayName({
+                    email: i.email,
+                    username: i.username
+                })}${i.type !== UserType.Internal ? ` (${i.idpName})` : ""}`
             }))
         );
 
@@ -767,6 +775,8 @@ export default function ResourceAuthenticationPage() {
                 <OneTimePasswordFormSection
                     resource={resource}
                     updateResource={updateResource}
+                    whitelist={whitelist}
+                    isLoadingWhiteList={isLoadingWhiteList}
                 />
             </SettingsContainer>
         </>
@@ -776,11 +786,16 @@ export default function ResourceAuthenticationPage() {
 type OneTimePasswordFormSectionProps = Pick<
     ResourceContextType,
     "resource" | "updateResource"
->;
+> & {
+    whitelist: Array<{ email: string }>;
+    isLoadingWhiteList: boolean;
+};
 
 function OneTimePasswordFormSection({
     resource,
-    updateResource
+    updateResource,
+    whitelist,
+    isLoadingWhiteList
 }: OneTimePasswordFormSectionProps) {
     const { env } = useEnvContext();
     const [whitelistEnabled, setWhitelistEnabled] = useState(
@@ -800,6 +815,18 @@ function OneTimePasswordFormSection({
     const [activeEmailTagIndex, setActiveEmailTagIndex] = useState<
         number | null
     >(null);
+
+    useEffect(() => {
+        if (isLoadingWhiteList) return;
+
+        whitelistForm.setValue(
+            "emails",
+            whitelist.map((w) => ({
+                id: w.email,
+                text: w.email
+            }))
+        );
+    }, [isLoadingWhiteList, whitelist, whitelistForm]);
 
     async function saveWhitelist() {
         try {

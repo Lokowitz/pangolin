@@ -255,7 +255,9 @@ export const siteResources = sqliteTable("siteResources", {
     aliasAddress: text("aliasAddress"),
     tcpPortRangeString: text("tcpPortRangeString").notNull().default("*"),
     udpPortRangeString: text("udpPortRangeString").notNull().default("*"),
-    disableIcmp: integer("disableIcmp", { mode: "boolean" }).notNull().default(false)
+    disableIcmp: integer("disableIcmp", { mode: "boolean" })
+        .notNull()
+        .default(false)
 });
 
 export const clientSiteResources = sqliteTable("clientSiteResources", {
@@ -383,7 +385,12 @@ export const clients = sqliteTable("clients", {
     type: text("type").notNull(), // "olm"
     online: integer("online", { mode: "boolean" }).notNull().default(false),
     // endpoint: text("endpoint"),
-    lastHolePunch: integer("lastHolePunch")
+    lastHolePunch: integer("lastHolePunch"),
+    archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+    blocked: integer("blocked", { mode: "boolean" }).notNull().default(false),
+    approvalState: text("approvalState").$type<
+        "pending" | "approved" | "denied"
+    >()
 });
 
 export const clientSitesAssociationsCache = sqliteTable(
@@ -423,7 +430,160 @@ export const olms = sqliteTable("olms", {
     userId: text("userId").references(() => users.userId, {
         // optionally tied to a user and in this case delete when the user deletes
         onDelete: "cascade"
+    }),
+    archived: integer("archived", { mode: "boolean" }).notNull().default(false)
+});
+
+export const currentFingerprint = sqliteTable("currentFingerprint", {
+    fingerprintId: integer("id").primaryKey({ autoIncrement: true }),
+
+    olmId: text("olmId")
+        .references(() => olms.olmId, { onDelete: "cascade" })
+        .notNull(),
+
+    firstSeen: integer("firstSeen").notNull(),
+    lastSeen: integer("lastSeen").notNull(),
+    lastCollectedAt: integer("lastCollectedAt").notNull(),
+
+    username: text("username"),
+    hostname: text("hostname"),
+    platform: text("platform"),
+    osVersion: text("osVersion"),
+    kernelVersion: text("kernelVersion"),
+    arch: text("arch"),
+    deviceModel: text("deviceModel"),
+    serialNumber: text("serialNumber"),
+    platformFingerprint: text("platformFingerprint"),
+
+    // Platform-agnostic checks
+
+    biometricsEnabled: integer("biometricsEnabled", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    diskEncrypted: integer("diskEncrypted", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    firewallEnabled: integer("firewallEnabled", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    autoUpdatesEnabled: integer("autoUpdatesEnabled", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    tpmAvailable: integer("tpmAvailable", { mode: "boolean" })
+        .notNull()
+        .default(false),
+
+    // Windows-specific posture check information
+
+    windowsAntivirusEnabled: integer("windowsAntivirusEnabled", {
+        mode: "boolean"
     })
+        .notNull()
+        .default(false),
+
+    // macOS-specific posture check information
+
+    macosSipEnabled: integer("macosSipEnabled", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    macosGatekeeperEnabled: integer("macosGatekeeperEnabled", {
+        mode: "boolean"
+    })
+        .notNull()
+        .default(false),
+    macosFirewallStealthMode: integer("macosFirewallStealthMode", {
+        mode: "boolean"
+    })
+        .notNull()
+        .default(false),
+
+    // Linux-specific posture check information
+
+    linuxAppArmorEnabled: integer("linuxAppArmorEnabled", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    linuxSELinuxEnabled: integer("linuxSELinuxEnabled", {
+        mode: "boolean"
+    })
+        .notNull()
+        .default(false)
+});
+
+export const fingerprintSnapshots = sqliteTable("fingerprintSnapshots", {
+    snapshotId: integer("id").primaryKey({ autoIncrement: true }),
+
+    fingerprintId: integer("fingerprintId").references(
+        () => currentFingerprint.fingerprintId,
+        {
+            onDelete: "set null"
+        }
+    ),
+
+    username: text("username"),
+    hostname: text("hostname"),
+    platform: text("platform"),
+    osVersion: text("osVersion"),
+    kernelVersion: text("kernelVersion"),
+    arch: text("arch"),
+    deviceModel: text("deviceModel"),
+    serialNumber: text("serialNumber"),
+    platformFingerprint: text("platformFingerprint"),
+
+    // Platform-agnostic checks
+
+    biometricsEnabled: integer("biometricsEnabled", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    diskEncrypted: integer("diskEncrypted", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    firewallEnabled: integer("firewallEnabled", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    autoUpdatesEnabled: integer("autoUpdatesEnabled", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    tpmAvailable: integer("tpmAvailable", { mode: "boolean" })
+        .notNull()
+        .default(false),
+
+    // Windows-specific posture check information
+
+    windowsAntivirusEnabled: integer("windowsAntivirusEnabled", {
+        mode: "boolean"
+    })
+        .notNull()
+        .default(false),
+
+    // macOS-specific posture check information
+
+    macosSipEnabled: integer("macosSipEnabled", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    macosGatekeeperEnabled: integer("macosGatekeeperEnabled", {
+        mode: "boolean"
+    })
+        .notNull()
+        .default(false),
+    macosFirewallStealthMode: integer("macosFirewallStealthMode", {
+        mode: "boolean"
+    })
+        .notNull()
+        .default(false),
+
+    // Linux-specific posture check information
+
+    linuxAppArmorEnabled: integer("linuxAppArmorEnabled", { mode: "boolean" })
+        .notNull()
+        .default(false),
+    linuxSELinuxEnabled: integer("linuxSELinuxEnabled", {
+        mode: "boolean"
+    })
+        .notNull()
+        .default(false),
+
+    hash: text("hash").notNull(),
+    collectedAt: integer("collectedAt").notNull()
 });
 
 export const twoFactorBackupCodes = sqliteTable("twoFactorBackupCodes", {
@@ -515,7 +675,10 @@ export const roles = sqliteTable("roles", {
         .notNull(),
     isAdmin: integer("isAdmin", { mode: "boolean" }),
     name: text("name").notNull(),
-    description: text("description")
+    description: text("description"),
+    requireDeviceApproval: integer("requireDeviceApproval", {
+        mode: "boolean"
+    }).default(false)
 });
 
 export const roleActions = sqliteTable("roleActions", {
@@ -774,7 +937,8 @@ export const idp = sqliteTable("idp", {
         mode: "boolean"
     })
         .notNull()
-        .default(false)
+        .default(false),
+    tags: text("tags")
 });
 
 // Identity Provider OAuth Configuration

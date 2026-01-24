@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import {
@@ -42,24 +42,27 @@ export type AuthPageCustomizationProps = {
 };
 
 const AuthPageFormSchema = z.object({
-    logoUrl: z.url().refine(
-        async (url) => {
-            try {
-                const response = await fetch(url);
-                return (
-                    response.status === 200 &&
-                    (response.headers.get("content-type") ?? "").startsWith(
-                        "image/"
-                    )
-                );
-            } catch (error) {
-                return false;
+    logoUrl: z.union([
+        z.string().length(0),
+        z.url().refine(
+            async (url) => {
+                try {
+                    const response = await fetch(url);
+                    return (
+                        response.status === 200 &&
+                        (response.headers.get("content-type") ?? "").startsWith(
+                            "image/"
+                        )
+                    );
+                } catch (error) {
+                    return false;
+                }
+            },
+            {
+                error: "Invalid logo URL, must be a valid image URL"
             }
-        },
-        {
-            error: "Invalid logo URL, must be a valid image URL"
-        }
-    ),
+        )
+    ]),
     logoWidth: z.coerce.number<number>().min(1),
     logoHeight: z.coerce.number<number>().min(1),
     orgTitle: z.string().optional(),
@@ -90,7 +93,6 @@ export default function AuthPageBrandingForm({
         deleteBranding,
         null
     );
-    const [setIsDeleteModalOpen] = useState(false);
 
     const t = useTranslations();
 
@@ -118,6 +120,7 @@ export default function AuthPageBrandingForm({
         const brandingData = form.getValues();
 
         if (!isValid || !isPaidUser) return;
+
         try {
             const updateRes = await api.put(
                 `/org/${orgId}/login-page-branding`,
@@ -163,6 +166,7 @@ export default function AuthPageBrandingForm({
                     title: t("success"),
                     description: t("authPageBrandingRemoved")
                 });
+                form.reset();
             }
         } catch (error) {
             toast({
@@ -289,7 +293,8 @@ export default function AuthPageBrandingForm({
                                     </div>
                                 </div>
 
-                                {build === "saas" && (
+                                {build === "saas" ||
+                                env.env.flags.useOrgOnlyIdp ? (
                                     <>
                                         <div className="mt-3 mb-6">
                                             <SettingsSectionTitle>
@@ -343,7 +348,7 @@ export default function AuthPageBrandingForm({
                                             />
                                         </div>
                                     </>
-                                )}
+                                ) : null}
 
                                 <div className="mt-3 mb-6">
                                     <SettingsSectionTitle>
@@ -396,22 +401,23 @@ export default function AuthPageBrandingForm({
 
                 <div className="flex justify-end gap-2 mt-6 items-center">
                     {branding && (
-                        <Button
-                            variant="destructive"
-                            type="button"
-                            loading={isUpdatingBranding || isDeletingBranding}
-                            disabled={
-                                isUpdatingBranding ||
-                                isDeletingBranding ||
-                                !isPaidUser
-                            }
-                            onClick={() => {
-                                deleteFormAction();
-                            }}
-                            className="gap-1"
-                        >
-                            {t("removeAuthPageBranding")}
-                        </Button>
+                        <form action={deleteFormAction}>
+                            <Button
+                                variant="destructive"
+                                type="submit"
+                                loading={
+                                    isUpdatingBranding || isDeletingBranding
+                                }
+                                disabled={
+                                    isUpdatingBranding ||
+                                    isDeletingBranding ||
+                                    !isPaidUser
+                                }
+                                className="gap-1"
+                            >
+                                {t("removeAuthPageBranding")}
+                            </Button>
+                        </form>
                     )}
                     <Button
                         type="submit"

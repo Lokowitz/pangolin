@@ -4,7 +4,7 @@ import { AxiosResponse } from "axios";
 import SettingsSectionTitle from "@app/components/SettingsSectionTitle";
 import { ListClientsResponse } from "@server/routers/client";
 import { getTranslations } from "next-intl/server";
-import type { ClientRow } from "@app/components/MachineClientsTable";
+import type { ClientRow } from "@app/components/UserDevicesTable";
 import UserDevicesTable from "@app/components/UserDevicesTable";
 
 type ClientsPageProps = {
@@ -41,6 +41,32 @@ export default async function ClientsPage(props: ClientsPageProps) {
     const mapClientToRow = (
         client: ListClientsResponse["clients"][0]
     ): ClientRow => {
+        // Build fingerprint object if any fingerprint data exists
+        const hasFingerprintData =
+            (client as any).fingerprintPlatform ||
+            (client as any).fingerprintOsVersion ||
+            (client as any).fingerprintKernelVersion ||
+            (client as any).fingerprintArch ||
+            (client as any).fingerprintSerialNumber ||
+            (client as any).fingerprintUsername ||
+            (client as any).fingerprintHostname ||
+            (client as any).deviceModel;
+
+        const fingerprint = hasFingerprintData
+            ? {
+                  platform: (client as any).fingerprintPlatform || null,
+                  osVersion: (client as any).fingerprintOsVersion || null,
+                  kernelVersion:
+                      (client as any).fingerprintKernelVersion || null,
+                  arch: (client as any).fingerprintArch || null,
+                  deviceModel: (client as any).deviceModel || null,
+                  serialNumber:
+                      (client as any).fingerprintSerialNumber || null,
+                  username: (client as any).fingerprintUsername || null,
+                  hostname: (client as any).fingerprintHostname || null
+              }
+            : null;
+
         return {
             name: client.name,
             id: client.clientId,
@@ -55,7 +81,11 @@ export default async function ClientsPage(props: ClientsPageProps) {
             username: client.username,
             userEmail: client.userEmail,
             niceId: client.niceId,
-            agent: client.agent
+            agent: client.agent,
+            archived: client.archived || false,
+            blocked: client.blocked || false,
+            approvalState: client.approvalState,
+            fingerprint
         };
     };
 

@@ -78,6 +78,10 @@ export enum ActionsEnum {
     updateSiteResource = "updateSiteResource",
     createClient = "createClient",
     deleteClient = "deleteClient",
+    archiveClient = "archiveClient",
+    unarchiveClient = "unarchiveClient",
+    blockClient = "blockClient",
+    unblockClient = "unblockClient",
     updateClient = "updateClient",
     listClients = "listClients",
     getClient = "getClient",
@@ -125,7 +129,9 @@ export enum ActionsEnum {
     getBlueprint = "getBlueprint",
     applyBlueprint = "applyBlueprint",
     viewLogs = "viewLogs",
-    exportLogs = "exportLogs"
+    exportLogs = "exportLogs",
+    listApprovals = "listApprovals",
+    updateApprovals = "updateApprovals"
 }
 
 export async function checkUserActionPermission(

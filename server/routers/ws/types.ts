@@ -25,6 +25,7 @@ export interface AuthenticatedWebSocket extends WebSocket {
     connectionId?: string;
     isFullyConnected?: boolean;
     pendingMessages?: Buffer[];
+    configVersion?: number;
 }
 
 export interface TokenPayload {
@@ -36,6 +37,7 @@ export interface TokenPayload {
 export interface WSMessage {
     type: string;
     data: any;
+    configVersion?: number;
 }
 
 export interface HandlerResponse {
@@ -43,6 +45,7 @@ export interface HandlerResponse {
     broadcast?: boolean;
     excludeSender?: boolean;
     targetClientId?: string;
+    options?: SendMessageOptions;
 }
 
 export interface HandlerContext {
@@ -50,10 +53,15 @@ export interface HandlerContext {
     senderWs: WebSocket;
     client: Newt | Olm | RemoteExitNode | undefined;
     clientType: ClientType;
-    sendToClient: (clientId: string, message: WSMessage) => Promise<boolean>;
+    sendToClient: (
+        clientId: string,
+        message: WSMessage,
+        options?: SendMessageOptions
+    ) => Promise<boolean>;
     broadcastToAllExcept: (
         message: WSMessage,
-        excludeClientId?: string
+        excludeClientId?: string,
+        options?: SendMessageOptions
     ) => Promise<void>;
     connectedClients: Map<string, WebSocket[]>;
 }
@@ -62,6 +70,11 @@ export type MessageHandler = (
     context: HandlerContext
 ) => Promise<HandlerResponse | void>;
 
+// Options for sending messages with config version tracking
+export interface SendMessageOptions {
+    incrementConfigVersion?: boolean;
+}
+
 // Redis message type for cross-node communication
 export interface RedisMessage {
     type: "direct" | "broadcast";
@@ -69,4 +82,5 @@ export interface RedisMessage {
     excludeClientId?: string;
     message: WSMessage;
     fromNodeId: string;
+    options?: SendMessageOptions;
 }
