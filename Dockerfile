@@ -1,19 +1,9 @@
 FROM node:24-alpine AS builder
 
-# OCI Image Labels - Build Args for dynamic values
-ARG VERSION="dev"
-ARG REVISION=""
-ARG CREATED=""
-ARG LICENSE="AGPL-3.0"
-
 WORKDIR /app
 
 ARG BUILD=oss
 ARG DATABASE=sqlite
-
-# Derive title and description based on BUILD type
-ARG IMAGE_TITLE="Pangolin"
-ARG IMAGE_DESCRIPTION="Identity-aware VPN and proxy for remote access to anything, anywhere"
 
 RUN apk add --no-cache python3 make g++
 
@@ -37,6 +27,16 @@ RUN test -f dist/server.mjs
 RUN npm prune --omit=dev && npm cache clean --force
 
 FROM node:24-alpine AS runner
+
+# OCI Image Labels - Build Args for dynamic values
+ARG VERSION="dev"
+ARG REVISION=""
+ARG CREATED=""
+ARG LICENSE="AGPL-3.0"
+
+# Derive title and description based on BUILD type
+ARG IMAGE_TITLE="Pangolin"
+ARG IMAGE_DESCRIPTION="Identity-aware VPN and proxy for remote access to anything, anywhere"
 
 WORKDIR /app
 
