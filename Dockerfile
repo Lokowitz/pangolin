@@ -50,6 +50,7 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server/migrations ./dist/init
+COPY --from=builder /app/package.json ./package.json
 
 COPY ./cli/wrapper.sh /usr/local/bin/pangctl
 RUN chmod +x /usr/local/bin/pangctl ./dist/cli.mjs
