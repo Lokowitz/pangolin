@@ -2,27 +2,27 @@ import { SidebarNavItem } from "@app/components/SidebarNav";
 import { Env } from "@app/lib/types/env";
 import { build } from "@server/build";
 import {
-    LuChartLine,
-    LuCombine,
-    LuCreditCard,
-    LuFingerprint,
-    LuGlobe,
-    LuGlobeLock,
-    LuKeyRound,
-    LuLaptop,
+    LuChartLine as ChartLine,
+    LuCombine as Combine,
+    LuCreditCard as CreditCard,
+    LuFingerprint as Fingerprint,
+    LuGlobe as Globe,
+    LuGlobeLock as GlobeLock,
+    LuKeyRound as KeyRound,
+    LuLaptop as Laptop,
     LuLink as LinkIcon,
-    LuLogs, // Added from 'dev' branch
-    LuMonitorUp,
-    LuReceiptText,
-    LuScanEye, // Added from 'dev' branch
-    LuServer,
-    LuSettings,
-    LuSquareMousePointer,
-    LuTicketCheck,
-    LuUser,
-    LuUserCog,
-    LuUsers,
-    LuWaypoints
+    LuLogs as Logs, // Added from 'dev' branch
+    LuMonitorUp as MonitorUp,
+    LuReceiptText as ReceiptText,
+    LuScanEye as ScanEye, // Added from 'dev' branch
+    LuServer as Server,
+    LuSettings as Settings,
+    LuSquareMousePointer as SquareMousePointer,
+    LuTicketCheck as TicketCheck,
+    LuUser as User,
+    LuUserCog as UserCog,
+    LuUsers as Users,
+    LuWaypoints as Waypoints
 } from "react-icons/lu";
 
 export type SidebarNavSection = {
@@ -36,7 +36,7 @@ export const orgLangingNavItems: SidebarNavItem[] = [
     {
         title: "sidebarAccount",
         href: "/{orgId}",
-        icon: <LuUser className="size-4 flex-none" />
+        icon: <User className="size-4 flex-none" />
     }
 ];
 
@@ -47,51 +47,51 @@ export const orgNavSections = (env?: Env): SidebarNavSection[] => [
             {
                 title: "sidebarSites",
                 href: "/{orgId}/settings/sites",
-                icon: <LuCombine className="size-4 flex-none" />
+                icon: <Combine className="size-4 flex-none" />
             },
             {
                 title: "sidebarResources",
-                icon: <LuWaypoints className="size-4 flex-none" />,
+                icon: <Waypoints className="size-4 flex-none" />,
                 items: [
                     {
                         title: "sidebarProxyResources",
                         href: "/{orgId}/settings/resources/proxy",
-                        icon: <LuGlobe className="size-4 flex-none" />
+                        icon: <Globe className="size-4 flex-none" />
                     },
                     {
                         title: "sidebarClientResources",
                         href: "/{orgId}/settings/resources/client",
-                        icon: <LuGlobeLock className="size-4 flex-none" />
+                        icon: <GlobeLock className="size-4 flex-none" />
                     }
                 ]
             },
             {
                 title: "sidebarClients",
-                icon: <LuMonitorUp className="size-4 flex-none" />,
+                icon: <MonitorUp className="size-4 flex-none" />,
                 items: [
                     {
                         href: "/{orgId}/settings/clients/user",
                         title: "sidebarUserDevices",
-                        icon: <LuLaptop className="size-4 flex-none" />
+                        icon: <Laptop className="size-4 flex-none" />
                     },
                     {
                         href: "/{orgId}/settings/clients/machine",
                         title: "sidebarMachineClients",
-                        icon: <LuServer className="size-4 flex-none" />
+                        icon: <Server className="size-4 flex-none" />
                     }
                 ]
             },
             {
                 title: "sidebarDomains",
                 href: "/{orgId}/settings/domains",
-                icon: <LuGlobe className="size-4 flex-none" />
+                icon: <Globe className="size-4 flex-none" />
             },
             ...(build == "saas"
                 ? [
                       {
                           title: "sidebarRemoteExitNodes",
                           href: "/{orgId}/settings/remote-exit-nodes",
-                          icon: <LuServer className="size-4 flex-none" />
+                          icon: <Server className="size-4 flex-none" />
                       }
                   ]
                 : [])
@@ -102,31 +102,31 @@ export const orgNavSections = (env?: Env): SidebarNavSection[] => [
         items: [
             {
                 title: "sidebarUsers",
-                icon: <LuUser className="size-4 flex-none" />,
+                icon: <User className="size-4 flex-none" />,
                 items: [
                     {
                         title: "sidebarUsers",
                         href: "/{orgId}/settings/access/users",
-                        icon: <LuUser className="size-4 flex-none" />
+                        icon: <User className="size-4 flex-none" />
                     },
                     {
                         title: "sidebarInvitations",
                         href: "/{orgId}/settings/access/invitations",
-                        icon: <LuTicketCheck className="size-4 flex-none" />
+                        icon: <TicketCheck className="size-4 flex-none" />
                     }
                 ]
             },
             {
                 title: "sidebarRoles",
                 href: "/{orgId}/settings/access/roles",
-                icon: <LuUsers className="size-4 flex-none" />
+                icon: <Users className="size-4 flex-none" />
             },
             ...(build === "saas" || env?.flags.useOrgOnlyIdp
                 ? [
                       {
                           title: "sidebarIdentityProviders",
                           href: "/{orgId}/settings/idp",
-                          icon: <LuFingerprint className="size-4 flex-none" />
+                          icon: <Fingerprint className="size-4 flex-none" />
                       }
                   ]
                 : []),
@@ -135,7 +135,7 @@ export const orgNavSections = (env?: Env): SidebarNavSection[] => [
                       {
                           title: "sidebarApprovals",
                           href: "/{orgId}/settings/access/approvals",
-                          icon: <LuUserCog className="size-4 flex-none" />
+                          icon: <UserCog className="size-4 flex-none" />
                       }
                   ]
                 : []),
@@ -153,19 +153,19 @@ export const orgNavSections = (env?: Env): SidebarNavSection[] => [
                 {
                     title: "sidebarLogsRequest",
                     href: "/{orgId}/settings/logs/request",
-                    icon: <LuSquareMousePointer className="size-4 flex-none" />
+                    icon: <SquareMousePointer className="size-4 flex-none" />
                 },
                 ...(build != "oss"
                     ? [
                           {
                               title: "sidebarLogsAccess",
                               href: "/{orgId}/settings/logs/access",
-                              icon: <LuScanEye className="size-4 flex-none" />
+                              icon: <ScanEye className="size-4 flex-none" />
                           },
                           {
                               title: "sidebarLogsAction",
                               href: "/{orgId}/settings/logs/action",
-                              icon: <LuLogs className="size-4 flex-none" />
+                              icon: <Logs className="size-4 flex-none" />
                           }
                       ]
                     : [])
@@ -174,7 +174,7 @@ export const orgNavSections = (env?: Env): SidebarNavSection[] => [
             const analytics = {
                 title: "sidebarLogsAnalytics",
                 href: "/{orgId}/settings/logs/analytics",
-                icon: <LuChartLine className="h-4 w-4" />
+                icon: <ChartLine className="h-4 w-4" />
             };
 
             // If only one log item, return it directly without grouping
@@ -187,7 +187,7 @@ export const orgNavSections = (env?: Env): SidebarNavSection[] => [
                 analytics,
                 {
                     title: "sidebarLogs",
-                    icon: <LuLogs className="size-4 flex-none" />,
+                    icon: <Logs className="size-4 flex-none" />,
                     items: logItems
                 }
             ];
@@ -199,17 +199,17 @@ export const orgNavSections = (env?: Env): SidebarNavSection[] => [
             {
                 title: "sidebarApiKeys",
                 href: "/{orgId}/settings/api-keys",
-                icon: <LuKeyRound className="size-4 flex-none" />
+                icon: <KeyRound className="size-4 flex-none" />
             },
             {
                 title: "sidebarBluePrints",
                 href: "/{orgId}/settings/blueprints",
-                icon: <LuReceiptText className="size-4 flex-none" />
+                icon: <ReceiptText className="size-4 flex-none" />
             },
             {
                 title: "sidebarSettings",
                 href: "/{orgId}/settings/general",
-                icon: <LuSettings className="size-4 flex-none" />
+                icon: <Settings className="size-4 flex-none" />
             },
 
             ...(build == "saas"
@@ -217,7 +217,7 @@ export const orgNavSections = (env?: Env): SidebarNavSection[] => [
                       {
                           title: "sidebarBilling",
                           href: "/{orgId}/settings/billing",
-                          icon: <LuCreditCard className="size-4 flex-none" />
+                          icon: <CreditCard className="size-4 flex-none" />
                       }
                   ]
                 : []),
@@ -226,7 +226,7 @@ export const orgNavSections = (env?: Env): SidebarNavSection[] => [
                       {
                           title: "sidebarEnterpriseLicenses",
                           href: "/{orgId}/settings/license",
-                          icon: <LuTicketCheck className="size-4 flex-none" />
+                          icon: <TicketCheck className="size-4 flex-none" />
                       }
                   ]
                 : [])
@@ -241,19 +241,19 @@ export const adminNavSections = (env?: Env): SidebarNavSection[] => [
             {
                 title: "sidebarAllUsers",
                 href: "/admin/users",
-                icon: <LuUsers className="size-4 flex-none" />
+                icon: <Users className="size-4 flex-none" />
             },
             {
                 title: "sidebarApiKeys",
                 href: "/admin/api-keys",
-                icon: <LuKeyRound className="size-4 flex-none" />
+                icon: <KeyRound className="size-4 flex-none" />
             },
             ...(build === "oss" || !env?.flags.useOrgOnlyIdp
                 ? [
                       {
                           title: "sidebarIdentityProviders",
                           href: "/admin/idp",
-                          icon: <LuFingerprint className="size-4 flex-none" />
+                          icon: <Fingerprint className="size-4 flex-none" />
                       }
                   ]
                 : []),
@@ -262,7 +262,7 @@ export const adminNavSections = (env?: Env): SidebarNavSection[] => [
                       {
                           title: "sidebarLicense",
                           href: "/admin/license",
-                          icon: <LuTicketCheck className="size-4 flex-none" />
+                          icon: <TicketCheck className="size-4 flex-none" />
                       }
                   ]
                 : [])
