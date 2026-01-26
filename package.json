@@ -107,7 +107,6 @@
         "node-fetch": "3.3.2",
         "nodemailer": "7.0.11",
         "npm": "11.7.0",
-        "nprogress": "0.2.0",
         "oslo": "1.2.1",
         "pg": "8.17.1",
         "posthog-node": "5.23.0",
