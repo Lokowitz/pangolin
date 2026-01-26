@@ -15,7 +15,7 @@ ARG DATABASE=sqlite
 ARG IMAGE_TITLE="Pangolin"
 ARG IMAGE_DESCRIPTION="Identity-aware VPN and proxy for remote access to anything, anywhere"
 
-RUN apk add --no-cache curl tzdata python3 make g++
+RUN apk add --no-cache python3 make g++
 
 # COPY package.json package-lock.json ./
 COPY package*.json ./
