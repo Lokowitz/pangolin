@@ -545,3 +545,4 @@ jobs:
                   aws ec2 stop-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID_ARM_RUNNER }}
                   aws ec2 stop-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID_AMD_RUNNER }}
                   echo "EC2 instances stopped"
+                  
