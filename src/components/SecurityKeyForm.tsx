@@ -32,8 +32,13 @@ import {
 import { startRegistration } from "@simplewebauthn/browser";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { Card, CardContent } from "@app/components/ui/card";
-import { Badge } from "@app/components/ui/badge";
-import { Loader2, KeyRound, Trash2, Plus, Shield, Info } from "lucide-react";
+import {
+    LuKeyRound as KeyRound,
+    LuTrash2 as Trash2,
+    LuPlus as Plus,
+    LuShield as Shield,
+    LuInfo as Info
+} from "react-icons/lu";
 import { cn } from "@app/lib/cn";
 
 type SecurityKeyFormProps = {

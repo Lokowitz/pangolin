@@ -27,7 +27,10 @@ import { GetLoginPageResponse } from "@server/routers/loginPage/types";
 import { ListDomainsResponse } from "@server/routers/domain";
 import { DomainRow } from "@app/components/DomainsTable";
 import { toUnicode } from "punycode";
-import { Globe, Trash2 } from "lucide-react";
+import {
+    LuGlobe as Globe,
+    LuTrash2 as Trash2
+} from "react-icons/lu";
 import CertificateStatus from "@app/components/private/CertificateStatus";
 import {
     Credenza,
@@ -42,7 +45,6 @@ import {
 import DomainPicker from "@app/components/DomainPicker";
 import { finalizeSubdomainSanitize } from "@app/lib/subdomain-utils";
 import { InfoPopup } from "@app/components/ui/info-popup";
-import { Alert, AlertDescription } from "@app/components/ui/alert";
 import { build } from "@server/build";
 import { usePaidStatus } from "@app/hooks/usePaidStatus";
 import { PaidFeaturesAlert } from "../PaidFeaturesAlert";

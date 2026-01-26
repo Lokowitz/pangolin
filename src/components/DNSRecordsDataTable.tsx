@@ -19,14 +19,12 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@app/components/ui/button";
 import { useMemo, useState } from "react";
-import { ExternalLink, Plus, RefreshCw } from "lucide-react";
+import { LuExternalLink as ExternalLink } from "react-icons/lu";
 import {
     Card,
     CardContent,
-    CardHeader,
-    CardTitle
+    CardHeader
 } from "@app/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@app/components/ui/tabs";
 import { useTranslations } from "next-intl";
 import { Badge } from "./ui/badge";
 import Link from "next/link";

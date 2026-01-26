@@ -24,7 +24,7 @@ import {
     PopoverContent,
     PopoverTrigger
 } from "@app/components/ui/popover";
-import { ChevronRight } from "lucide-react";
+import { LuChevronRight as ChevronRight } from "react-icons/lu";
 import { build } from "@server/build";
 
 export type SidebarNavItem = {

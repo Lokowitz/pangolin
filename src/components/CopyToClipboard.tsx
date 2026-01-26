@@ -1,4 +1,7 @@
-import { Check, Copy } from "lucide-react";
+import {
+    LuCopy as Copy,
+    LuCheck as Check
+} from "react-icons/lu";
 import Link from "next/link";
 import { useState } from "react";
 import { useTranslations } from "next-intl";

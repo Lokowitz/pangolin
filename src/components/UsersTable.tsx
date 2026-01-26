@@ -1,6 +1,5 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
 import { ExtendedColumnDef } from "@app/components/ui/data-table";
 import {
     DropdownMenu,
@@ -9,7 +8,11 @@ import {
     DropdownMenuTrigger
 } from "@app/components/ui/dropdown-menu";
 import { Button } from "@app/components/ui/button";
-import { ArrowRight, ArrowUpDown, Crown, MoreHorizontal } from "lucide-react";
+import {
+    LuArrowRight as ArrowRight,
+    LuArrowUpDown as ArrowUpDown,
+    LuEllipsis as MoreHorizontal
+} from "react-icons/lu";
 import { UsersDataTable } from "@app/components/UsersDataTable";
 import { useState, useEffect } from "react";
 import ConfirmDeleteDialog from "@app/components/ConfirmDeleteDialog";

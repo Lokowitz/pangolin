@@ -2,7 +2,12 @@
 
 import React from "react";
 import { Button } from "@app/components/ui/button";
-import { Shield, ArrowRight, Laptop, Server } from "lucide-react";
+import {
+    LuShield as Shield,
+    LuArrowRight as ArrowRight,
+    LuLaptop as Laptop,
+    LuServer as Server
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import DismissableBanner from "./DismissableBanner";

@@ -80,13 +80,13 @@ import {
 } from "@tanstack/react-table";
 import { AxiosResponse } from "axios";
 import {
-    AlertTriangle,
-    CircleCheck,
-    CircleX,
-    Info,
-    Plus,
-    Settings
-} from "lucide-react";
+    LuTriangleAlert as AlertTriangle,
+    LuCircleCheck as CircleCheck,
+    LuCircleX as CircleX,
+    LuInfo as Info,
+    LuPlus as Plus,
+    LuSettings as Settings
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { use, useActionState, useCallback, useEffect, useMemo, useState } from "react";

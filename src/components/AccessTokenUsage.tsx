@@ -1,15 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Info, InfoIcon } from "lucide-react";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import {  LuInfo as InfoIcon } from "react-icons/lu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useEnvContext } from "@app/hooks/useEnvContext";

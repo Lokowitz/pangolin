@@ -2,7 +2,7 @@
 
 import React from "react";
 import confetti from "canvas-confetti";
-import { Star } from "lucide-react";
+import { LuStar as Star } from "react-icons/lu";
 import { useTranslations } from "next-intl";
 
 export default function SupporterMessage({ tier }: { tier: string }) {

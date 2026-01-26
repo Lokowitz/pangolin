@@ -5,7 +5,7 @@ import SettingsSectionTitle from "@app/components/SettingsSectionTitle";
 import { AdminListUsersResponse } from "@server/routers/user/adminListUsers";
 import UsersTable, { GlobalUserRow } from "../../../components/AdminUsersTable";
 import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { LuInfo as InfoIcon } from "react-icons/lu";
 import { getTranslations } from "next-intl/server";
 
 type PageProps = {

@@ -77,13 +77,13 @@ import {
 } from "@tanstack/react-table";
 import { AxiosResponse } from "axios";
 import {
-    CircleCheck,
-    CircleX,
-    Info,
-    Plus,
-    Settings,
-    SquareArrowOutUpRight
-} from "lucide-react";
+    LuCircleCheck as CircleCheck,
+    LuCircleX as CircleX,
+    LuInfo as Info,
+    LuPlus as Plus,
+    LuSettings as Settings,
+    LuSquareArrowOutUpRight as SquareArrowOutUpRight
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";

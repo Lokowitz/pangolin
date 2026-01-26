@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -30,7 +30,10 @@ import { cleanRedirect } from "@app/lib/cleanRedirect";
 import { useTranslations } from "next-intl";
 import BrandingLogo from "@app/components/BrandingLogo";
 import { build } from "@server/build";
-import { Check, X } from "lucide-react";
+import {
+    LuCheck as Check,
+    LuX as X
+} from "react-icons/lu";
 import { cn } from "@app/lib/cn";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
 

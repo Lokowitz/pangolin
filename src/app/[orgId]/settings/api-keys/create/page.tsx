@@ -23,7 +23,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@app/components/ui/input";
-import { InfoIcon } from "lucide-react";
+import { LuInfo as InfoIcon } from "react-icons/lu";
 import { Button } from "@app/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
@@ -43,7 +43,6 @@ import {
 } from "@app/components/InfoSection";
 import CopyToClipboard from "@app/components/CopyToClipboard";
 import moment from "moment";
-import CopyCodeBox from "@server/emails/templates/components/CopyCodeBox";
 import CopyTextBox from "@app/components/CopyTextBox";
 import PermissionsSelectBox from "@app/components/PermissionsSelectBox";
 import { useTranslations } from "next-intl";

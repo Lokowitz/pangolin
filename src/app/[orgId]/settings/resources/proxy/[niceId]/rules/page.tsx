@@ -54,17 +54,14 @@ import {
     SettingsSectionDescription,
     SettingsSectionBody,
     SettingsSectionFooter,
-    SettingsSectionForm
 } from "@app/components/Settings";
 import { ListResourceRulesResponse } from "@server/routers/resource/listResourceRules";
 import { SwitchInput } from "@app/components/SwitchInput";
-import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
-import { ArrowUpDown, Check, InfoIcon, X, ChevronsUpDown } from "lucide-react";
 import {
-    InfoSection,
-    InfoSections,
-    InfoSectionTitle
-} from "@app/components/InfoSection";
+    LuArrowUpDown as ArrowUpDown,
+    LuCheck as Check,
+    LuChevronsUpDown as ChevronsUpDown
+} from "react-icons/lu";
 import { InfoPopup } from "@app/components/ui/info-popup";
 import {
     isValidCIDR,

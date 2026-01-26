@@ -5,7 +5,6 @@ import {
     SettingsSection,
     SettingsSectionBody,
     SettingsSectionDescription,
-    SettingsSectionFooter,
     SettingsSectionHeader,
     SettingsSectionTitle
 } from "@app/components/Settings";
@@ -28,7 +27,15 @@ import { createApiClient, formatAxiosError } from "@app/lib/api";
 import { toast } from "@app/hooks/useToast";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useTransition } from "react";
-import { Check, Ban, Shield, ShieldOff, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { 
+    LuCheck as Check,
+    LuBan as Ban,
+    LuShield as Shield,
+    LuShieldOff as ShieldOff,
+    LuClock as Clock,
+    LuCircleCheck as CheckCircle2,
+    LuCircleX as XCircle
+} from "react-icons/lu";
 import { useParams } from "next/navigation";
 import { FaApple, FaWindows, FaLinux } from "react-icons/fa";
 import { SiAndroid } from "react-icons/si";

@@ -22,7 +22,6 @@ import { useTranslations } from "next-intl";
 import LoginPasswordForm from "@app/components/LoginPasswordForm";
 import LoginOrgSelector from "@app/components/LoginOrgSelector";
 import UserProfileCard from "@app/components/UserProfileCard";
-import { ArrowLeft } from "lucide-react";
 import SecurityKeyAuthButton from "@app/components/SecurityKeyAuthButton";
 
 const identifierSchema = z.object({

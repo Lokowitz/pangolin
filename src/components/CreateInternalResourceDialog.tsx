@@ -54,7 +54,10 @@ import { ListSitesResponse } from "@server/routers/site";
 import { UserType } from "@server/types/UserTypes";
 import { useQuery } from "@tanstack/react-query";
 import { AxiosResponse } from "axios";
-import { Check, ChevronsUpDown } from "lucide-react";
+import {
+    LuCheck as Check,
+    LuChevronsUpDown as ChevronsUpDown  
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";

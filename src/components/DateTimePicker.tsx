@@ -1,7 +1,6 @@
 "use client";
 
-import { ChevronDownIcon, CalendarIcon } from "lucide-react";
-
+import { LuChevronDown as ChevronDownIcon } from "react-icons/lu";
 import { Button } from "@app/components/ui/button";
 import { Calendar } from "@app/components/ui/calendar";
 import { Input } from "@app/components/ui/input";

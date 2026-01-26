@@ -3,7 +3,11 @@
 import { useState, forwardRef, useImperativeHandle, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle2, Check, X } from "lucide-react";
+import {
+    LuCircleCheck as CheckCircle2,
+    LuCheck as Check, 
+    LuX as X 
+} from "react-icons/lu";
 import { Progress } from "@/components/ui/progress";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";

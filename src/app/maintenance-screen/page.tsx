@@ -10,7 +10,7 @@ import {
     CardTitle
 } from "@app/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@app/components/ui/alert";
-import { Clock } from "lucide-react";
+import { LuClock as Clock } from "react-icons/lu";
 import { AxiosResponse } from "axios";
 
 export const dynamic = "force-dynamic";

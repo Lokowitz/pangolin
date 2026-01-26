@@ -1,17 +1,19 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
 import { ExtendedColumnDef } from "@app/components/ui/data-table";
 import { IdpDataTable } from "@app/components/AdminIdpDataTable";
 import { Button } from "@app/components/ui/button";
-import { ArrowRight, ArrowUpDown, MoreHorizontal } from "lucide-react";
+import {
+    LuArrowRight as ArrowRight,
+    LuArrowUpDown as ArrowUpDown,
+    LuEllipsis as MoreHorizontal
+} from "react-icons/lu";
 import { useState } from "react";
 import ConfirmDeleteDialog from "@app/components/ConfirmDeleteDialog";
 import { toast } from "@app/hooks/useToast";
 import { formatAxiosError } from "@app/lib/api";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
-import { Badge } from "@app/components/ui/badge";
 import { useRouter } from "next/navigation";
 import {
     DropdownMenu,

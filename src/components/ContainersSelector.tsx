@@ -1,6 +1,5 @@
 import { useEffect, useState, FC, useCallback, useMemo } from "react";
 import {
-    ColumnDef,
     getCoreRowModel,
     useReactTable,
     flexRender,
@@ -43,7 +42,12 @@ import {
     DropdownMenuCheckboxItem
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, RefreshCw, Filter, Columns } from "lucide-react";
+import {
+    LuSearch as Search,
+    LuRefreshCw as RefreshCw,
+    LuFilter as Filter,
+    LuColumns2 as Columns
+} from "react-icons/lu";
 import { Container } from "@server/routers/site";
 import { useTranslations } from "next-intl";
 import { FaDocker } from "react-icons/fa";

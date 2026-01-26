@@ -30,7 +30,7 @@ import {
 } from "@app/components/InfoSection";
 import CopyToClipboard from "@app/components/CopyToClipboard";
 import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { LuInfo as InfoIcon } from "react-icons/lu";
 import { PaidFeaturesAlert } from "@app/components/PaidFeaturesAlert";
 import { OlmInstallCommands } from "@app/components/olm-install-commands";
 

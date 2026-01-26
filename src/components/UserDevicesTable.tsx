@@ -13,14 +13,14 @@ import { useEnvContext } from "@app/hooks/useEnvContext";
 import { toast } from "@app/hooks/useToast";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
 import { getUserDisplayName } from "@app/lib/getUserDisplayName";
-import { formatFingerprintInfo, formatPlatform } from "@app/lib/formatDeviceFingerprint";
+import { formatFingerprintInfo } from "@app/lib/formatDeviceFingerprint";
 import {
-    ArrowRight,
-    ArrowUpDown,
-    ArrowUpRight,
-    MoreHorizontal,
-    CircleSlash
-} from "lucide-react";
+    LuArrowRight as ArrowRight,
+    LuArrowUpDown as ArrowUpDown,
+    LuArrowUpRight as ArrowUpRight,
+    LuEllipsis as MoreHorizontal,
+    LuCircleSlash as CircleSlash
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -28,7 +28,6 @@ import { useMemo, useState, useTransition } from "react";
 import ClientDownloadBanner from "./ClientDownloadBanner";
 import { Badge } from "./ui/badge";
 import { build } from "@server/build";
-import { usePaidStatus } from "@app/hooks/usePaidStatus";
 import { InfoPopup } from "@app/components/ui/info-popup";
 
 export type ClientRow = {

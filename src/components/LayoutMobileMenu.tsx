@@ -7,7 +7,11 @@ import { cn } from "@app/lib/cn";
 import { ListUserOrgsResponse } from "@server/routers/org";
 import SupporterStatus from "@app/components/SupporterStatus";
 import { Button } from "@app/components/ui/button";
-import { ExternalLink, Menu, Server } from "lucide-react";
+import {
+    LuExternalLink as ExternalLink,
+    LuMenu as Menu,
+    LuServer as Server
+} from "react-icons/lu";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUserContext } from "@app/hooks/useUserContext";
@@ -23,7 +27,6 @@ import {
     SheetTitle,
     SheetDescription
 } from "@app/components/ui/sheet";
-import { Abel } from "next/font/google";
 
 interface LayoutMobileMenuProps {
     orgId?: string;

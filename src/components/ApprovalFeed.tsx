@@ -1,4 +1,5 @@
 "use client";
+
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { toast } from "@app/hooks/useToast";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
@@ -11,7 +12,11 @@ import {
     type ApprovalItem
 } from "@app/lib/queries";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Ban, Check, LaptopMinimal, RefreshCw } from "lucide-react";
+import {
+    LuBan as Ban,
+    LuCheck as Check,
+    LuRefreshCw as RefreshCw
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";

@@ -31,7 +31,7 @@ import {
 import { toast } from "@app/hooks/useToast";
 import { formatAxiosError } from "@app/lib/api";
 import { useUserContext } from "@app/hooks/useUserContext";
-import { CheckCircle2 } from "lucide-react";
+import { LuCircleCheck as CheckCircle2 } from "react-icons/lu";
 import { useTranslations } from "next-intl";
 
 type Disable2FaProps = {

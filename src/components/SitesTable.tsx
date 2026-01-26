@@ -1,6 +1,6 @@
 "use client";
 
-import { Column, ColumnDef } from "@tanstack/react-table";
+import { Column } from "@tanstack/react-table";
 import { ExtendedColumnDef } from "@app/components/ui/data-table";
 import { SitesDataTable } from "@app/components/SitesDataTable";
 import {
@@ -11,16 +11,13 @@ import {
 } from "@app/components/ui/dropdown-menu";
 import { Button } from "@app/components/ui/button";
 import {
-    ArrowRight,
-    ArrowUpDown,
-    ArrowUpRight,
-    Check,
-    MoreHorizontal,
-    X
-} from "lucide-react";
+    LuArrowRight as ArrowRight,
+    LuArrowUpDown as ArrowUpDown,
+    LuArrowUpRight as ArrowUpRight,
+    LuEllipsis as MoreHorizontal
+} from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AxiosResponse } from "axios";
 import { useState, useEffect } from "react";
 import ConfirmDeleteDialog from "@app/components/ConfirmDeleteDialog";
 import { toast } from "@app/hooks/useToast";

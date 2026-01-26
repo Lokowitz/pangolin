@@ -13,21 +13,20 @@ import {
     SelectValue
 } from "@/components/ui/select";
 import {
-    ExternalLink,
-    Globe,
-    Search,
-    RefreshCw,
-    AlertCircle,
-    ChevronLeft,
-    ChevronRight,
-    Key,
-    KeyRound,
-    Fingerprint,
-    AtSign,
-    Copy,
-    InfoIcon,
-    Combine
-} from "lucide-react";
+    LuExternalLink as ExternalLink,
+    LuGlobe as Globe,
+    LuSearch as Search,
+    LuRefreshCw as RefreshCw,
+    LuCircleAlert as AlertCircle,
+    LuChevronLeft as ChevronLeft,
+    LuChevronRight as ChevronRight,
+    LuKey as Key,
+    LuKeyRound as KeyRound,
+    LuFingerprint as Fingerprint,
+    LuAtSign as AtSign,
+    LuCopy as Copy,
+    LuCombine as Combine
+} from "react-icons/lu";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { GetUserResourcesResponse } from "@server/routers/resource/getUserResources";

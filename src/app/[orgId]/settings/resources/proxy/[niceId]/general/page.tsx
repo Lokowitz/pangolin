@@ -42,7 +42,10 @@ import { createApiClient, formatAxiosError } from "@app/lib/api";
 import { finalizeSubdomainSanitize } from "@app/lib/subdomain-utils";
 import { UpdateResourceResponse } from "@server/routers/resource";
 import { AxiosResponse } from "axios";
-import { AlertCircle, Globe } from "lucide-react";
+import {
+    LuCircleAlert as AlertCircle,
+    LuGlobe as Globe
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import { toASCII, toUnicode } from "punycode";

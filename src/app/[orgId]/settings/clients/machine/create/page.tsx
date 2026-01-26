@@ -37,7 +37,10 @@ import {
     PickClientDefaultsResponse
 } from "@server/routers/client";
 import { AxiosResponse } from "axios";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { 
+    LuChevronDown as ChevronDown,
+    LuChevronUp as ChevronUp
+} from "react-icons/lu";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";

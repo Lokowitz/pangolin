@@ -15,7 +15,7 @@ import {
 import { Input } from "@app/components/ui/input";
 import { useForm } from "react-hook-form";
 import { toast } from "@app/hooks/useToast";
-import { useRouter, useParams, redirect } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
     SettingsContainer,
     SettingsSection,
@@ -24,16 +24,17 @@ import {
     SettingsSectionDescription,
     SettingsSectionBody,
     SettingsSectionForm,
-    SettingsSectionFooter,
     SettingsSectionGrid
 } from "@app/components/Settings";
 import { formatAxiosError } from "@app/lib/api";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useState, useEffect } from "react";
-import { SwitchInput } from "@app/components/SwitchInput";
 import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
-import { InfoIcon, ExternalLink } from "lucide-react";
+import { 
+    LuInfo as InfoIcon, 
+    LuExternalLink as ExternalLink 
+} from "react-icons/lu";
 import {
     InfoSection,
     InfoSectionContent,

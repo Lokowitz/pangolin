@@ -3,23 +3,15 @@
 import {
     Card,
     CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle
+    CardHeader
 } from "@/components/ui/card";
-import { createApiClient } from "@app/lib/api";
 import LoginForm, { LoginFormIDP } from "@app/components/LoginForm";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import Image from "next/image";
 import { cleanRedirect } from "@app/lib/cleanRedirect";
 import BrandingLogo from "@app/components/BrandingLogo";
 import { useTranslations } from "next-intl";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
-import Link from "next/link";
-import { Button } from "./ui/button";
-import { ArrowRight } from "lucide-react";
 
 type DashboardLoginFormProps = {
     redirect?: string;

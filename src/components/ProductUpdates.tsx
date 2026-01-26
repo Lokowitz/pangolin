@@ -10,13 +10,13 @@ import {
 } from "@app/lib/queries";
 import { useQueries } from "@tanstack/react-query";
 import {
-    ArrowRight,
-    BellIcon,
-    ChevronRightIcon,
-    ExternalLinkIcon,
-    RocketIcon,
-    XIcon
-} from "lucide-react";
+    LuArrowRight as ArrowRight,
+    LuBell as BellIcon,
+    LuChevronRight as ChevronRightIcon,
+    LuExternalLink as ExternalLinkIcon,
+    LuRocket as RocketIcon,
+    LuX as XIcon
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { Transition } from "@headlessui/react";
 import * as React from "react";

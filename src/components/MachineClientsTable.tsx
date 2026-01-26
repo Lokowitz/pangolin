@@ -13,11 +13,11 @@ import { useEnvContext } from "@app/hooks/useEnvContext";
 import { toast } from "@app/hooks/useToast";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
 import {
-    ArrowRight,
-    ArrowUpDown,
-    MoreHorizontal,
-    CircleSlash
-} from "lucide-react";
+    LuArrowRight as ArrowRight,
+    LuArrowUpDown as ArrowUpDown,
+    LuEllipsis as MoreHorizontal,
+    LuCircleSlash as CircleSlash
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

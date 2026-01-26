@@ -14,7 +14,10 @@ import { getSevenDaysAgo } from "@app/lib/getSevenDaysAgo";
 import { build } from "@server/build";
 import { ColumnDef } from "@tanstack/react-table";
 import axios from "axios";
-import { Key, User } from "lucide-react";
+import {
+    LuKey as Key,
+    LuUser as User
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";

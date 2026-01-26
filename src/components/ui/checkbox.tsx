@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { Check } from "lucide-react";
+import { LuCheck as Check } from "react-icons/lu";
 
 import { cn } from "@app/lib/cn";
 import { cva, type VariantProps } from "class-variance-authority";

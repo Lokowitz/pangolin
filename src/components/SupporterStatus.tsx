@@ -1,14 +1,7 @@
 "use client";
 
-import Image from "next/image";
-import { Separator } from "@app/components/ui/separator";
 import { useSupporterStatusContext } from "@app/hooks/useSupporterStatusContext";
-import { useState, useTransition } from "react";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger
-} from "@app/components/ui/popover";
+import { useState } from "react";
 import {
     Tooltip,
     TooltipContent,
@@ -44,7 +37,6 @@ import { useEnvContext } from "@app/hooks/useEnvContext";
 import { AxiosResponse } from "axios";
 import { ValidateSupporterKeyResponse } from "@server/routers/supporterKey";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
     Card,
     CardContent,
@@ -52,7 +44,10 @@ import {
     CardHeader,
     CardTitle
 } from "./ui/card";
-import { Check, ExternalLink, Heart } from "lucide-react";
+import {
+    LuCheck as Check, 
+    LuHeart as Heart
+} from "react-icons/lu";
 import confetti from "canvas-confetti";
 import { useTranslations } from "next-intl";
 

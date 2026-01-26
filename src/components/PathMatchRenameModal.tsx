@@ -1,4 +1,4 @@
-import { Settings } from "lucide-react";
+import { LuSettings as Settings } from "react-icons/lu";
 import {
     Select,
     SelectContent,
@@ -6,7 +6,6 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-
 import { Badge } from "@app/components/ui/badge";
 import { Label } from "@app/components/ui/label";
 import { useEffect, useState } from "react";

@@ -23,12 +23,13 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@app/components/ui/input";
-import { Checkbox } from "@app/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
-import { InfoIcon, ExternalLink } from "lucide-react";
+import {
+    LuInfo as InfoIcon,
+    LuExternalLink as ExternalLink
+} from "react-icons/lu";
 import { StrategySelect } from "@app/components/StrategySelect";
 import { SwitchInput } from "@app/components/SwitchInput";
-import { Badge } from "@app/components/ui/badge";
 import { useTranslations } from "next-intl";
 
 type CreateIdpFormValues = {

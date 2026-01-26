@@ -1,11 +1,9 @@
 "use client";
+
 import {
     SettingsContainer,
     SettingsSection,
-    SettingsSectionBody,
-    SettingsSectionForm,
-    SettingsSectionHeader,
-    SettingsSectionTitle
+    SettingsSectionBody
 } from "@app/components/Settings";
 import { useTranslations } from "next-intl";
 import {
@@ -17,7 +15,6 @@ import {
     FormMessage
 } from "@app/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Input } from "./ui/input";
 import Editor from "@monaco-editor/react";
 import { cn } from "@app/lib/cn";
 import type { GetBlueprintResponse } from "@server/routers/blueprints";
@@ -29,7 +26,11 @@ import {
     InfoSectionTitle
 } from "./InfoSection";
 import { Badge } from "./ui/badge";
-import { Globe, Terminal, Webhook } from "lucide-react";
+import {
+    LuGlobe as Globe,
+    LuTerminal as Terminal,
+    LuWebhook as Webhook
+} from "react-icons/lu";
 
 export type CreateBlueprintFormProps = {
     blueprint: GetBlueprintResponse;

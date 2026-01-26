@@ -11,7 +11,10 @@ import {
     CardTitle
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, XCircle, Shield } from "lucide-react";
+import {
+    LuCircleCheck as CheckCircle2,
+    LuCircleX as XCircle
+} from "react-icons/lu";
 import Enable2FaDialog from "./Enable2FaDialog";
 import ChangePasswordDialog from "./ChangePasswordDialog";
 import { useTranslations } from "next-intl";

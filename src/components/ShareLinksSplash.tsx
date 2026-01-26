@@ -1,9 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Link, X, Clock, Share, ArrowRight, Lock } from "lucide-react"; // Replace with actual imports
+import {
+    LuLink as Link,
+    LuX as X,
+    LuClock as Clock,
+    LuShare as Share,
+    LuLock as Lock
+} from "react-icons/lu"; // Replace with actual imports
 import { Card, CardContent } from "@app/components/ui/card";
-import { Button } from "@app/components/ui/button";
 import { useTranslations } from "next-intl";
 
 export const ShareableLinksSplash = () => {

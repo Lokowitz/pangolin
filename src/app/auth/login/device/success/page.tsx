@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import BrandingLogo from "@app/components/BrandingLogo";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
-import { CheckCircle2 } from "lucide-react";
+import { LuCircleCheck as CheckCircle2 } from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect } from "react";

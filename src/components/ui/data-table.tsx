@@ -33,12 +33,17 @@ import { Button } from "@app/components/ui/button";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@app/components/ui/input";
 import { DataTablePagination } from "@app/components/DataTablePagination";
-import { Plus, Search, RefreshCw, Columns, Filter } from "lucide-react";
+import {
+    LuPlus as Plus,
+    LuSearch as Search,
+    LuRefreshCw as RefreshCw,
+    LuColumns2 as Columns,
+    LuFilter as Filter
+} from "react-icons/lu";
 import {
     Card,
     CardContent,
-    CardHeader,
-    CardTitle
+    CardHeader
 } from "@app/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@app/components/ui/tabs";
 import { useTranslations } from "next-intl";

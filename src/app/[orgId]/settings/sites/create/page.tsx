@@ -5,7 +5,6 @@ import {
     SettingsSection,
     SettingsSectionBody,
     SettingsSectionDescription,
-    SettingsSectionForm,
     SettingsSectionHeader,
     SettingsSectionTitle
 } from "@app/components/Settings";
@@ -21,11 +20,15 @@ import {
 } from "@app/components/ui/form";
 import HeaderTitle from "@app/components/SettingsSectionTitle";
 import { z } from "zod";
-import { createElement, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@app/components/ui/input";
-import { ChevronDown, ChevronUp, InfoIcon, Terminal } from "lucide-react";
+import {
+    LuChevronDown as ChevronDown,
+    LuChevronUp as ChevronUp,
+    LuInfo as InfoIcon
+} from "react-icons/lu";
 import { Button } from "@app/components/ui/button";
 import CopyTextBox from "@app/components/CopyTextBox";
 import CopyToClipboard from "@app/components/CopyToClipboard";
@@ -35,15 +38,6 @@ import {
     InfoSections,
     InfoSectionTitle
 } from "@app/components/InfoSection";
-import {
-    FaApple,
-    FaCubes,
-    FaDocker,
-    FaFreebsd,
-    FaWindows
-} from "react-icons/fa";
-import { SiNixos, SiKubernetes } from "react-icons/si";
-import { Checkbox, CheckboxWithLabel } from "@app/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
 import { generateKeypair } from "../[niceId]/wireguardConfig";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
@@ -63,7 +57,6 @@ import { QRCodeCanvas } from "qrcode.react";
 import { useTranslations } from "next-intl";
 import { build } from "@server/build";
 import { NewtSiteInstallCommands } from "@app/components/newt-install-commands";
-import { id } from "date-fns/locale";
 
 type SiteType = "newt" | "wireguard" | "local";
 

@@ -15,12 +15,15 @@ import { InfoPopup } from "@app/components/ui/info-popup";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { toast } from "@app/hooks/useToast";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
-import { ArrowUpDown, ArrowUpRight, MoreHorizontal } from "lucide-react";
+import {
+    LuArrowUpRight as ArrowUpRight,
+    LuArrowUpDown as ArrowUpDown,
+    LuEllipsis as MoreHorizontal
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-
 import CreateInternalResourceDialog from "@app/components/CreateInternalResourceDialog";
 import EditInternalResourceDialog from "@app/components/EditInternalResourceDialog";
 import { orgQueries } from "@app/lib/queries";

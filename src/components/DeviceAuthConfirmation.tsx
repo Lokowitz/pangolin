@@ -9,7 +9,10 @@ import {
     CardTitle
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, CheckCircle2, Monitor } from "lucide-react";
+import {
+    LuCircleCheck as CheckCircle2,
+    LuMonitor as Monitor
+} from "react-icons/lu";
 import BrandingLogo from "./BrandingLogo";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";

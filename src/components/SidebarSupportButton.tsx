@@ -4,11 +4,13 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { MessageCircle, CheckCircle2 } from "lucide-react";
+import {
+    LuMessageCircle as MessageCircle,
+    LuCircleCheck as CheckCircle2
+} from "react-icons/lu";
 import { useUserContext } from "@app/hooks/useUserContext";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
-import { cn } from "@app/lib/cn";
 import { useToast } from "@app/hooks/useToast";
 import {
     Popover,

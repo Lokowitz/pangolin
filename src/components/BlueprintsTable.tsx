@@ -1,15 +1,14 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
 import { ExtendedColumnDef } from "@app/components/ui/data-table";
 import { Button } from "@app/components/ui/button";
 import {
-    ArrowRight,
-    ArrowUpDown,
-    Globe,
-    Terminal,
-    Webhook
-} from "lucide-react";
+    LuArrowRight as ArrowRight,
+    LuArrowUpDown as ArrowUpDown,
+    LuGlobe as Globe,
+    LuTerminal as Terminal,
+    LuWebhook as Webhook
+} from "react-icons/lu";
 import { useTransition } from "react";
 import { Badge } from "@app/components/ui/badge";
 import { useRouter } from "next/navigation";

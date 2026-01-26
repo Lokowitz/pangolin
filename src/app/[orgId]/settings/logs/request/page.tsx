@@ -11,7 +11,13 @@ import { useTranslations } from "next-intl";
 import { getSevenDaysAgo } from "@app/lib/getSevenDaysAgo";
 import { ColumnDef } from "@tanstack/react-table";
 import axios from "axios";
-import { ArrowUpRight, Key, Lock, Unlock, User } from "lucide-react";
+import {
+    LuArrowUpRight as ArrowUpRight,
+    LuKey as Key,
+    LuLock as Lock,
+    LuLockOpen as Unlock,
+    LuUser as User
+} from "react-icons/lu";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";

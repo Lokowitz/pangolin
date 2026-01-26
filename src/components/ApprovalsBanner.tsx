@@ -2,7 +2,10 @@
 
 import React from "react";
 import { Button } from "@app/components/ui/button";
-import { ShieldCheck, ArrowRight } from "lucide-react";
+import {
+    LuShieldCheck as ShieldCheck,
+    LuArrowRight as ArrowRight
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import DismissableBanner from "./DismissableBanner";

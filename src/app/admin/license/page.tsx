@@ -37,17 +37,15 @@ import {
     SettingsSectionTitle as SSTitle,
     SettingsSection,
     SettingsSectionDescription,
-    SettingsSectionGrid,
     SettingsSectionHeader,
     SettingsSectionFooter
 } from "@app/components/Settings";
 import SettingsSectionTitle from "@app/components/SettingsSectionTitle";
-import { Check, Heart, InfoIcon } from "lucide-react";
+import { LuCheck as Check} from "react-icons/lu";
 import CopyTextBox from "@app/components/CopyTextBox";
 import ConfirmDeleteDialog from "@app/components/ConfirmDeleteDialog";
 import { SitePriceCalculator } from "../../../components/SitePriceCalculator";
 import { Checkbox } from "@app/components/ui/checkbox";
-import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
 import { useSupporterStatusContext } from "@app/hooks/useSupporterStatusContext";
 import { useTranslations } from "next-intl";
 

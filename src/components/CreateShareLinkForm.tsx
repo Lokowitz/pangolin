@@ -54,7 +54,10 @@ import {
     CommandItem,
     CommandList
 } from "@app/components/ui/command";
-import { CheckIcon, ChevronsUpDown } from "lucide-react";
+import {
+    LuCheck as CheckIcon,
+    LuChevronsUpDown as ChevronsUpDown  
+} from "react-icons/lu";
 import { Checkbox } from "@app/components/ui/checkbox";
 import { GenerateAccessTokenResponse } from "@server/routers/accessToken";
 import { constructShareLink } from "@app/lib/shareLinks";

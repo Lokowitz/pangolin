@@ -2,8 +2,7 @@ import React from "react";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { Button } from "@/components/ui/button";
-import { Info } from "lucide-react";
-import { info } from "winston";
+import { LuInfo as Info } from "react-icons/lu";
 import {
     Popover,
     PopoverContent,

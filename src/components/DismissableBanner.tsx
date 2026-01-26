@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, type ReactNode, useEffectEvent } from "react";
 import { Card, CardContent } from "@app/components/ui/card";
-import { X } from "lucide-react";
+import { LuX as X } from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 

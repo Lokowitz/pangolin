@@ -15,7 +15,12 @@ import { useEnvContext } from "@app/hooks/useEnvContext";
 import { toast } from "@app/hooks/useToast";
 import { formatAxiosError } from "@app/lib/api";
 import { getUserDisplayName } from "@app/lib/getUserDisplayName";
-import { Laptop, LogOut, Moon, Sun, Smartphone } from "lucide-react";
+import {
+    LuLaptop as Laptop,
+    LuMoon as Moon,
+    LuSun as Sun,
+    LuSmartphone as Smartphone
+} from "react-icons/lu";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -25,7 +30,6 @@ import SecurityKeyForm from "./SecurityKeyForm";
 import Enable2FaDialog from "./Enable2FaDialog";
 import ChangePasswordDialog from "./ChangePasswordDialog";
 import ViewDevicesDialog from "./ViewDevicesDialog";
-import SupporterStatus from "./SupporterStatus";
 import { UserType } from "@server/types/UserTypes";
 import LocaleSwitcher from "@app/components/LocaleSwitcher";
 import { useTranslations } from "next-intl";

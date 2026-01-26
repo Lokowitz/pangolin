@@ -47,7 +47,12 @@ import { build } from "@server/build";
 import { UserType } from "@server/types/UserTypes";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import SetResourcePasswordForm from "components/SetResourcePasswordForm";
-import { Binary, Bot, InfoIcon, Key } from "lucide-react";
+import {
+    LuBinary as Binary,
+    LuBot as Bot,
+    LuInfo as InfoIcon,
+    LuKey as Key
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {

@@ -2,7 +2,10 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Copy, Check } from "lucide-react";
+import {
+    LuCopy as Copy,
+    LuCheck as Check
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 
 type CopyTextBoxProps = {

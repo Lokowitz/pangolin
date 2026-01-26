@@ -15,13 +15,10 @@ import {
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
-    FormLabel,
     FormMessage
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
     InputOTP,
     InputOTPGroup,
@@ -29,7 +26,7 @@ import {
 } from "@/components/ui/input-otp";
 import { AxiosResponse } from "axios";
 import { VerifyEmailResponse } from "@server/routers/auth";
-import { ArrowRight, IdCard, Loader2 } from "lucide-react";
+import { LuLoader as Loader2 } from "react-icons/lu";
 import { Alert, AlertDescription } from "./ui/alert";
 import { toast } from "@app/hooks/useToast";
 import { useRouter } from "next/navigation";

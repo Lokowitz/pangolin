@@ -3,7 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, DockIcon as Docker, Globe, Server, X } from "lucide-react";
+import {
+    LuArrowRight as ArrowRight,
+    LuGlobe as Globe,
+    LuServer as Server,
+    LuX as X
+} from "react-icons/lu";
+import { FaDocker as Docker } from "react-icons/fa";
 import Link from "next/link";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useTranslations } from "next-intl";

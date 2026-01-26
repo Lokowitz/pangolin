@@ -1,7 +1,11 @@
 "use client";
 
 import { Button } from "@app/components/ui/button";
-import { Laptop, Moon, Sun } from "lucide-react";
+import {
+    LuLaptop as Laptop,
+    LuMoon as Moon,
+    LuSun as Sun
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";

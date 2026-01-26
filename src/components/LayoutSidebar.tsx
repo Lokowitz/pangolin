@@ -18,7 +18,10 @@ import { approvalQueries } from "@app/lib/queries";
 import { build } from "@server/build";
 import { useQuery } from "@tanstack/react-query";
 import { ListUserOrgsResponse } from "@server/routers/org";
-import { ExternalLink, Server } from "lucide-react";
+import {
+    LuExternalLink as ExternalLink,
+    LuServer as Server
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -27,7 +30,6 @@ import { useEffect, useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import SidebarLicenseButton from "./SidebarLicenseButton";
 import { SidebarSupportButton } from "./SidebarSupportButton";
-import { is } from "drizzle-orm";
 
 const ProductUpdates = dynamic(() => import("./ProductUpdates"), {
     ssr: false

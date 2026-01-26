@@ -1,4 +1,4 @@
-import { Terminal } from "lucide-react";
+import { LuTerminal as Terminal } from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { FaDocker, FaWindows } from "react-icons/fa";

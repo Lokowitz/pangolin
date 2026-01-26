@@ -1,31 +1,8 @@
 "use client";
 
 import {
-    ColumnDef,
-    flexRender,
-    getCoreRowModel,
-    useReactTable,
-    getPaginationRowModel,
-    SortingState,
-    getSortedRowModel,
-    ColumnFiltersState,
-    getFilteredRowModel
+    ColumnDef
 } from "@tanstack/react-table";
-
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableHeader,
-    TableRow
-} from "@/components/ui/table";
-import { Button } from "@app/components/ui/button";
-import { useState } from "react";
-import { Input } from "@app/components/ui/input";
-import { DataTablePagination } from "@app/components/DataTablePagination";
-import { Plus, Search } from "lucide-react";
 import { DataTable } from "@app/components/ui/data-table";
 import { useTranslations } from "next-intl";
 

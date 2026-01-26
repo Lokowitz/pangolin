@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Button } from "@app/components/ui/button";
-import { Download } from "lucide-react";
+import { LuDownload as Download } from "react-icons/lu";
 import { FaApple, FaWindows, FaLinux } from "react-icons/fa";
 import { SiAndroid } from "react-icons/si";
 import { useTranslations } from "next-intl";

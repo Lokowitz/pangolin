@@ -10,7 +10,6 @@ import {
     FormControl,
     FormField,
     FormItem,
-    FormLabel,
     FormMessage
 } from "@/components/ui/form";
 import {
@@ -30,8 +29,7 @@ import {
     InputOTPSeparator,
     InputOTPSlot
 } from "@/components/ui/input-otp";
-import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { LuLoader as Loader2 } from "react-icons/lu";
 import { DeviceAuthConfirmation } from "@/components/DeviceAuthConfirmation";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
 import BrandingLogo from "./BrandingLogo";

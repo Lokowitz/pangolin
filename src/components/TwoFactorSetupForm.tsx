@@ -3,16 +3,13 @@
 import { useState, forwardRef, useImperativeHandle, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { CheckCircle2 } from "lucide-react";
+import { LuCircleCheck as CheckCircle2 } from "react-icons/lu";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { AxiosResponse } from "axios";
 import {
     LoginResponse,
-    RequestTotpSecretBody,
     RequestTotpSecretResponse,
-    VerifyTotpBody,
     VerifyTotpResponse
 } from "@server/routers/auth";
 import { z } from "zod";
@@ -30,7 +27,6 @@ import { toast } from "@app/hooks/useToast";
 import { formatAxiosError } from "@app/lib/api";
 import CopyTextBox from "@app/components/CopyTextBox";
 import { QRCodeCanvas } from "qrcode.react";
-import { useUserContext } from "@app/hooks/useUserContext";
 import { useTranslations } from "next-intl";
 
 type TwoFactorSetupFormProps = {

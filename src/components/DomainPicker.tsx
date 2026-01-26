@@ -35,13 +35,13 @@ import { CheckDomainAvailabilityResponse } from "@server/routers/domain/types";
 import { useQuery } from "@tanstack/react-query";
 import { AxiosResponse } from "axios";
 import {
-    AlertCircle,
-    Building2,
-    Check,
-    CheckCircle2,
-    ChevronsUpDown,
-    Zap
-} from "lucide-react";
+    LuCircleAlert as AlertCircle,
+    LuBuilding2 as Building2,
+    LuCheck as Check,
+    LuCircleCheck as CheckCircle2,
+    LuChevronsUpDown as ChevronsUpDown,
+    LuZap as Zap
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { toUnicode } from "punycode";
 import { useCallback, useEffect, useMemo, useState } from "react";

@@ -24,12 +24,12 @@ import {
     useReactTable
 } from "@tanstack/react-table";
 import {
-    ChevronDown,
-    ChevronRight,
-    Download,
-    Loader,
-    RefreshCw
-} from "lucide-react";
+    LuChevronDown as ChevronDown,
+    LuChevronRight as ChevronRight,
+    LuDownload as Download,
+    LuLoader as Loader,
+    LuRefreshCw as RefreshCw
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useMemo } from "react";
 import {

@@ -1,12 +1,11 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
 import { ExtendedColumnDef } from "@app/components/ui/data-table";
 import { DataTable } from "@app/components/ui/data-table";
 import { Button } from "@app/components/ui/button";
 import { Badge } from "@app/components/ui/badge";
 import { LicenseKeyCache } from "@server/license/license";
-import { ArrowUpDown } from "lucide-react";
+import { LuArrowUpDown as ArrowUpDown } from "react-icons/lu";
 import CopyToClipboard from "@app/components/CopyToClipboard";
 import { useTranslations } from "next-intl";
 import moment from "moment";

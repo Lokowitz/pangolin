@@ -7,7 +7,11 @@ import {
     resourceQueries
 } from "@app/lib/queries";
 import { useQuery } from "@tanstack/react-query";
-import { LoaderIcon, RefreshCw, XIcon } from "lucide-react";
+import {
+    LuLoader as LoaderIcon,
+    LuRefreshCw as RefreshCw,
+    LuX as XIcon
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { DateRangePicker, type DateTimeValue } from "./DateTimePicker";

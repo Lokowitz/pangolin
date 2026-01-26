@@ -11,14 +11,11 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-    Users,
-    Globe,
-    Database,
-    Cog,
-    Settings,
-    Waypoints,
-    Combine
-} from "lucide-react";
+    LuUsers as Users,
+    LuSettings as Settings,
+    LuWaypoints as Waypoints,
+    LuCombine as Combine
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 
 interface OrgStat {

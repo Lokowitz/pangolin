@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw } from "lucide-react";
+import { LuRefreshCw as RefreshCw } from "react-icons/lu";
 import { Button } from "@app/components/ui/button";
 import { useTranslations } from "next-intl";
 import { toast } from "@app/hooks/useToast";

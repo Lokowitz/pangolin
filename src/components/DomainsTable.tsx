@@ -1,15 +1,14 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
 import { ExtendedColumnDef } from "@app/components/ui/data-table";
 import { DomainsDataTable } from "@app/components/DomainsDataTable";
 import { Button } from "@app/components/ui/button";
 import {
-    ArrowRight,
-    ArrowUpDown,
-    MoreHorizontal,
-    RefreshCw
-} from "lucide-react";
+    LuArrowRight as ArrowRight,
+    LuArrowUpDown as ArrowUpDown,
+    LuEllipsis as MoreHorizontal,
+    LuRefreshCw as RefreshCw
+} from "react-icons/lu";
 import { useState } from "react";
 import ConfirmDeleteDialog from "@app/components/ConfirmDeleteDialog";
 import { formatAxiosError } from "@app/lib/api";

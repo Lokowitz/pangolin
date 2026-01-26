@@ -2,7 +2,11 @@
 
 import React from "react";
 import { Button } from "@app/components/ui/button";
-import { Server, Terminal, Container } from "lucide-react";
+import {
+    LuServer as Server,
+    LuTerminal as Terminal,
+    LuContainer as Container
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import DismissableBanner from "./DismissableBanner";

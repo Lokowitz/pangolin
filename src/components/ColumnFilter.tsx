@@ -13,7 +13,11 @@ import {
     CommandItem,
     CommandList
 } from "@app/components/ui/command";
-import { CheckIcon, ChevronDownIcon, Filter } from "lucide-react";
+import {
+    LuCheck as CheckIcon,
+    LuChevronDown as ChevronDownIcon,
+    LuFilter as Filter
+} from "react-icons/lu";
 import { cn } from "@app/lib/cn";
 
 interface FilterOption {

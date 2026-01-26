@@ -30,7 +30,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
-import { InfoIcon, ExternalLink, CheckIcon } from "lucide-react";
+import {
+    LuInfo as InfoIcon,
+    LuExternalLink as ExternalLink,
+    LuCheck as CheckIcon
+} from "react-icons/lu";
 import PolicyTable, { PolicyRow } from "../../../../../components/PolicyTable";
 import { AxiosResponse } from "axios";
 import { ListOrgsResponse } from "@server/routers/org";
@@ -50,8 +54,6 @@ import {
 } from "@app/components/ui/command";
 import { CaretSortIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
-import { Textarea } from "@app/components/ui/textarea";
-import { InfoPopup } from "@app/components/ui/info-popup";
 import { GetIdpResponse } from "@server/routers/idp";
 import {
     SettingsContainer,

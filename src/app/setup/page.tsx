@@ -35,8 +35,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger
 } from "@app/components/ui/collapsible";
-import { ChevronsUpDown } from "lucide-react";
-import { cn } from "@app/lib/cn";
+import { LuChevronsUpDown as ChevronsUpDown } from "react-icons/lu";
 
 type Step = "org" | "site" | "resources";
 

@@ -8,7 +8,10 @@ import {
     CardHeader,
     CardTitle
 } from "@app/components/ui/card";
-import { Shield, ArrowRight } from "lucide-react";
+import {
+    LuShield as Shield,
+    LuArrowRight as ArrowRight
+} from "react-icons/lu";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 

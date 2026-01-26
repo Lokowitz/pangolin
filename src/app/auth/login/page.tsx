@@ -5,7 +5,7 @@ import OrgSignInLink from "@app/components/OrgSignInLink";
 import { cache } from "react";
 import SmartLoginForm from "@app/components/SmartLoginForm";
 import DashboardLoginForm from "@app/components/DashboardLoginForm";
-import { Mail } from "lucide-react";
+import { LuMail as Mail } from "react-icons/lu";
 import { pullEnv } from "@app/lib/pullEnv";
 import { cleanRedirect } from "@app/lib/cleanRedirect";
 import { getTranslations } from "next-intl/server";

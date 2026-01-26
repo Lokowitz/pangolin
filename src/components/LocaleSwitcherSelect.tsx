@@ -7,7 +7,10 @@ import {
     DropdownMenuTrigger
 } from "@app/components/ui/dropdown-menu";
 import { Button } from "@app/components/ui/button";
-import { Check, Globe, Languages } from "lucide-react";
+import {
+    LuCheck as Check,
+    LuLanguages as Languages
+} from "react-icons/lu";
 import clsx from "clsx";
 import { useTransition } from "react";
 import { Locale } from "@/i18n/config";

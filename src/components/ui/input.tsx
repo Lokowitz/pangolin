@@ -1,7 +1,10 @@
 import * as React from "react";
 
 import { cn } from "@app/lib/cn";
-import { EyeOff, Eye } from "lucide-react";
+import {
+    LuEyeOff as EyeOff,
+    LuEye as Eye
+} from "react-icons/lu";
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 

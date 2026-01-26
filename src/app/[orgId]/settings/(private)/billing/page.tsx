@@ -22,17 +22,16 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import {
-    CreditCard,
-    Database,
-    Clock,
-    AlertCircle,
-    CheckCircle,
-    Users,
-    Calculator,
-    ExternalLink,
-    Gift,
-    Server
-} from "lucide-react";
+    LuCreditCard as CreditCard,
+    LuDatabase as Database,
+    LuClock as Clock,
+    LuCircleAlert as AlertCircle,
+    LuCircleCheck as CheckCircle,
+    LuUsers as Users,
+    LuExternalLink as ExternalLink,
+    LuGift as Gift,
+    LuServer as Server
+} from "react-icons/lu";
 import { InfoPopup } from "@/components/ui/info-popup";
 import {
     GetOrgSubscriptionResponse,

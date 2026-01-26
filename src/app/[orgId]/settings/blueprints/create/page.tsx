@@ -2,9 +2,7 @@ import SettingsSectionTitle from "@app/components/SettingsSectionTitle";
 import { Button } from "@app/components/ui/button";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-
 import type { Metadata } from "next";
-import { ArrowLeft } from "lucide-react";
 import CreateBlueprintForm from "@app/components/CreateBlueprintForm";
 
 export interface CreateBlueprintPageProps {

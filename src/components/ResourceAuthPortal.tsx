@@ -23,7 +23,14 @@ import {
     FormLabel,
     FormMessage
 } from "@/components/ui/form";
-import { LockIcon, Binary, Key, User, Send, AtSign } from "lucide-react";
+import {
+    LuLock as LockIcon,
+    LuBinary as Binary,
+    LuKey as Key,
+    LuUser as User,
+    LuSend as Send,
+    LuAtSign as AtSign
+} from "react-icons/lu";
 import {
     InputOTP,
     InputOTPGroup,

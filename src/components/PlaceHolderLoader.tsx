@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Loader2 } from "lucide-react"; // Ensure you have lucide-react installed
+import { LuLoader as Loader2 } from "react-icons/lu"; // Ensure you have lucide-react installed
 
 interface LoaderProps {
     height?: string;

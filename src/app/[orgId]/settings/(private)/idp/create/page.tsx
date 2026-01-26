@@ -32,7 +32,7 @@ import { createApiClient, formatAxiosError } from "@app/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ListRolesResponse } from "@server/routers/role";
 import { AxiosResponse } from "axios";
-import { InfoIcon } from "lucide-react";
+import { LuInfo as InfoIcon } from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";

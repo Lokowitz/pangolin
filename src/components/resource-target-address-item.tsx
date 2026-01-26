@@ -5,7 +5,7 @@ import { CaretSortIcon } from "@radix-ui/react-icons";
 import type { ListSitesResponse } from "@server/routers/site";
 import { type ListTargetsResponse } from "@server/routers/target";
 import type { ArrayElement } from "@server/types/ArrayElement";
-import { CheckIcon } from "lucide-react";
+import { LuCheck as CheckIcon } from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { ContainersSelector } from "./ContainersSelector";
 import { Button } from "./ui/button";

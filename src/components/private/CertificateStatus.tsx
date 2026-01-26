@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { RotateCw } from "lucide-react";
+import { LuRotateCw as RotateCw } from "react-icons/lu";
 import { useCertificate } from "@app/hooks/useCertificate";
 import { useTranslations } from "next-intl";
 

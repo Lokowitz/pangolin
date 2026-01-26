@@ -2,7 +2,10 @@
 
 import React from "react";
 import { Button } from "@app/components/ui/button";
-import { Plug, ArrowRight } from "lucide-react";
+import {
+    LuPlug as Plug,
+    LuArrowRight as ArrowRight
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import DismissableBanner from "./DismissableBanner";

@@ -10,7 +10,10 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Plus } from "lucide-react";
+import {
+    LuArrowRight as ArrowRight,
+    LuPlus as Plus
+} from "react-icons/lu";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useTranslations } from "next-intl";
 

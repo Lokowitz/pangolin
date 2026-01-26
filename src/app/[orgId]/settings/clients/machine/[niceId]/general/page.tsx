@@ -33,7 +33,10 @@ import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import ActionBanner from "@app/components/ActionBanner";
-import { Shield, ShieldOff } from "lucide-react";
+import { 
+    LuShield as Shield, 
+    LuShieldOff as ShieldOff
+} from "react-icons/lu";
 
 const GeneralFormSchema = z.object({
     name: z.string().nonempty("Name is required"),

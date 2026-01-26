@@ -34,9 +34,11 @@ import {
     ResetPasswordBody,
     ResetPasswordResponse
 } from "@server/routers/auth";
-import { Loader2, InfoIcon } from "lucide-react";
+import {
+    LuLoader as Loader2,
+    LuInfo as InfoIcon
+} from "react-icons/lu";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { toast } from "@app/hooks/useToast";
 import { useRouter } from "next/navigation";
 import { formatAxiosError } from "@app/lib/api";
 import { createApiClient } from "@app/lib/api";

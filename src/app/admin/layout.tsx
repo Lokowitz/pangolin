@@ -1,6 +1,4 @@
 import { Metadata } from "next";
-import { TopbarNav } from "@app/components/TopbarNav";
-import { KeyRound, Users } from "lucide-react";
 import { verifySession } from "@app/lib/auth/verifySession";
 import { redirect } from "next/navigation";
 import { cache } from "react";

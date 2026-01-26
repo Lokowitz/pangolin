@@ -36,7 +36,10 @@ import { useTranslations } from "next-intl";
 import React from "react";
 import { StrategySelect, StrategyOption } from "./StrategySelect";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { InfoIcon, Check } from "lucide-react";
+import {
+    LuInfo as InfoIcon,
+    LuCheck as Check
+} from "react-icons/lu";
 import { useUserContext } from "@app/hooks/useUserContext";
 
 type FormProps = {

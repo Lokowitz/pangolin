@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@app/components/ui/button";
-import { FingerprintIcon } from "lucide-react";
+import { LuFingerprint as FingerprintIcon } from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { startAuthentication } from "@simplewebauthn/browser";
 import {

@@ -1,24 +1,18 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
 import { ExtendedColumnDef } from "@app/components/ui/data-table";
 import { Button } from "@app/components/ui/button";
 import {
-    ArrowUpDown,
-    Trash2,
-    MoreHorizontal,
-    Pencil,
-    ArrowRight
-} from "lucide-react";
+    LuArrowUpDown as ArrowUpDown,
+    LuEllipsis as MoreHorizontal
+} from "react-icons/lu";
 import { PolicyDataTable } from "@app/components/PolicyDataTable";
-import { Badge } from "@app/components/ui/badge";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger
 } from "@app/components/ui/dropdown-menu";
-import Link from "next/link";
 import { InfoPopup } from "@app/components/ui/info-popup";
 import { useTranslations } from "next-intl";
 

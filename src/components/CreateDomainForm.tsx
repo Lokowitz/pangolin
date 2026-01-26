@@ -11,7 +11,7 @@ import {
     FormDescription
 } from "@app/components/ui/form";
 import { Input } from "@app/components/ui/input";
-import { Checkbox, CheckboxWithLabel } from "@app/components/ui/checkbox";
+import { CheckboxWithLabel } from "@app/components/ui/checkbox";
 import { useToast } from "@app/hooks/useToast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useMemo } from "react";
@@ -35,14 +35,7 @@ import { CreateDomainResponse } from "@server/routers/domain/createOrgDomain";
 import { StrategySelect } from "@app/components/StrategySelect";
 import { AxiosResponse } from "axios";
 import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
-import { InfoIcon, AlertTriangle, Globe } from "lucide-react";
-import CopyToClipboard from "@app/components/CopyToClipboard";
-import {
-    InfoSection,
-    InfoSectionContent,
-    InfoSections,
-    InfoSectionTitle
-} from "@app/components/InfoSection";
+import { LuGlobe as Globe } from "react-icons/lu";
 import { useOrgContext } from "@app/hooks/useOrgContext";
 import { build } from "@server/build";
 import { toASCII, toUnicode } from "punycode";

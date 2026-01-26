@@ -17,7 +17,6 @@ import { z } from "zod";
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -40,7 +39,7 @@ import { getUserDisplayName } from "@app/lib/getUserDisplayName";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { Tag, TagInput } from "@app/components/tags/tag-input";
 import { UserType } from "@server/types/UserTypes";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { orgQueries, resourceQueries } from "@app/lib/queries";
 import {
     Command,
@@ -57,14 +56,11 @@ import {
 } from "@app/components/ui/popover";
 import { cn } from "@app/lib/cn";
 import { ListSitesResponse } from "@server/routers/site";
-import { Check, ChevronsUpDown, ChevronDown } from "lucide-react";
 import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger
-} from "@app/components/ui/collapsible";
+    LuCheck as Check,
+    LuChevronsUpDown as ChevronsUpDown
+} from "react-icons/lu";
 import { HorizontalTabs, TabItem } from "@app/components/HorizontalTabs";
-import { Separator } from "@app/components/ui/separator";
 // import { InfoPopup } from "@app/components/ui/info-popup";
 
 // Helper to validate port range string format

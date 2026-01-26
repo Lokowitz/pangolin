@@ -3,13 +3,11 @@
 import { Button } from "@app/components/ui/button";
 import { Card, CardContent } from "@app/components/ui/card";
 import {
-    ShieldCheck,
-    Check,
-    Ban,
-    User,
-    Settings,
-    ArrowRight
-} from "lucide-react";
+    LuCheck as Check,
+    LuUser as User,
+    LuSettings as Settings,
+    LuArrowRight as ArrowRight
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 

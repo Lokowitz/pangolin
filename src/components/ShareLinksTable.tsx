@@ -1,39 +1,22 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
 import { ExtendedColumnDef } from "@app/components/ui/data-table";
 import { ShareLinksDataTable } from "@app/components/ShareLinksDataTable";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-} from "@app/components/ui/dropdown-menu";
 import { Button } from "@app/components/ui/button";
 import {
-    Copy,
-    ArrowRight,
-    ArrowUpDown,
-    MoreHorizontal,
-    Check,
-    ArrowUpRight,
-    ShieldOff,
-    ShieldCheck
-} from "lucide-react";
+    LuArrowUpDown as ArrowUpDown,
+    LuArrowUpRight as ArrowUpRight
+} from "react-icons/lu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 // import CreateResourceForm from "./CreateResourceForm";
 import { useState } from "react";
-import ConfirmDeleteDialog from "@app/components/ConfirmDeleteDialog";
 import { formatAxiosError } from "@app/lib/api";
 import { toast } from "@app/hooks/useToast";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
-import { ArrayElement } from "@server/types/ArrayElement";
-import { ListAccessTokensResponse } from "@server/routers/accessToken";
 import moment from "moment";
 import CreateShareLinkForm from "@app/components/CreateShareLinkForm";
-import { constructShareLink } from "@app/lib/shareLinks";
 import { useTranslations } from "next-intl";
 
 export type ShareLinkRow = {

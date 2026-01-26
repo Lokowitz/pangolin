@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Globe } from "lucide-react";
+import { LuGlobe as Globe } from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import DismissableBanner from "./DismissableBanner";
 

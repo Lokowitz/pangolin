@@ -1,10 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ColumnDef } from "@tanstack/react-table";
 import { ExtendedColumnDef } from "@app/components/ui/data-table";
 import { Button } from "./ui/button";
-import { ArrowUpDown } from "lucide-react";
+import { LuArrowUpDown as ArrowUpDown } from "react-icons/lu";
 import CopyToClipboard from "./CopyToClipboard";
 import { Badge } from "./ui/badge";
 import moment from "moment";
@@ -13,7 +12,7 @@ import { GeneratedLicenseKey } from "@server/routers/generatedLicense/types";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@app/hooks/useToast";
-import { createApiClient, formatAxiosError } from "@app/lib/api";
+import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import GenerateLicenseKeyForm from "./GenerateLicenseKeyForm";
 

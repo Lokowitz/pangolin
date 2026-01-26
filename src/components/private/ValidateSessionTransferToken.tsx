@@ -3,10 +3,10 @@
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
 import { AxiosResponse } from "axios";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { LuCircleAlert as AlertCircle } from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { TransferSessionResponse } from "@server/routers/auth/types";
 

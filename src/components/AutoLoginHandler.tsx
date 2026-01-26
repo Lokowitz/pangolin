@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useEnvContext } from "@app/hooks/useEnvContext";
-import { createApiClient, formatAxiosError } from "@app/lib/api";
-import { AxiosResponse } from "axios";
+import { createApiClient } from "@app/lib/api";
 import { redirect, useRouter } from "next/navigation";
 import {
     Card,
@@ -13,7 +12,11 @@ import {
     CardDescription
 } from "@app/components/ui/card";
 import { Alert, AlertDescription } from "@app/components/ui/alert";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+    LuLoaderCircle as Loader2,
+    LuCircleCheck as CheckCircle2,
+    LuCircleAlert as AlertCircle
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { generateOidcUrlProxy } from "@app/actions/server";
 

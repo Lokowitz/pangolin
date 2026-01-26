@@ -1,7 +1,12 @@
 "use client";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldCheck, ShieldOff, Eye, EyeOff } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+    LuShieldCheck as ShieldCheck,
+    LuShieldOff as ShieldOff,
+    LuEye as Eye,
+    LuEyeOff as EyeOff
+} from "react-icons/lu";
 import { useResourceContext } from "@app/hooks/useResourceContext";
 import CopyToClipboard from "@app/components/CopyToClipboard";
 import {

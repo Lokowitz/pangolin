@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@app/components/ui/button";
 import { toast } from "@app/hooks/useToast";
-import { useState, useRef, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { createApiClient } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -9,7 +9,11 @@ import { useTranslations } from "next-intl";
 import { LogDataTable } from "@app/components/LogDataTable";
 import { ColumnDef } from "@tanstack/react-table";
 import { DateTimeValue } from "@app/components/DateTimePicker";
-import { ArrowUpRight, Key, User } from "lucide-react";
+import {
+    LuArrowUpRight as ArrowUpRight,
+    LuKey as Key,
+    LuUser as User
+} from "react-icons/lu";
 import Link from "next/link";
 import { ColumnFilter } from "@app/components/ColumnFilter";
 import SettingsSectionTitle from "@app/components/SettingsSectionTitle";

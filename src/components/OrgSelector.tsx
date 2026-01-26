@@ -23,7 +23,13 @@ import {
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { cn } from "@app/lib/cn";
 import { ListUserOrgsResponse } from "@server/routers/org";
-import { Check, ChevronsUpDown, Plus, Building2, Users } from "lucide-react";
+import {
+    LuCheck as Check,
+    LuChevronsUpDown as ChevronsUpDown,
+    LuPlus as Plus,
+    LuBuilding2 as Building2,
+    LuUsers as Users
+} from "react-icons/lu";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useUserContext } from "@app/hooks/useUserContext";

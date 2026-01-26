@@ -11,7 +11,7 @@ import { CheckboxWithLabel } from "./ui/checkbox";
 import { Button } from "./ui/button";
 import { useState } from "react";
 import { FaCubes, FaDocker, FaWindows } from "react-icons/fa";
-import { Terminal } from "lucide-react";
+import { LuTerminal as Terminal } from "react-icons/lu";
 import { SiKubernetes, SiNixos } from "react-icons/si";
 
 export type CommandItem = string | { title: string; command: string };

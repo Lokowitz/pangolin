@@ -19,16 +19,16 @@ import { createApiClient, formatAxiosError } from "@app/lib/api";
 import { UpdateResourceResponse } from "@server/routers/resource";
 import { AxiosResponse } from "axios";
 import {
-    ArrowRight,
-    ArrowUpDown,
-    CheckCircle2,
-    ChevronDown,
-    Clock,
-    MoreHorizontal,
-    ShieldCheck,
-    ShieldOff,
-    XCircle
-} from "lucide-react";
+    LuArrowRight as ArrowRight,
+    LuArrowUpDown as ArrowUpDown,
+    LuCircleCheck as CheckCircle2,
+    LuChevronDown as ChevronDown,
+    LuClock as Clock,
+    LuEllipsis as MoreHorizontal,
+    LuShieldCheck as ShieldCheck,
+    LuShieldOff as ShieldOff,
+    LuCircleX as XCircle
+} from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

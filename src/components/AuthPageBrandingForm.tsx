@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { startTransition, useActionState, useState } from "react";
+import { useActionState } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import {
@@ -22,10 +22,9 @@ import {
     SettingsSectionTitle
 } from "./Settings";
 import { useTranslations } from "next-intl";
-
 import type { GetLoginPageBrandingResponse } from "@server/routers/loginPage/types";
 import { Input } from "./ui/input";
-import { ExternalLink, InfoIcon, XIcon } from "lucide-react";
+import { LuX as XIcon } from "react-icons/lu";
 import { Button } from "./ui/button";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
@@ -34,7 +33,6 @@ import { toast } from "@app/hooks/useToast";
 import { usePaidStatus } from "@app/hooks/usePaidStatus";
 import { build } from "@server/build";
 import { PaidFeaturesAlert } from "./PaidFeaturesAlert";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 export type AuthPageCustomizationProps = {
     orgId: string;

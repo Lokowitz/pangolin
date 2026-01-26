@@ -7,7 +7,7 @@ import {
     TooltipTrigger
 } from "@app/components/ui/tooltip";
 import { Button } from "./ui/button";
-import { TicketCheck } from "lucide-react";
+import { LuTicketCheck as TicketCheck } from "react-icons/lu";
 import { useTranslations } from "next-intl";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
 import Link from "next/link";

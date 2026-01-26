@@ -2,7 +2,7 @@ import SignupForm from "@app/components/SignupForm";
 import { verifySession } from "@app/lib/auth/verifySession";
 import { cleanRedirect } from "@app/lib/cleanRedirect";
 import { pullEnv } from "@app/lib/pullEnv";
-import { Mail } from "lucide-react";
+import { LuMail as Mail } from "react-icons/lu";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cache } from "react";

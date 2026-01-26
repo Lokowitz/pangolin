@@ -13,7 +13,11 @@ import {
     CardDescription
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+    LuLoader as Loader2,
+    LuCircleCheck as CheckCircle2,
+    LuCircleAlert as AlertCircle
+} from "react-icons/lu";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
 import { useTranslations } from "next-intl";
 import { validateOidcUrlCallbackProxy } from "@app/actions/server";

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Info } from "lucide-react";
+import { LuInfo as Info } from "react-icons/lu";
 import {
     Popover,
     PopoverContent,

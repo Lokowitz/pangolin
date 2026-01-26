@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Button } from "@app/components/ui/button";
-import { MinusCircle, PlusCircle } from "lucide-react";
+import {
+    LuCircleMinus as MinusCircle,
+    LuCirclePlus as PlusCircle
+} from "react-icons/lu";
 import {
     Credenza,
     CredenzaBody,

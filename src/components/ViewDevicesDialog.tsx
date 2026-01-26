@@ -29,7 +29,7 @@ import {
 } from "@app/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@app/components/ui/tabs";
 import ConfirmDeleteDialog from "@app/components/ConfirmDeleteDialog";
-import { Loader2, RefreshCw } from "lucide-react";
+import { LuLoader as Loader2 } from "react-icons/lu";
 import moment from "moment";
 import { useUserContext } from "@app/hooks/useUserContext";
 

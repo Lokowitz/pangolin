@@ -34,9 +34,8 @@ import {
     ResetPasswordBody,
     ResetPasswordResponse
 } from "@server/routers/auth";
-import { Loader2 } from "lucide-react";
+import { LuLoaderCircle as Loader2 } from "react-icons/lu";
 import { Alert, AlertDescription } from "@app/components/ui/alert";
-import { toast } from "@app/hooks/useToast";
 import { useRouter } from "next/navigation";
 import { formatAxiosError } from "@app/lib/api";
 import { createApiClient } from "@app/lib/api";

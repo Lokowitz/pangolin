@@ -15,7 +15,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { AxiosResponse } from "axios";
 import { AcceptInviteResponse, GetUserResponse } from "@server/routers/user";
-import { Loader2 } from "lucide-react";
+import { LuLoader as Loader2 } from "react-icons/lu";
 
 type InviteStatusCardProps = {
     user: GetUserResponse | null;
