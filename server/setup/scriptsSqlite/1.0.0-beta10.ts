@@ -1,6 +1,6 @@
 import { configFilePath1, configFilePath2 } from "@server/lib/consts";
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 
 export default async function migration() {
     console.log("Running setup script 1.0.0-beta.10...");
@@ -24,12 +24,12 @@ export default async function migration() {
 
         // Read and parse the YAML file
         const fileContents = fs.readFileSync(filePath, "utf8");
-        const rawConfig = yaml.load(fileContents) as any;
+        const rawConfig = yaml.parse(fileContents) as any;
 
         delete rawConfig.server.secure_cookies;
 
         // Write the updated YAML back to the file
-        const updatedYaml = yaml.dump(rawConfig);
+        const updatedYaml = yaml.stringify(rawConfig);
         fs.writeFileSync(filePath, updatedYaml, "utf8");
 
         console.log(`Removed deprecated config option: secure_cookies.`);

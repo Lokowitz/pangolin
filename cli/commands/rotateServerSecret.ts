@@ -4,7 +4,7 @@ import { encrypt, decrypt } from "@server/lib/crypto";
 import { configFilePath1, configFilePath2 } from "@server/lib/consts";
 import { eq } from "drizzle-orm";
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 
 type RotateServerSecretArgs = {
     "old-secret": string;
@@ -63,7 +63,7 @@ export const rotateServerSecret: CommandModule<
 
             // Read current config
             const configContent = fs.readFileSync(configPath, "utf8");
-            const config = yaml.load(configContent) as any;
+            const config = yaml.parse(configContent) as any;
 
             if (!config?.server?.secret) {
                 console.error(
@@ -258,7 +258,7 @@ export const rotateServerSecret: CommandModule<
             // Update config file with new secret
             console.log("\nUpdating config file...");
             config.server.secret = newSecret;
-            const newConfigContent = yaml.dump(config, {
+            const newConfigContent = yaml.stringify(config, {
                 indent: 2,
                 lineWidth: -1
             });

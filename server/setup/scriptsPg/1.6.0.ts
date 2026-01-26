@@ -2,7 +2,7 @@ import { db } from "@server/db/pg/driver";
 import { configFilePath1, configFilePath2 } from "@server/lib/consts";
 import { sql } from "drizzle-orm";
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 
 const version = "1.6.0";
 
@@ -37,14 +37,14 @@ export default async function migration() {
 
         // Read and parse the YAML file
         const fileContents = fs.readFileSync(filePath, "utf8");
-        const rawConfig = yaml.load(fileContents) as any;
+        const rawConfig = yaml.parse(fileContents) as any;
 
         if (rawConfig.server?.trust_proxy) {
             rawConfig.server.trust_proxy = 1;
         }
 
         // Write the updated YAML back to the file
-        const updatedYaml = yaml.dump(rawConfig);
+        const updatedYaml = yaml.stringify(rawConfig);
         fs.writeFileSync(filePath, updatedYaml, "utf8");
 
         console.log(`Set trust_proxy to 1 in config file`);

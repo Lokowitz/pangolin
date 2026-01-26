@@ -12,7 +12,7 @@
  */
 
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 import { privateConfigFilePath1 } from "@server/lib/consts";
 import { z } from "zod";
 import { colorsSchema } from "@server/lib/colorsSchema";
@@ -186,7 +186,7 @@ export function readPrivateConfigFile() {
             if (yamlContent.trim() === "") {
                 return {};
             }
-            const config = yaml.load(yamlContent);
+            const config = yaml.parse(yamlContent);
             return config;
         } catch (error) {
             if (error instanceof Error) {

@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 import { encodeBase32LowerCaseNoPadding } from "@oslojs/encoding";
 import { APP_PATH, configFilePath1, configFilePath2 } from "@server/lib/consts";
 
@@ -177,13 +177,13 @@ export default async function migration() {
         }
 
         const fileContents = fs.readFileSync(filePath, "utf8");
-        const rawConfig = yaml.load(fileContents) as any;
+        const rawConfig = yaml.parse(fileContents) as any;
 
         if (!rawConfig.server.secret) {
             rawConfig.server.secret = generateIdFromEntropySize(32);
         }
 
-        const updatedYaml = yaml.dump(rawConfig);
+        const updatedYaml = yaml.stringify(rawConfig);
         fs.writeFileSync(filePath, updatedYaml, "utf8");
 
         console.log(`Added new config option: server.secret`);

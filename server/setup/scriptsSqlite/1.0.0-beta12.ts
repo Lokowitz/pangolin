@@ -2,7 +2,7 @@ import { db } from "../../db/sqlite";
 import { configFilePath1, configFilePath2 } from "@server/lib/consts";
 import { sql } from "drizzle-orm";
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 
 export default async function migration() {
     console.log("Running setup script 1.0.0-beta.12...");
@@ -26,7 +26,7 @@ export default async function migration() {
 
         // Read and parse the YAML file
         const fileContents = fs.readFileSync(filePath, "utf8");
-        const rawConfig = yaml.load(fileContents) as any;
+        const rawConfig = yaml.parse(fileContents) as any;
 
         if (!rawConfig.flags) {
             rawConfig.flags = {};
@@ -35,7 +35,7 @@ export default async function migration() {
         rawConfig.flags.allow_base_domain_resources = true;
 
         // Write the updated YAML back to the file
-        const updatedYaml = yaml.dump(rawConfig);
+        const updatedYaml = yaml.stringify(rawConfig);
         fs.writeFileSync(filePath, updatedYaml, "utf8");
 
         console.log(`Added new config option: allow_base_domain_resources`);

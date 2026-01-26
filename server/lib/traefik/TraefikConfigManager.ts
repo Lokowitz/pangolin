@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import config from "@server/lib/config";
 import logger from "@server/logger";
-import * as yaml from "js-yaml";
+import yaml from "yaml";
 import axios from "axios";
 import { db, exitNodes } from "@server/db";
 import { eq } from "drizzle-orm";
@@ -573,7 +573,7 @@ export class TraefikConfigManager {
                     "utf8"
                 );
                 // Try to parse as YAML then JSON.stringify for comparison
-                const oldObj = yaml.load(oldContent);
+                const oldObj = yaml.parse(oldContent);
                 oldJson = JSON.stringify(oldObj);
             } catch {
                 oldJson = "";
@@ -587,7 +587,7 @@ export class TraefikConfigManager {
             try {
                 fs.writeFileSync(
                     traefikDynamicConfigPath,
-                    yaml.dump(traefikConfig, { noRefs: true }),
+                    yaml.stringify(traefikConfig),
                     "utf8"
                 );
                 logger.info("Traefik dynamic config updated");
@@ -611,7 +611,7 @@ export class TraefikConfigManager {
         if (fs.existsSync(dynamicConfigPath)) {
             try {
                 const fileContent = fs.readFileSync(dynamicConfigPath, "utf8");
-                dynamicConfig = yaml.load(fileContent) || dynamicConfig;
+                dynamicConfig = yaml.parse(fileContent) || dynamicConfig;
                 if (!dynamicConfig.tls)
                     dynamicConfig.tls = { certificates: [] };
                 if (!Array.isArray(dynamicConfig.tls.certificates)) {
@@ -623,7 +623,7 @@ export class TraefikConfigManager {
         }
 
         // Keep a copy of the original config for comparison
-        const originalConfigYaml = yaml.dump(dynamicConfig, { noRefs: true });
+        const originalConfigYaml = yaml.stringify(dynamicConfig);
 
         // Clear existing certificates and rebuild from local state
         dynamicConfig.tls.certificates = [];
@@ -688,7 +688,7 @@ export class TraefikConfigManager {
         }
 
         // Only write the config if it has changed
-        const newConfigYaml = yaml.dump(dynamicConfig, { noRefs: true });
+        const newConfigYaml = yaml.stringify(dynamicConfig);
         if (newConfigYaml !== originalConfigYaml) {
             fs.writeFileSync(dynamicConfigPath, newConfigYaml, "utf8");
             logger.info("Dynamic cert config updated from local certificates");
@@ -717,7 +717,7 @@ export class TraefikConfigManager {
         if (fs.existsSync(dynamicConfigPath)) {
             try {
                 const fileContent = fs.readFileSync(dynamicConfigPath, "utf8");
-                dynamicConfig = yaml.load(fileContent) || dynamicConfig;
+                dynamicConfig = yaml.parse(fileContent) || dynamicConfig;
                 if (!dynamicConfig.tls)
                     dynamicConfig.tls = { certificates: [] };
                 if (!Array.isArray(dynamicConfig.tls.certificates)) {
@@ -729,7 +729,7 @@ export class TraefikConfigManager {
         }
 
         // Keep a copy of the original config for comparison
-        const originalConfigYaml = yaml.dump(dynamicConfig, { noRefs: true });
+        const originalConfigYaml = yaml.stringify(dynamicConfig);
 
         for (const cert of validCertificates) {
             try {
@@ -836,7 +836,7 @@ export class TraefikConfigManager {
         }
 
         // Only write the config if it has changed
-        const newConfigYaml = yaml.dump(dynamicConfig, { noRefs: true });
+        const newConfigYaml = yaml.stringify(dynamicConfig);
         if (newConfigYaml !== originalConfigYaml) {
             fs.writeFileSync(dynamicConfigPath, newConfigYaml, "utf8");
             logger.info("Dynamic cert config updated");
@@ -922,7 +922,7 @@ export class TraefikConfigManager {
                         dynamicConfigPath,
                         "utf8"
                     );
-                    dynamicConfig = yaml.load(fileContent) || dynamicConfig;
+                    dynamicConfig = yaml.parse(fileContent) || dynamicConfig;
                     if (!dynamicConfig.tls)
                         dynamicConfig.tls = { certificates: [] };
                     if (!Array.isArray(dynamicConfig.tls.certificates)) {
@@ -982,7 +982,7 @@ export class TraefikConfigManager {
                 try {
                     fs.writeFileSync(
                         dynamicConfigPath,
-                        yaml.dump(dynamicConfig, { noRefs: true }),
+                        yaml.stringify(dynamicConfig, ),
                         "utf8"
                     );
                     logger.info("Dynamic config updated after cleanup");

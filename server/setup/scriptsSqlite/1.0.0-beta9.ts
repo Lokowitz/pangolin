@@ -12,7 +12,7 @@ import {
 import { APP_PATH, configFilePath1, configFilePath2 } from "@server/lib/consts";
 import { eq, sql } from "drizzle-orm";
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 import path from "path";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -59,7 +59,7 @@ export default async function migration() {
 
             // Read and parse the YAML file
             const fileContents = fs.readFileSync(filePath, "utf8");
-            const rawConfig = yaml.load(fileContents) as any;
+            const rawConfig = yaml.parse(fileContents) as any;
 
             rawConfig.server.resource_session_request_param =
                 "p_session_request";
@@ -73,7 +73,7 @@ export default async function migration() {
             rawConfig.flags.allow_raw_resources = true;
 
             // Write the updated YAML back to the file
-            const updatedYaml = yaml.dump(rawConfig);
+            const updatedYaml = yaml.stringify(rawConfig);
             fs.writeFileSync(filePath, updatedYaml, "utf8");
         } catch (e) {
             console.log(
@@ -119,7 +119,7 @@ export default async function migration() {
             });
 
             const traefikFileContents = fs.readFileSync(traefikPath, "utf8");
-            const traefikConfig = yaml.load(traefikFileContents) as any;
+            const traefikConfig = yaml.parse(traefikFileContents) as any;
 
             const parsedConfig: any = schema.safeParse(traefikConfig);
 
@@ -137,7 +137,7 @@ export default async function migration() {
                 traefikConfig.experimental.plugins.badger.version =
                     "v1.0.0-beta.3";
 
-                const updatedTraefikYaml = yaml.dump(traefikConfig);
+                const updatedTraefikYaml = yaml.stringify(traefikConfig);
                 fs.writeFileSync(traefikPath, updatedTraefikYaml, "utf8");
 
                 console.log("Updated Badger version in Traefik config.");
@@ -176,7 +176,7 @@ export default async function migration() {
             });
 
             const traefikFileContents = fs.readFileSync(traefikPath, "utf8");
-            const traefikConfig = yaml.load(traefikFileContents) as any;
+            const traefikConfig = yaml.parse(traefikFileContents) as any;
 
             const parsedConfig: any = schema.safeParse(traefikConfig);
 
@@ -185,7 +185,7 @@ export default async function migration() {
                 delete traefikConfig.http.middlewares["redirect-to-https"]
                     .redirectScheme.permanent;
 
-                const updatedTraefikYaml = yaml.dump(traefikConfig);
+                const updatedTraefikYaml = yaml.stringify(traefikConfig);
                 fs.writeFileSync(traefikPath, updatedTraefikYaml, "utf8");
 
                 console.log(
