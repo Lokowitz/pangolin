@@ -1263,7 +1263,7 @@ hybridRouter.post(
 );
 
 const geoIpLookupParamsSchema = z.object({
-    ip: z.string().ip()
+    ip: z.union([z.ipv4(), z.ipv6()])
 });
 hybridRouter.get(
     "/geoip/:ip",
