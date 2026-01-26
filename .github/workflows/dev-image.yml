@@ -47,7 +47,9 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG }}
-          build-args: DATABASE=sqlite BUILD=enterprise
+          build-args: |
+            DATABASE=sqlite
+            BUILD=enterprise
           cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache
           cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache,mode=max
             
@@ -58,7 +60,9 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG_PG }}
-          build-args: DATABASE=pg BUILD=enterprise
+          build-args: |
+            DATABASE=sqlite
+            BUILD=enterprise
           cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg
           cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
           
@@ -114,7 +118,9 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG }}
-          build-args: DATABASE=sqlite BUILD=enterprise
+          build-args: |
+            DATABASE=sqlite
+            BUILD=enterprise
           cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache
           cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache,mode=max
             
@@ -125,7 +131,9 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAG_PG }}
-          build-args: DATABASE=pg BUILD=enterprise
+          build-args: |
+            DATABASE=sqlite
+            BUILD=enterprise
           cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg
           cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
           
