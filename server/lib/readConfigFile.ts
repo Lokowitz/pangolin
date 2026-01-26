@@ -1,5 +1,5 @@
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 import { configFilePath1, configFilePath2 } from "./consts";
 import { z } from "zod";
 import stoi from "./stoi";
@@ -400,7 +400,7 @@ export function readConfigFile() {
     const loadConfig = (configPath: string) => {
         try {
             const yamlContent = fs.readFileSync(configPath, "utf8");
-            const config = yaml.load(yamlContent);
+            const config = yaml.parse(yamlContent);
             return config;
         } catch (error) {
             if (error instanceof Error) {

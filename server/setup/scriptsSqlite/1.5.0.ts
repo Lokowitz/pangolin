@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import { APP_PATH, configFilePath1, configFilePath2 } from "@server/lib/consts";
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 
 const version = "1.5.0";
 const location = path.join(APP_PATH, "db", "db.sqlite");
@@ -45,7 +45,7 @@ export default async function migration() {
 
         // Read and parse the YAML file
         const fileContents = fs.readFileSync(filePath, "utf8");
-        const rawConfig = yaml.load(fileContents) as any;
+        const rawConfig = yaml.parse(fileContents) as any;
 
         if (rawConfig.cors?.headers) {
             const headers = JSON.parse(JSON.stringify(rawConfig.cors.headers));
@@ -54,7 +54,7 @@ export default async function migration() {
         }
 
         // Write the updated YAML back to the file
-        const updatedYaml = yaml.dump(rawConfig);
+        const updatedYaml = yaml.stringify(rawConfig);
         fs.writeFileSync(filePath, updatedYaml, "utf8");
 
         console.log(`Migrated CORS headers to allowed_headers`);

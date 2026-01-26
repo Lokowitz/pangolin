@@ -1,6 +1,6 @@
 import { APP_PATH, configFilePath1, configFilePath2 } from "@server/lib/consts";
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 import path from "path";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -26,7 +26,7 @@ export default async function migration() {
 
     // Read and parse the YAML file
     const fileContents = fs.readFileSync(filePath, "utf8");
-    const rawConfig = yaml.load(fileContents) as any;
+    const rawConfig = yaml.parse(fileContents) as any;
 
     // Validate the structure
     if (!rawConfig.server) {
@@ -37,7 +37,7 @@ export default async function migration() {
     rawConfig.server.resource_access_token_param = "p_token";
 
     // Write the updated YAML back to the file
-    const updatedYaml = yaml.dump(rawConfig);
+    const updatedYaml = yaml.stringify(rawConfig);
     fs.writeFileSync(filePath, updatedYaml, "utf8");
 
     // then try to update badger in traefik config
@@ -72,7 +72,7 @@ experimental:
         });
 
         const traefikFileContents = fs.readFileSync(traefikPath, "utf8");
-        const traefikConfig = yaml.load(traefikFileContents) as any;
+        const traefikConfig = yaml.parse(traefikFileContents) as any;
 
         const parsedConfig = schema.safeParse(traefikConfig);
 
@@ -82,7 +82,7 @@ experimental:
 
         traefikConfig.experimental.plugins.badger.version = "v1.0.0-beta.2";
 
-        const updatedTraefikYaml = yaml.dump(traefikConfig);
+        const updatedTraefikYaml = yaml.stringify(traefikConfig);
 
         fs.writeFileSync(traefikPath, updatedTraefikYaml, "utf8");
 

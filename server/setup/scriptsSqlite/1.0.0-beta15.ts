@@ -1,7 +1,7 @@
 import { db } from "../../db/sqlite";
 import { configFilePath1, configFilePath2 } from "@server/lib/consts";
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 import { sql } from "drizzle-orm";
 import { domains, orgDomains, resources } from "@server/db";
 
@@ -31,7 +31,7 @@ export default async function migration() {
 
         // Read and parse the YAML file
         const fileContents = fs.readFileSync(filePath, "utf8");
-        const rawConfig = yaml.load(fileContents) as any;
+        const rawConfig = yaml.parse(fileContents) as any;
 
         const baseDomain = rawConfig.app.base_domain;
         const certResolver = rawConfig.traefik.cert_resolver;
@@ -56,7 +56,7 @@ export default async function migration() {
         }
 
         // Write the updated YAML back to the file
-        const updatedYaml = yaml.dump(rawConfig);
+        const updatedYaml = yaml.stringify(rawConfig);
         fs.writeFileSync(filePath, updatedYaml, "utf8");
 
         domain = baseDomain;

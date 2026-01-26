@@ -16,7 +16,7 @@ import { registry } from "./openApi";
 import fs from "fs";
 import path from "path";
 import { APP_PATH } from "./lib/consts";
-import yaml from "js-yaml";
+import yaml from "yaml";
 
 const dev = process.env.ENVIRONMENT !== "prod";
 const externalPort = config.getRawConfig().server.integration_port;
@@ -107,7 +107,7 @@ function getOpenApiDocumentation() {
 
     // convert to yaml and save to file
     const outputPath = path.join(APP_PATH, "openapi.yaml");
-    const yamlOutput = yaml.dump(generated);
+    const yamlOutput = yaml.stringify(generated);
     fs.writeFileSync(outputPath, yamlOutput, "utf8");
     logger.info(`OpenAPI documentation saved to ${outputPath}`);
 

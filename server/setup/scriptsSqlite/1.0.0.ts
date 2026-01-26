@@ -1,6 +1,6 @@
 import { APP_PATH } from "@server/lib/consts";
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml from "yaml";
 import path from "path";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -29,7 +29,7 @@ export default async function migration() {
         });
 
         const traefikFileContents = fs.readFileSync(traefikPath, "utf8");
-        const traefikConfig = yaml.load(traefikFileContents) as any;
+        const traefikConfig = yaml.parse(traefikFileContents) as any;
 
         const parsedConfig = schema.safeParse(traefikConfig);
 
@@ -39,7 +39,7 @@ export default async function migration() {
 
         traefikConfig.experimental.plugins.badger.version = "v1.0.0";
 
-        const updatedTraefikYaml = yaml.dump(traefikConfig);
+        const updatedTraefikYaml = yaml.stringify(traefikConfig);
 
         fs.writeFileSync(traefikPath, updatedTraefikYaml, "utf8");
 
