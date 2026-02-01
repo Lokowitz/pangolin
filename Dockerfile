@@ -71,6 +71,7 @@ COPY --chown=node:node --chmod=+x ./cli/wrapper.sh /usr/local/bin/pangctl
 COPY --chown=node:node server/db/names.json server/db/*_models.json ./dist/
 COPY --chown=node:node public ./public
 COPY --chown=node:node --chmod=+x entrypoint.mjs /entrypoint.mjs
+COPY --chown=node:node --chmod=+x healthcheck.mjs /healthcheck.mjs
 
 # OCI Image Labels
 LABEL org.opencontainers.image.source="https://github.com/fosrl/pangolin" \
