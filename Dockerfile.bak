@@ -18,10 +18,8 @@ RUN if [ "$BUILD" = "oss" ]; then rm -rf server/private; fi && \
     npm run set:$BUILD && \
     npm run db:$DATABASE:generate && \
     npm run build:$DATABASE && \
-    npm run build:cli
-
-# test to make sure the build output is there and error if not
-RUN test -f dist/server.mjs
+    npm run build:cli && \
+    test -f dist/server.mjs
 
 FROM dhi.io/node:24-alpine3.23-dev AS runner
 
@@ -43,8 +41,6 @@ ARG IMAGE_TITLE="Pangolin"
 ARG IMAGE_DESCRIPTION="Identity-aware VPN and proxy for remote access to anything, anywhere"
 
 WORKDIR /app
-
-COPY --chown=node:node package.json ./
 
 # Copy pre-built node_modules from builder (already pruned to production only)
 # This includes the compiled native modules like better-sqlite3

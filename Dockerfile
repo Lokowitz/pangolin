@@ -57,9 +57,6 @@ ENV NODE_ENV=development
 
 WORKDIR /app
 
-# Copy package.json
-COPY --chown=node:node package.json ./
-
 # Copy pre-built node_modules and timezone data from runner stage
 COPY --from=runner /app/node_modules ./node_modules
 COPY --from=runner /usr/share/zoneinfo /usr/share/zoneinfo
@@ -73,7 +70,7 @@ COPY --chown=node:node --from=builder /app/server/migrations ./dist/init
 COPY --chown=node:node --chmod=+x ./cli/wrapper.sh /usr/local/bin/pangctl
 COPY --chown=node:node server/db/names.json server/db/*_models.json ./dist/
 COPY --chown=node:node public ./public
-COPY --chown=node:node --chmod=+x entrypoint.sh /entrypoint.sh
+COPY --chown=node:node --chmod=+x entrypoint.mjs /entrypoint.mjs
 
 # OCI Image Labels
 LABEL org.opencontainers.image.source="https://github.com/fosrl/pangolin" \
@@ -90,4 +87,4 @@ LABEL org.opencontainers.image.source="https://github.com/fosrl/pangolin" \
 # Run as non-root user
 USER node
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["node", "/entrypoint.mjs"]
