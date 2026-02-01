@@ -29,6 +29,8 @@ RUN if [ "$BUILD" = "oss" ]; then rm -rf server/private; fi && \
 
 FROM dhi.io/node:24-alpine3.23-dev AS runner
 
+WORKDIR /app
+
 # Install runtime dependencies and install production node_modules
 RUN apk add --no-cache \
     g++ \
@@ -50,6 +52,9 @@ ARG LICENSE="AGPL-3.0"
 ARG IMAGE_TITLE="Pangolin"
 ARG IMAGE_DESCRIPTION="Identity-aware VPN and proxy for remote access to anything, anywhere"
 
+ENV ENVIRONMENT=prod
+ENV NODE_ENV=development
+
 WORKDIR /app
 
 # Copy package.json
@@ -68,6 +73,7 @@ COPY --chown=node:node --from=builder /app/server/migrations ./dist/init
 COPY --chown=node:node ./cli/wrapper.sh /usr/local/bin/pangctl
 COPY --chown=node:node server/db/names.json server/db/*_models.json ./dist/
 COPY --chown=node:node public ./public
+COPY --chown=node:node entrypoint.sh /entrypoint.sh
 
 # OCI Image Labels
 LABEL org.opencontainers.image.source="https://github.com/fosrl/pangolin" \
@@ -84,4 +90,4 @@ LABEL org.opencontainers.image.source="https://github.com/fosrl/pangolin" \
 # Run as non-root user
 USER node
 
-CMD ["npm", "run", "start"]
+ENTRYPOINT ["/entrypoint.sh"]
