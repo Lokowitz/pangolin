@@ -70,10 +70,10 @@ COPY --chown=node:node --from=builder /app/.next/static ./.next/static
 COPY --chown=node:node --from=builder /app/dist ./dist
 COPY --chown=node:node --from=builder /app/server/migrations ./dist/init
 
-COPY --chown=node:node ./cli/wrapper.sh /usr/local/bin/pangctl
+COPY --chown=node:node --chmod=+x ./cli/wrapper.sh /usr/local/bin/pangctl
 COPY --chown=node:node server/db/names.json server/db/*_models.json ./dist/
 COPY --chown=node:node public ./public
-COPY --chown=node:node entrypoint.sh /entrypoint.sh
+COPY --chown=node:node --chmod=+x entrypoint.sh /entrypoint.sh
 
 # OCI Image Labels
 LABEL org.opencontainers.image.source="https://github.com/fosrl/pangolin" \
