@@ -52,9 +52,6 @@ ARG LICENSE="AGPL-3.0"
 ARG IMAGE_TITLE="Pangolin"
 ARG IMAGE_DESCRIPTION="Identity-aware VPN and proxy for remote access to anything, anywhere"
 
-ENV ENVIRONMENT=prod
-ENV NODE_ENV=development
-
 WORKDIR /app
 
 # Copy pre-built node_modules and timezone data from runner stage

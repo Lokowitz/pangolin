@@ -2,7 +2,6 @@ import { spawn } from 'child_process';
 
 // Set environment variables for the application
 process.env.ENVIRONMENT = 'prod';
-process.env.NODE_ENV = 'development';
 
 async function runMigrations() {
   return new Promise((resolve, reject) => {
@@ -25,6 +24,8 @@ async function runMigrations() {
     });
   });
 }
+
+process.env.NODE_ENV = 'development';
 
 async function startServer() {
   return new Promise((resolve, reject) => {
