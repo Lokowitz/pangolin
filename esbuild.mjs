@@ -6,6 +6,16 @@ import path from "path";
 import fs from "fs";
 // import { glob } from "glob";
 
+// Read default build type from server/build.ts (TypeScript file won't import under ESM)
+let build = "oss";
+try {
+    const buildFile = fs.readFileSync(path.resolve("server/build.ts"), "utf8");
+    const m = buildFile.match(/export\s+const\s+build\s*=\s*["'](oss|saas|enterprise)["']/);
+    if (m) build = m[1];
+} catch (err) {
+    // fallback to "oss" if file missing or unreadable
+}
+
 const banner = `
 // patch __dirname
 // import { fileURLToPath } from "url";
@@ -37,7 +47,7 @@ const argv = yargs(hideBin(process.argv))
         describe: "Build type (oss, saas, enterprise)",
         type: "string",
         choices: ["oss", "saas", "enterprise"],
-        default: "oss"
+        default: build
     })
     .help()
     .alias("help", "h").argv;
