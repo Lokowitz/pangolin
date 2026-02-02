@@ -4,6 +4,7 @@ import { hideBin } from "yargs/helpers";
 import { nodeExternalsPlugin } from "esbuild-node-externals";
 import path from "path";
 import fs from "fs";
+import { build as buildOS } from "@server/build";
 // import { glob } from "glob";
 
 const banner = `
@@ -37,7 +38,7 @@ const argv = yargs(hideBin(process.argv))
         describe: "Build type (oss, saas, enterprise)",
         type: "string",
         choices: ["oss", "saas", "enterprise"],
-        default: "oss"
+        default: buildOS
     })
     .help()
     .alias("help", "h").argv;
