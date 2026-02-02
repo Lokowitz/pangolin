@@ -4,8 +4,16 @@ import { hideBin } from "yargs/helpers";
 import { nodeExternalsPlugin } from "esbuild-node-externals";
 import path from "path";
 import fs from "fs";
-import { build as buildOS } from "@server/build";
 // import { glob } from "glob";
+
+let build = "oss";
+try {
+    const buildFile = fs.readFileSync(path.resolve("server/build.ts"), "utf8");
+    const m = buildFile.match(/export\s+const\s+build\s*=\s*["'](oss|saas|enterprise)["']/);
+    if (m) build = m[1];
+} catch (err) {
+    // fallback to "oss" if file missing or unreadable
+}
 
 const banner = `
 // patch __dirname
@@ -38,7 +46,7 @@ const argv = yargs(hideBin(process.argv))
         describe: "Build type (oss, saas, enterprise)",
         type: "string",
         choices: ["oss", "saas", "enterprise"],
-        default: buildOS
+        default: build
     })
     .help()
     .alias("help", "h").argv;
