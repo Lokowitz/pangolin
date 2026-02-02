@@ -47,7 +47,7 @@ const argv = yargs(hideBin(process.argv))
         describe: "Build type (oss, saas, enterprise)",
         type: "string",
         choices: ["oss", "saas", "enterprise"],
-        default: "oss"
+        default: build
     })
     .help()
     .alias("help", "h").argv;
