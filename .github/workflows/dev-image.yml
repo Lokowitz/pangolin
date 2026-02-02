@@ -1,0 +1,166 @@
+name: Create Dev-Image
+
+on:
+  pull_request_target:
+    branches:
+      - main
+      - dev
+    types: 
+      - opened
+      - synchronize
+      - reopened
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  TAG_URL: https://hub.docker.com/r/${{ vars.DOCKER_HUB_REPO }}/tags
+  TAG: ${{ vars.DOCKER_HUB_REPO }}:dev-pr${{ github.event.pull_request.number }}
+  TAG_PG: ${{ vars.DOCKER_HUB_REPO }}:postgresql-dev-pr${{ github.event.pull_request.number }}
+
+jobs:
+  build-w:
+    if: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+    runs-on: ubuntu-latest
+    environment: build-dev
+    
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v6
+        with:
+          ref: refs/pull/${{github.event.pull_request.number}}/merge
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image SQLITE
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.TAG }}
+          build-args: |
+            DATABASE=sqlite
+            BUILD=enterprise
+          cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache
+          cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache,mode=max
+            
+      - name: Build and push Docker image PG
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.TAG_PG }}
+          build-args: |
+            DATABASE=sqlite
+            BUILD=enterprise
+          cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg
+          cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
+          
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const repoUrl = process.env.TAG_URL;
+            const tag = process.env.TAG;
+            const tagPg = process.env.TAG_PG;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `> [!WARNING]
+              > This image may contain unchecked and breaking changes. Only use on own risk.
+              
+              👋 Thanks for your PR!  
+              Dev images for this PR are now available on [docker hub](${repoUrl}):
+              
+              **SQLITE Image:**
+              \`\`\`
+              ${tag}
+              \`\`\`
+              
+              **Postgresql Image:**
+              \`\`\`
+              ${tagPg}
+              \`\`\``
+            })
+  build-wo:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v6
+        with:
+          ref: refs/pull/${{github.event.pull_request.number}}/merge
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image SQLITE
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.TAG }}
+          build-args: |
+            DATABASE=sqlite
+            BUILD=enterprise
+          cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache
+          cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache,mode=max
+            
+      - name: Build and push Docker image PG
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.TAG_PG }}
+          build-args: |
+            DATABASE=sqlite
+            BUILD=enterprise
+          cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg
+          cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
+          
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const repoUrl = process.env.TAG_URL;
+            const tag = process.env.TAG;
+            const tagPg = process.env.TAG_PG;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `> [!WARNING]
+              > This image may contain unchecked and breaking changes. Only use on own risk.
+              
+              👋 Thanks for your PR!  
+              Dev images for this PR are now available on [docker hub](${repoUrl}):
+              
+              **SQLITE Image:**
+              \`\`\`
+              ${tag}
+              \`\`\`
+              
+              **Postgresql Image:**
+              \`\`\`
+              ${tagPg}
+              \`\`\``
+            })
+            
