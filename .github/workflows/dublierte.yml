@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Find possible duplicates
-        uses: Namchee/dupliket@latest
+        uses: Namchee/dupliket@v1
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
           api_key: ${{ secrets.OPENAI_API_KEY }}
