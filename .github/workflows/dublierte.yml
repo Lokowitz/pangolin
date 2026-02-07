@@ -12,4 +12,4 @@ jobs:
         uses: Namchee/dupliket@latest
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
-          api_key: ${{ secrets.API_KEY }}
+          api_key: ${{ secrets.OPENAI_API_KEY }}
