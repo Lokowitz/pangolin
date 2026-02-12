@@ -113,7 +113,7 @@ export async function generateNewEnterpriseLicense(
         }
 
         const tier = licenseData.tier === "big_license" ? LicenseId.BIG_LICENSE : LicenseId.SMALL_LICENSE;
-        const tierPrice = getLicensePriceSet()[tier]
+        const tierPrice = getLicensePriceSet()[tier];
 
         const session = await stripe!.checkout.sessions.create({
             client_reference_id: keyId.toString(),
@@ -126,6 +126,7 @@ export async function generateNewEnterpriseLicense(
             ], // Start with the standard feature set that matches the free limits
             customer: customer.customerId,
             mode: "subscription",
+            allow_promotion_codes: true,
             success_url: `${config.getRawConfig().app.dashboard_url}/${orgId}/settings/license?success=true&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${config.getRawConfig().app.dashboard_url}/${orgId}/settings/license?canceled=true`
         });
