@@ -13,7 +13,17 @@
 
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { db, newts, orgs, roundTripMessageTracker, siteResources, sites, userOrgs } from "@server/db";
+import {
+    db,
+    newts,
+    roles,
+    roundTripMessageTracker,
+    siteResources,
+    sites,
+    userOrgs
+} from "@server/db";
+import { isLicensedOrSubscribed } from "#private/lib/isLicencedOrSubscribed";
+import { tierMatrix } from "@server/lib/billing/tierMatrix";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
 import createHttpError from "http-errors";
@@ -22,7 +32,7 @@ import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 import { eq, or, and } from "drizzle-orm";
 import { canUserAccessSiteResource } from "@server/auth/canUserAccessSiteResource";
-import { signPublicKey, getOrgCAKeys } from "#private/lib/sshCA";
+import { signPublicKey, getOrgCAKeys } from "@server/lib/sshCA";
 import config from "@server/lib/config";
 import { sendToClient } from "#private/routers/ws";
 
@@ -135,11 +145,26 @@ export async function signSshKey(
             );
         }
 
+        const isLicensed = await isLicensedOrSubscribed(
+            orgId,
+            tierMatrix.sshPam
+        );
+        if (!isLicensed) {
+            return next(
+                createHttpError(
+                    HttpCode.FORBIDDEN,
+                    "SSH key signing requires a paid plan"
+                )
+            );
+        }
+
         let usernameToUse;
         if (!userOrg.pamUsername) {
             if (req.user?.email) {
                 // Extract username from email (first part before @)
-                usernameToUse = req.user?.email.split("@")[0];
+                usernameToUse = req.user?.email
+                    .split("@")[0]
+                    .replace(/[^a-zA-Z0-9_-]/g, "");
                 if (!usernameToUse) {
                     return next(
                         createHttpError(
@@ -151,7 +176,7 @@ export async function signSshKey(
             } else if (req.user?.username) {
                 usernameToUse = req.user.username;
                 // We need to clean out any spaces or special characters from the username to ensure it's valid for SSH certificates
-                usernameToUse = usernameToUse.replace(/[^a-zA-Z0-9_-]/g, "");
+                usernameToUse = usernameToUse.replace(/[^a-zA-Z0-9_-]/g, "-");
                 if (!usernameToUse) {
                     return next(
                         createHttpError(
@@ -168,6 +193,9 @@ export async function signSshKey(
                     )
                 );
             }
+
+            // prefix with p-
+            usernameToUse = `p-${usernameToUse}`;
 
             // check if we have a existing user in this org with the same
             const [existingUserWithSameName] = await db
@@ -214,6 +242,16 @@ export async function signSshKey(
                     );
                 }
             }
+
+            await db
+                .update(userOrgs)
+                .set({ pamUsername: usernameToUse })
+                .where(
+                    and(
+                        eq(userOrgs.orgId, orgId),
+                        eq(userOrgs.userId, userId)
+                    )
+                );
         } else {
             usernameToUse = userOrg.pamUsername;
         }
@@ -285,6 +323,15 @@ export async function signSshKey(
             );
         }
 
+        if (resource.mode == "cidr") {
+            return next(
+                createHttpError(
+                    HttpCode.BAD_REQUEST,
+                    "SSHing is not supported for CIDR resources"
+                )
+            );
+        }
+
         // Check if the user has access to the resource
         const hasAccess = await canUserAccessSiteResource({
             userId: userId,
@@ -300,6 +347,29 @@ export async function signSshKey(
                 )
             );
         }
+
+        const [roleRow] = await db
+            .select()
+            .from(roles)
+            .where(eq(roles.roleId, roleId))
+            .limit(1);
+
+        let parsedSudoCommands: string[] = [];
+        let parsedGroups: string[] = [];
+        try {
+            parsedSudoCommands = JSON.parse(roleRow?.sshSudoCommands ?? "[]");
+            if (!Array.isArray(parsedSudoCommands)) parsedSudoCommands = [];
+        } catch {
+            parsedSudoCommands = [];
+        }
+        try {
+            parsedGroups = JSON.parse(roleRow?.sshUnixGroups ?? "[]");
+            if (!Array.isArray(parsedGroups)) parsedGroups = [];
+        } catch {
+            parsedGroups = [];
+        }
+        const homedir = roleRow?.sshCreateHomeDir ?? null;
+        const sudoMode = roleRow?.sshSudoMode ?? "none";
 
         // get the site
         const [newt] = await db
@@ -334,7 +404,7 @@ export async function signSshKey(
             .values({
                 wsClientId: newt.newtId,
                 messageType: `newt/pam/connection`,
-                sentAt: Math.floor(Date.now() / 1000),
+                sentAt: Math.floor(Date.now() / 1000)
             })
             .returning();
 
@@ -352,14 +422,17 @@ export async function signSshKey(
             data: {
                 messageId: message.messageId,
                 orgId: orgId,
-                agentPort: 22123,
+                agentPort: resource.authDaemonPort ?? 22123,
+                externalAuthDaemon: resource.authDaemonMode === "remote",
                 agentHost: resource.destination,
                 caCert: caKeys.publicKeyOpenSSH,
                 username: usernameToUse,
                 niceId: resource.niceId,
                 metadata: {
-                    sudo: true, // we are hardcoding these for now but should make configurable from the role or something
-                    homedir: true
+                    sudoMode: sudoMode,
+                    sudoCommands: parsedSudoCommands,
+                    homedir: homedir,
+                    groups: parsedGroups
                 }
             }
         });
