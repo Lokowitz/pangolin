@@ -1,5 +1,5 @@
 import { APP_PATH } from "@server/lib/consts";
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import path from "path";
 
 const version = "1.9.0";
@@ -8,7 +8,7 @@ export default async function migration() {
     console.log(`Running setup script ${version}...`);
 
     const location = path.join(APP_PATH, "db", "db.sqlite");
-    const db = new Database(location);
+    const db = createClient({ url: "file:" + location });
 
     const resourceSiteMap = new Map<number, number>();
     let firstSiteId: number = 1;
@@ -35,10 +35,7 @@ export default async function migration() {
     }
 
     try {
-        db.pragma("foreign_keys = OFF");
-
-        db.transaction(() => {
-            db.exec(`CREATE TABLE 'setupTokens' (
+        await db.execute(`CREATE TABLE 'setupTokens' (
 	'tokenId' text PRIMARY KEY NOT NULL,
 	'token' text NOT NULL,
 	'used' integer DEFAULT false NOT NULL,
@@ -120,70 +117,69 @@ ALTER TABLE 'olms' ADD 'version' text;--> statement-breakpoint
 ALTER TABLE 'orgs' ADD 'createdAt' text;--> statement-breakpoint
 ALTER TABLE 'targets' ADD 'siteId' integer NOT NULL DEFAULT ${firstSiteId || 1} REFERENCES sites(siteId);`);
 
-            // for each resource, get all of its targets, and update the siteId to be the previously stored siteId
-            for (const [resourceId, siteId] of resourceSiteMap) {
-                const targets = db
-                    .prepare(
-                        "SELECT targetId FROM targets WHERE resourceId = ?"
-                    )
-                    .all(resourceId) as Array<{ targetId: number }>;
-                for (const target of targets) {
-                    db.prepare(
-                        "UPDATE targets SET siteId = ? WHERE targetId = ?"
-                    ).run(siteId, target.targetId);
-                }
-            }
+		// for each resource, get all of its targets, and update the siteId to be the previously stored siteId
+		for (const [resourceId, siteId] of resourceSiteMap) {
+			const targetsResult = await db.execute({
+				sql: "SELECT targetId FROM targets WHERE resourceId = ?",
+				args: [resourceId]
+			});
+			const targets = (targetsResult.rows as unknown) as Array<{ targetId: number }>;
+			
+			for (const target of targets) {
+				await db.execute({
+					sql: "UPDATE targets SET siteId = ? WHERE targetId = ?",
+					args: [siteId, target.targetId]
+				});
+			}
+		}
 
-            // list resources that have enableProxy false
-            // move them to the siteResources table
-            // remove them from the resources table
-            const proxyFalseResources = db
-                .prepare("SELECT * FROM resources WHERE enableProxy = 0")
-                .all() as Array<any>;
+		// list resources that have enableProxy false
+		// move them to the siteResources table
+		// remove them from the resources table
+		const proxyFalseResourcesResult = await db.execute("SELECT * FROM resources WHERE enableProxy = 0");
+		const proxyFalseResources = (proxyFalseResourcesResult.rows as unknown) as Array<any>;
 
-            for (const resource of proxyFalseResources) {
-                // Get the first target to derive destination IP and port
-                const firstTarget = db
-                    .prepare(
-                        "SELECT ip, port FROM targets WHERE resourceId = ? LIMIT 1"
-                    )
-                    .get(resource.resourceId) as
-                    | { ip: string; port: number }
-                    | undefined;
+		for (const resource of proxyFalseResources) {
+			// Get the first target to derive destination IP and port
+			const targetResult = await db.execute({
+				sql: "SELECT ip, port FROM targets WHERE resourceId = ? LIMIT 1",
+				args: [resource.resourceId]
+				});
+			const firstTarget = (targetResult.rows?.[0] as unknown) as
+				| { ip: string; port: number }
+				| undefined;
 
-                if (!firstTarget) {
-                    continue;
-                }
+			if (!firstTarget) {
+				continue;
+			}
 
-                // Insert into siteResources table
-                const stmt = db.prepare(`
-					INSERT INTO siteResources (siteId, orgId, name, protocol, proxyPort, destinationPort, destinationIp, enabled)
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-				`);
-                stmt.run(
-                    resourceSiteMap.get(resource.resourceId),
-                    resource.orgId,
-                    resource.name,
-                    resource.protocol,
-                    resource.proxyPort,
-                    firstTarget.port,
-                    firstTarget.ip,
-                    resource.enabled
-                );
+			// Insert into siteResources table
+			const stmt = await db.execute({
+				sql: `INSERT INTO siteResources (siteId, orgId, name, protocol, proxyPort, destinationPort, destinationIp, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+				args: [
+					resourceSiteMap.get(resource.resourceId),
+					resource.orgId,
+					resource.name,
+					resource.protocol,
+					resource.proxyPort,
+					firstTarget.port,
+					firstTarget.ip,
+					resource.enabled
+				]
+			});
 
-                // Delete from resources table
-                db.prepare("DELETE FROM resources WHERE resourceId = ?").run(
-                    resource.resourceId
-                );
+			// Delete from resources table
+			await db.execute({
+				sql: "DELETE FROM resources WHERE resourceId = ?",
+				args: [resource.resourceId]
+			});
 
-                // Delete the targets for this resource
-                db.prepare("DELETE FROM targets WHERE resourceId = ?").run(
-                    resource.resourceId
-                );
-            }
-        })();
-
-        db.pragma("foreign_keys = ON");
+			// Delete the targets for this resource
+			await db.execute({
+				sql: "DELETE FROM targets WHERE resourceId = ?",
+				args: [resource.resourceId]
+			});
+		}
 
         console.log(`Migrated database`);
     } catch (e) {

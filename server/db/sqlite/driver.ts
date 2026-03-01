@@ -1,5 +1,5 @@
-import { drizzle as DrizzleSqlite } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { drizzle as DrizzleSqlite } from "drizzle-orm/libsql";
+import { createClient } from "@libsql/client";
 import * as schema from "./schema/schema";
 import path from "path";
 import fs from "fs";
@@ -12,7 +12,7 @@ export const exists = checkFileExists(location);
 bootstrapVolume();
 
 function createDb() {
-    const sqlite = new Database(location);
+    const sqlite = createClient({ url: "file:" + location });
     return DrizzleSqlite(sqlite, {
         schema
     });
