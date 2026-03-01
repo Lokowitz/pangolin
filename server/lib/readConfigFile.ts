@@ -3,12 +3,9 @@ import yaml from "js-yaml";
 import { configFilePath1, configFilePath2 } from "./consts";
 import { z } from "zod";
 import stoi from "./stoi";
+import { getEnvOrYaml } from "./getEnvOrYaml";
 
 const portSchema = z.number().positive().gt(0).lte(65535);
-
-const getEnvOrYaml = (envVar: string) => (valFromYaml: any) => {
-    return process.env[envVar] ?? valFromYaml;
-};
 
 export const configSchema = z
     .object({
@@ -192,6 +189,46 @@ export const configSchema = z
                     .prefault({})
             })
             .optional(),
+        postgres_logs: z
+            .object({
+                connection_string: z
+                    .string()
+                    .optional()
+                    .transform(getEnvOrYaml("POSTGRES_LOGS_CONNECTION_STRING")),
+                replicas: z
+                    .array(
+                        z.object({
+                            connection_string: z.string()
+                        })
+                    )
+                    .optional(),
+                pool: z
+                    .object({
+                        max_connections: z
+                            .number()
+                            .positive()
+                            .optional()
+                            .default(20),
+                        max_replica_connections: z
+                            .number()
+                            .positive()
+                            .optional()
+                            .default(10),
+                        idle_timeout_ms: z
+                            .number()
+                            .positive()
+                            .optional()
+                            .default(30000),
+                        connection_timeout_ms: z
+                            .number()
+                            .positive()
+                            .optional()
+                            .default(5000)
+                    })
+                    .optional()
+                    .prefault({})
+            })
+            .optional(),
         traefik: z
             .object({
                 http_entrypoint: z.string().optional().default("web"),
@@ -216,7 +253,10 @@ export const configSchema = z
                     .default(["newt", "wireguard", "local"]),
                 allow_raw_resources: z.boolean().optional().default(true),
                 file_mode: z.boolean().optional().default(false),
-                pp_transport_prefix: z.string().optional().default("pp-transport-v")
+                pp_transport_prefix: z
+                    .string()
+                    .optional()
+                    .default("pp-transport-v")
             })
             .optional()
             .prefault({}),
@@ -308,7 +348,10 @@ export const configSchema = z
             .object({
                 smtp_host: z.string().optional(),
                 smtp_port: portSchema.optional(),
-                smtp_user: z.string().optional(),
+                smtp_user: z
+                    .string()
+                    .optional()
+                    .transform(getEnvOrYaml("EMAIL_SMTP_USER")),
                 smtp_pass: z
                     .string()
                     .optional()
@@ -327,7 +370,9 @@ export const configSchema = z
                 enable_integration_api: z.boolean().optional(),
                 disable_local_sites: z.boolean().optional(),
                 disable_basic_wireguard_sites: z.boolean().optional(),
-                disable_config_managed_domains: z.boolean().optional()
+                disable_config_managed_domains: z.boolean().optional(),
+                disable_product_help_banners: z.boolean().optional(),
+                disable_enterprise_features: z.boolean().optional()
             })
             .optional(),
         dns: z

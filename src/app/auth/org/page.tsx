@@ -14,7 +14,7 @@ import {
     LoadLoginPageResponse
 } from "@server/routers/loginPage/types";
 import { GetSessionTransferTokenRenponse } from "@server/routers/auth/types";
-import ValidateSessionTransferToken from "@app/components/private/ValidateSessionTransferToken";
+import ValidateSessionTransferToken from "@app/components/ValidateSessionTransferToken";
 import { isOrgSubscribed } from "@app/lib/api/isOrgSubscribed";
 import { OrgSelectionForm } from "@app/components/OrgSelectionForm";
 import OrgLoginPage from "@app/components/OrgLoginPage";
@@ -33,11 +33,11 @@ export default async function OrgAuthPage(props: {
     const forceLoginParam = searchParams.forceLogin;
     const forceLogin = forceLoginParam === "true";
 
-    if (build !== "saas") {
+    const env = pullEnv();
+
+    if (build !== "saas" && env.app.identityProviderMode !== "org") {
         redirect("/");
     }
-
-    const env = pullEnv();
 
     const authHeader = await authCookieHeader();
 
@@ -86,8 +86,6 @@ export default async function OrgAuthPage(props: {
             );
             redirect(env.app.dashboardUrl);
         }
-
-        console.log(user, forceLogin);
 
         if (user && !forceLogin) {
             let redirectToken: string | undefined;

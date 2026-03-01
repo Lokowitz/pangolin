@@ -1,9 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useActionState, useState } from "react";
-import { useForm } from "react-hook-form";
-import z from "zod";
 import {
     Form,
     FormControl,
@@ -13,6 +9,11 @@ import {
     FormLabel,
     FormMessage
 } from "@app/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
+import { useActionState } from "react";
+import { useForm } from "react-hook-form";
+import z from "zod";
 import {
     SettingsSection,
     SettingsSectionBody,
@@ -21,20 +22,21 @@ import {
     SettingsSectionHeader,
     SettingsSectionTitle
 } from "./Settings";
-import { useTranslations } from "next-intl";
 
-import type { GetLoginPageBrandingResponse } from "@server/routers/loginPage/types";
-import { Input } from "./ui/input";
-import { ExternalLink, InfoIcon, XIcon } from "lucide-react";
-import { Button } from "./ui/button";
-import { createApiClient, formatAxiosError } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
-import { useRouter } from "next/navigation";
-import { toast } from "@app/hooks/useToast";
 import { usePaidStatus } from "@app/hooks/usePaidStatus";
+import { toast } from "@app/hooks/useToast";
+import { createApiClient, formatAxiosError } from "@app/lib/api";
 import { build } from "@server/build";
+import type { GetLoginPageBrandingResponse } from "@server/routers/loginPage/types";
+import { XIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { PaidFeaturesAlert } from "./PaidFeaturesAlert";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { validateLocalPath } from "@app/lib/validateLocalPath";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { tierMatrix } from "@server/lib/billing/tierMatrix";
 
 export type AuthPageCustomizationProps = {
     orgId: string;
@@ -42,24 +44,77 @@ export type AuthPageCustomizationProps = {
 };
 
 const AuthPageFormSchema = z.object({
-    logoUrl: z.url().refine(
-        async (url) => {
-            try {
-                const response = await fetch(url);
-                return (
-                    response.status === 200 &&
-                    (response.headers.get("content-type") ?? "").startsWith(
-                        "image/"
-                    )
-                );
-            } catch (error) {
-                return false;
+    logoUrl: z.union([
+        z.literal(""),
+        z.string().superRefine(async (urlOrPath, ctx) => {
+            const parseResult = z.url().safeParse(urlOrPath);
+            if (!parseResult.success) {
+                if (build !== "enterprise") {
+                    ctx.addIssue({
+                        code: "custom",
+                        message: "Must be a valid URL"
+                    });
+                    return;
+                } else {
+                    try {
+                        validateLocalPath(urlOrPath);
+                    } catch (error) {
+                        ctx.addIssue({
+                            code: "custom",
+                            message:
+                                "Must be either a valid image URL or a valid pathname starting with `/` and not containing query parameters, `..` or `*`"
+                        });
+                    } finally {
+                        return;
+                    }
+                }
             }
-        },
-        {
-            error: "Invalid logo URL, must be a valid image URL"
-        }
-    ),
+
+            try {
+                const response = await fetch(urlOrPath, {
+                    method: "HEAD"
+                }).catch(() => {
+                    // If HEAD fails (CORS or method not allowed), try GET
+                    return fetch(urlOrPath, { method: "GET" });
+                });
+
+                if (response.status !== 200) {
+                    ctx.addIssue({
+                        code: "custom",
+                        message: `Failed to load image. Please check that the URL is accessible.`
+                    });
+                    return;
+                }
+
+                const contentType = response.headers.get("content-type") ?? "";
+                if (!contentType.startsWith("image/")) {
+                    ctx.addIssue({
+                        code: "custom",
+                        message: `URL does not point to an image. Please provide a URL to an image file (e.g., .png, .jpg, .svg).`
+                    });
+                    return;
+                }
+            } catch (error) {
+                let errorMessage =
+                    "Unable to verify image URL. Please check that the URL is accessible and points to an image file.";
+
+                if (
+                    error instanceof TypeError &&
+                    error.message.includes("fetch")
+                ) {
+                    errorMessage =
+                        "Network error: Unable to reach the URL. Please check your internet connection and verify the URL is correct.";
+                } else if (error instanceof Error) {
+                    errorMessage = `Error verifying URL: ${error.message}`;
+                }
+
+                ctx.addIssue({
+                    code: "custom",
+                    message: errorMessage
+                });
+            }
+        })
+    ]),
     logoWidth: z.coerce.number<number>().min(1),
     logoHeight: z.coerce.number<number>().min(1),
     orgTitle: z.string().optional(),
@@ -90,7 +145,6 @@ export default function AuthPageBrandingForm({
         deleteBranding,
         null
     );
-    const [setIsDeleteModalOpen] = useState(false);
 
     const t = useTranslations();
 
@@ -110,14 +164,15 @@ export default function AuthPageBrandingForm({
                 `Choose your preferred authentication method for {{resourceName}}`,
             primaryColor: branding?.primaryColor ?? `#f36117` // default pangolin primary color
         },
-        disabled: !isPaidUser
+        disabled: !isPaidUser(tierMatrix.loginPageBranding)
     });
 
     async function updateBranding() {
         const isValid = await form.trigger();
         const brandingData = form.getValues();
 
-        if (!isValid || !isPaidUser) return;
+        if (!isValid || !isPaidUser(tierMatrix.loginPageBranding)) return;
+
         try {
             const updateRes = await api.put(
                 `/org/${orgId}/login-page-branding`,
@@ -147,8 +202,6 @@ export default function AuthPageBrandingForm({
     }
 
     async function deleteBranding() {
-        if (!isPaidUser) return;
-
         try {
             const updateRes = await api.delete(
                 `/org/${orgId}/login-page-branding`
@@ -163,6 +216,7 @@ export default function AuthPageBrandingForm({
                     title: t("success"),
                     description: t("authPageBrandingRemoved")
                 });
+                form.reset();
             }
         } catch (error) {
             toast({
@@ -190,7 +244,9 @@ export default function AuthPageBrandingForm({
 
                 <SettingsSectionBody>
                     <SettingsSectionForm>
-                        <PaidFeaturesAlert />
+                        <PaidFeaturesAlert
+                            tiers={tierMatrix.loginPageBranding}
+                        />
 
                         <Form {...form}>
                             <form
@@ -239,12 +295,25 @@ export default function AuthPageBrandingForm({
                                         render={({ field }) => (
                                             <FormItem className="md:col-span-3">
                                                 <FormLabel>
-                                                    {t("brandingLogoURL")}
+                                                    {build === "enterprise"
+                                                        ? t(
+                                                              "brandingLogoURLOrPath"
+                                                          )
+                                                        : t("brandingLogoURL")}
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Input {...field} />
                                                 </FormControl>
                                                 <FormMessage />
+                                                <FormDescription>
+                                                    {build === "enterprise"
+                                                        ? t(
+                                                              "brandingLogoPathDescription"
+                                                          )
+                                                        : t(
+                                                              "brandingLogoURLDescription"
+                                                          )}
+                                                </FormDescription>
                                             </FormItem>
                                         )}
                                     />
@@ -289,7 +358,8 @@ export default function AuthPageBrandingForm({
                                     </div>
                                 </div>
 
-                                {build === "saas" && (
+                                {build === "saas" ||
+                                env.env.app.identityProviderMode === "org" ? (
                                     <>
                                         <div className="mt-3 mb-6">
                                             <SettingsSectionTitle>
@@ -343,7 +413,7 @@ export default function AuthPageBrandingForm({
                                             />
                                         </div>
                                     </>
-                                )}
+                                ) : null}
 
                                 <div className="mt-3 mb-6">
                                     <SettingsSectionTitle>
@@ -396,31 +466,30 @@ export default function AuthPageBrandingForm({
 
                 <div className="flex justify-end gap-2 mt-6 items-center">
                     {branding && (
-                        <Button
-                            variant="destructive"
-                            type="button"
-                            loading={isUpdatingBranding || isDeletingBranding}
-                            disabled={
-                                isUpdatingBranding ||
-                                isDeletingBranding ||
-                                !isPaidUser
-                            }
-                            onClick={() => {
-                                deleteFormAction();
-                            }}
-                            className="gap-1"
-                        >
-                            {t("removeAuthPageBranding")}
-                        </Button>
+                        <form action={deleteFormAction}>
+                            <Button
+                                variant="destructive"
+                                type="submit"
+                                loading={isDeletingBranding}
+                                disabled={
+                                    isUpdatingBranding ||
+                                    isDeletingBranding ||
+                                    !isPaidUser(tierMatrix.loginPageBranding)
+                                }
+                                className="gap-1"
+                            >
+                                {t("removeAuthPageBranding")}
+                            </Button>
+                        </form>
                     )}
                     <Button
                         type="submit"
                         form="auth-page-branding-form"
-                        loading={isUpdatingBranding || isDeletingBranding}
+                        loading={isUpdatingBranding}
                         disabled={
                             isUpdatingBranding ||
                             isDeletingBranding ||
-                            !isPaidUser
+                            !isPaidUser(tierMatrix.loginPageBranding)
                         }
                     >
                         {t("saveAuthPageBranding")}

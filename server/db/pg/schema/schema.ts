@@ -1,18 +1,16 @@
-import {
-    pgTable,
-    serial,
-    varchar,
-    boolean,
-    integer,
-    bigint,
-    real,
-    text,
-    index,
-    uniqueIndex
-} from "drizzle-orm/pg-core";
-import { InferSelectModel } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import { alias } from "yargs";
+import { InferSelectModel } from "drizzle-orm";
+import {
+    bigint,
+    boolean,
+    index,
+    integer,
+    pgTable,
+    real,
+    serial,
+    text,
+    varchar
+} from "drizzle-orm/pg-core";
 
 export const domains = pgTable("domains", {
     domainId: varchar("domainId").primaryKey(),
@@ -55,7 +53,11 @@ export const orgs = pgTable("orgs", {
         .default(0),
     settingsLogRetentionDaysAction: integer("settingsLogRetentionDaysAction") // where 0 = dont keep logs and -1 = keep forever and 9001 = end of the following year
         .notNull()
-        .default(0)
+        .default(0),
+    sshCaPrivateKey: text("sshCaPrivateKey"), // Encrypted SSH CA private key (PEM format)
+    sshCaPublicKey: text("sshCaPublicKey"), // SSH CA public key (OpenSSH format)
+    isBillingOrg: boolean("isBillingOrg"),
+    billingOrgId: varchar("billingOrgId")
 });
 
 export const orgDomains = pgTable("orgDomains", {
@@ -134,13 +136,16 @@ export const resources = pgTable("resources", {
     proxyProtocol: boolean("proxyProtocol").notNull().default(false),
     proxyProtocolVersion: integer("proxyProtocolVersion").default(1),
 
-    maintenanceModeEnabled: boolean("maintenanceModeEnabled").notNull().default(false),
+    maintenanceModeEnabled: boolean("maintenanceModeEnabled")
+        .notNull()
+        .default(false),
     maintenanceModeType: text("maintenanceModeType", {
         enum: ["forced", "automatic"]
     }).default("forced"), // "forced" = always show, "automatic" = only when down
     maintenanceTitle: text("maintenanceTitle"),
     maintenanceMessage: text("maintenanceMessage"),
     maintenanceEstimatedTime: text("maintenanceEstimatedTime"),
+    postAuthPath: text("postAuthPath")
 });
 
 export const targets = pgTable("targets", {
@@ -185,7 +190,9 @@ export const targetHealthCheck = pgTable("targetHealthCheck", {
     hcFollowRedirects: boolean("hcFollowRedirects").default(true),
     hcMethod: varchar("hcMethod").default("GET"),
     hcStatus: integer("hcStatus"), // http code
-    hcHealth: text("hcHealth").default("unknown"), // "unknown", "healthy", "unhealthy"
+    hcHealth: text("hcHealth")
+        .$type<"unknown" | "healthy" | "unhealthy">()
+        .default("unknown"), // "unknown", "healthy", "unhealthy"
     hcTlsServerName: text("hcTlsServerName")
 });
 
@@ -215,7 +222,7 @@ export const siteResources = pgTable("siteResources", {
         .references(() => orgs.orgId, { onDelete: "cascade" }),
     niceId: varchar("niceId").notNull(),
     name: varchar("name").notNull(),
-    mode: varchar("mode").notNull(), // "host" | "cidr" | "port"
+    mode: varchar("mode").$type<"host" | "cidr">().notNull(), // "host" | "cidr" | "port"
     protocol: varchar("protocol"), // only for port mode
     proxyPort: integer("proxyPort"), // only for port mode
     destinationPort: integer("destinationPort"), // only for port mode
@@ -223,9 +230,13 @@ export const siteResources = pgTable("siteResources", {
     enabled: boolean("enabled").notNull().default(true),
     alias: varchar("alias"),
     aliasAddress: varchar("aliasAddress"),
-    tcpPortRangeString: varchar("tcpPortRangeString"),
-    udpPortRangeString: varchar("udpPortRangeString"),
-    disableIcmp: boolean("disableIcmp").notNull().default(false)
+    tcpPortRangeString: varchar("tcpPortRangeString").notNull().default("*"),
+    udpPortRangeString: varchar("udpPortRangeString").notNull().default("*"),
+    disableIcmp: boolean("disableIcmp").notNull().default(false),
+    authDaemonPort: integer("authDaemonPort").default(22123),
+    authDaemonMode: varchar("authDaemonMode", { length: 32 })
+        .$type<"site" | "remote">()
+        .default("site")
 });
 
 export const clientSiteResources = pgTable("clientSiteResources", {
@@ -325,7 +336,8 @@ export const userOrgs = pgTable("userOrgs", {
         .notNull()
         .references(() => roles.roleId),
     isOwner: boolean("isOwner").notNull().default(false),
-    autoProvisioned: boolean("autoProvisioned").default(false)
+    autoProvisioned: boolean("autoProvisioned").default(false),
+    pamUsername: varchar("pamUsername") // cleaned username for ssh and such
 });
 
 export const emailVerificationCodes = pgTable("emailVerificationCodes", {
@@ -363,7 +375,12 @@ export const roles = pgTable("roles", {
         .notNull(),
     isAdmin: boolean("isAdmin"),
     name: varchar("name").notNull(),
-    description: varchar("description")
+    description: varchar("description"),
+    requireDeviceApproval: boolean("requireDeviceApproval").default(false),
+    sshSudoMode: varchar("sshSudoMode", { length: 32 }).default("none"), // "none" | "full" | "commands"
+    sshSudoCommands: text("sshSudoCommands").default("[]"),
+    sshCreateHomeDir: boolean("sshCreateHomeDir").default(true),
+    sshUnixGroups: text("sshUnixGroups").default("[]")
 });
 
 export const roleActions = pgTable("roleActions", {
@@ -464,13 +481,22 @@ export const resourceHeaderAuth = pgTable("resourceHeaderAuth", {
     headerAuthHash: varchar("headerAuthHash").notNull()
 });
 
-export const resourceHeaderAuthExtendedCompatibility = pgTable("resourceHeaderAuthExtendedCompatibility", {
-    headerAuthExtendedCompatibilityId: serial("headerAuthExtendedCompatibilityId").primaryKey(),
-    resourceId: integer("resourceId")
-        .notNull()
-        .references(() => resources.resourceId, { onDelete: "cascade" }),
-    extendedCompatibilityIsActivated: boolean("extendedCompatibilityIsActivated").notNull().default(false),
-});
+export const resourceHeaderAuthExtendedCompatibility = pgTable(
+    "resourceHeaderAuthExtendedCompatibility",
+    {
+        headerAuthExtendedCompatibilityId: serial(
+            "headerAuthExtendedCompatibilityId"
+        ).primaryKey(),
+        resourceId: integer("resourceId")
+            .notNull()
+            .references(() => resources.resourceId, { onDelete: "cascade" }),
+        extendedCompatibilityIsActivated: boolean(
+            "extendedCompatibilityIsActivated"
+        )
+            .notNull()
+            .default(true)
+    }
+);
 
 export const resourceAccessToken = pgTable("resourceAccessToken", {
     accessTokenId: varchar("accessTokenId").primaryKey(),
@@ -580,7 +606,8 @@ export const idp = pgTable("idp", {
     type: varchar("type").notNull(),
     defaultRoleMapping: varchar("defaultRoleMapping"),
     defaultOrgMapping: varchar("defaultOrgMapping"),
-    autoProvision: boolean("autoProvision").notNull().default(false)
+    autoProvision: boolean("autoProvision").notNull().default(false),
+    tags: text("tags")
 });
 
 export const idpOidcConfig = pgTable("idpOidcConfig", {
@@ -677,7 +704,12 @@ export const clients = pgTable("clients", {
     online: boolean("online").notNull().default(false),
     // endpoint: varchar("endpoint"),
     lastHolePunch: integer("lastHolePunch"),
-    maxConnections: integer("maxConnections")
+    maxConnections: integer("maxConnections"),
+    archived: boolean("archived").notNull().default(false),
+    blocked: boolean("blocked").notNull().default(false),
+    approvalState: varchar("approvalState").$type<
+        "pending" | "approved" | "denied"
+    >()
 });
 
 export const clientSitesAssociationsCache = pgTable(
@@ -701,6 +733,16 @@ export const clientSiteResourcesAssociationsCache = pgTable(
     }
 );
 
+export const clientPostureSnapshots = pgTable("clientPostureSnapshots", {
+    snapshotId: serial("snapshotId").primaryKey(),
+
+    clientId: integer("clientId").references(() => clients.clientId, {
+        onDelete: "cascade"
+    }),
+
+    collectedAt: integer("collectedAt").notNull()
+});
+
 export const olms = pgTable("olms", {
     olmId: varchar("id").primaryKey(),
     secretHash: varchar("secretHash").notNull(),
@@ -715,7 +757,118 @@ export const olms = pgTable("olms", {
     userId: text("userId").references(() => users.userId, {
         // optionally tied to a user and in this case delete when the user deletes
         onDelete: "cascade"
-    })
+    }),
+    archived: boolean("archived").notNull().default(false)
+});
+
+export const currentFingerprint = pgTable("currentFingerprint", {
+    fingerprintId: serial("id").primaryKey(),
+
+    olmId: text("olmId")
+        .references(() => olms.olmId, { onDelete: "cascade" })
+        .notNull(),
+
+    firstSeen: integer("firstSeen").notNull(),
+    lastSeen: integer("lastSeen").notNull(),
+    lastCollectedAt: integer("lastCollectedAt").notNull(),
+
+    username: text("username"),
+    hostname: text("hostname"),
+    platform: text("platform"),
+    osVersion: text("osVersion"),
+    kernelVersion: text("kernelVersion"),
+    arch: text("arch"),
+    deviceModel: text("deviceModel"),
+    serialNumber: text("serialNumber"),
+    platformFingerprint: varchar("platformFingerprint"),
+
+    // Platform-agnostic checks
+
+    biometricsEnabled: boolean("biometricsEnabled").notNull().default(false),
+    diskEncrypted: boolean("diskEncrypted").notNull().default(false),
+    firewallEnabled: boolean("firewallEnabled").notNull().default(false),
+    autoUpdatesEnabled: boolean("autoUpdatesEnabled").notNull().default(false),
+    tpmAvailable: boolean("tpmAvailable").notNull().default(false),
+
+    // Windows-specific posture check information
+
+    windowsAntivirusEnabled: boolean("windowsAntivirusEnabled")
+        .notNull()
+        .default(false),
+
+    // macOS-specific posture check information
+
+    macosSipEnabled: boolean("macosSipEnabled").notNull().default(false),
+    macosGatekeeperEnabled: boolean("macosGatekeeperEnabled")
+        .notNull()
+        .default(false),
+    macosFirewallStealthMode: boolean("macosFirewallStealthMode")
+        .notNull()
+        .default(false),
+
+    // Linux-specific posture check information
+
+    linuxAppArmorEnabled: boolean("linuxAppArmorEnabled")
+        .notNull()
+        .default(false),
+    linuxSELinuxEnabled: boolean("linuxSELinuxEnabled").notNull().default(false)
+});
+
+export const fingerprintSnapshots = pgTable("fingerprintSnapshots", {
+    snapshotId: serial("id").primaryKey(),
+
+    fingerprintId: integer("fingerprintId").references(
+        () => currentFingerprint.fingerprintId,
+        {
+            onDelete: "set null"
+        }
+    ),
+
+    username: text("username"),
+    hostname: text("hostname"),
+    platform: text("platform"),
+    osVersion: text("osVersion"),
+    kernelVersion: text("kernelVersion"),
+    arch: text("arch"),
+    deviceModel: text("deviceModel"),
+    serialNumber: text("serialNumber"),
+    platformFingerprint: varchar("platformFingerprint"),
+
+    // Platform-agnostic checks
+
+    biometricsEnabled: boolean("biometricsEnabled").notNull().default(false),
+    diskEncrypted: boolean("diskEncrypted").notNull().default(false),
+    firewallEnabled: boolean("firewallEnabled").notNull().default(false),
+    autoUpdatesEnabled: boolean("autoUpdatesEnabled").notNull().default(false),
+    tpmAvailable: boolean("tpmAvailable").notNull().default(false),
+
+    // Windows-specific posture check information
+
+    windowsAntivirusEnabled: boolean("windowsAntivirusEnabled")
+        .notNull()
+        .default(false),
+
+    // macOS-specific posture check information
+
+    macosSipEnabled: boolean("macosSipEnabled").notNull().default(false),
+    macosGatekeeperEnabled: boolean("macosGatekeeperEnabled")
+        .notNull()
+        .default(false),
+    macosFirewallStealthMode: boolean("macosFirewallStealthMode")
+        .notNull()
+        .default(false),
+
+    // Linux-specific posture check information
+
+    linuxAppArmorEnabled: boolean("linuxAppArmorEnabled")
+        .notNull()
+        .default(false),
+    linuxSELinuxEnabled: boolean("linuxSELinuxEnabled")
+        .notNull()
+        .default(false),
+
+    hash: text("hash").notNull(),
+    collectedAt: integer("collectedAt").notNull()
 });
 
 export const olmSessions = pgTable("clientSession", {
@@ -844,6 +997,16 @@ export const deviceWebAuthCodes = pgTable("deviceWebAuthCodes", {
     })
 });
 
+export const roundTripMessageTracker = pgTable("roundTripMessageTracker", {
+    messageId: serial("messageId").primaryKey(),
+    wsClientId: varchar("clientId"),
+    messageType: varchar("messageType"),
+    sentAt: bigint("sentAt", { mode: "number" }).notNull(),
+    receivedAt: bigint("receivedAt", { mode: "number" }),
+    error: text("error"),
+    complete: boolean("complete").notNull().default(false)
+});
+
 export type Org = InferSelectModel<typeof orgs>;
 export type User = InferSelectModel<typeof users>;
 export type Site = InferSelectModel<typeof sites>;
@@ -872,7 +1035,9 @@ export type ResourceSession = InferSelectModel<typeof resourceSessions>;
 export type ResourcePincode = InferSelectModel<typeof resourcePincode>;
 export type ResourcePassword = InferSelectModel<typeof resourcePassword>;
 export type ResourceHeaderAuth = InferSelectModel<typeof resourceHeaderAuth>;
-export type ResourceHeaderAuthExtendedCompatibility = InferSelectModel<typeof resourceHeaderAuthExtendedCompatibility>;
+export type ResourceHeaderAuthExtendedCompatibility = InferSelectModel<
+    typeof resourceHeaderAuthExtendedCompatibility
+>;
 export type ResourceOtp = InferSelectModel<typeof resourceOtp>;
 export type ResourceAccessToken = InferSelectModel<typeof resourceAccessToken>;
 export type ResourceWhitelist = InferSelectModel<typeof resourceWhitelist>;
@@ -902,3 +1067,6 @@ export type SecurityKey = InferSelectModel<typeof securityKeys>;
 export type WebauthnChallenge = InferSelectModel<typeof webauthnChallenge>;
 export type DeviceWebAuthCode = InferSelectModel<typeof deviceWebAuthCodes>;
 export type RequestAuditLog = InferSelectModel<typeof requestAuditLog>;
+export type RoundTripMessageTracker = InferSelectModel<
+    typeof roundTripMessageTracker
+>;

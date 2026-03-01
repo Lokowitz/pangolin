@@ -11,7 +11,13 @@ import {
     userSiteResources
 } from "@server/db";
 import { getUniqueSiteResourceName } from "@server/db/names";
-import { getNextAvailableAliasAddress, isIpInCidr, portRangeStringSchema } from "@server/lib/ip";
+import {
+    getNextAvailableAliasAddress,
+    isIpInCidr,
+    portRangeStringSchema
+} from "@server/lib/ip";
+import { isLicensedOrSubscribed } from "#dynamic/lib/isLicencedOrSubscribed";
+import { tierMatrix } from "@server/lib/billing/tierMatrix";
 import { rebuildClientAssociationsFromSiteResource } from "@server/lib/rebuildClientAssociations";
 import response from "@server/lib/response";
 import logger from "@server/logger";
@@ -49,7 +55,9 @@ const createSiteResourceSchema = z
         clientIds: z.array(z.int()),
         tcpPortRangeString: portRangeStringSchema,
         udpPortRangeString: portRangeStringSchema,
-        disableIcmp: z.boolean().optional()
+        disableIcmp: z.boolean().optional(),
+        authDaemonPort: z.int().positive().optional(),
+        authDaemonMode: z.enum(["site", "remote"]).optional()
     })
     .strict()
     .refine(
@@ -69,7 +77,10 @@ const createSiteResourceSchema = z
                 const domainRegex =
                     /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
                 const isValidDomain = domainRegex.test(data.destination);
-                const isValidAlias = data.alias !== undefined && data.alias !== null && data.alias.trim() !== "";
+                const isValidAlias =
+                    data.alias !== undefined &&
+                    data.alias !== null &&
+                    data.alias.trim() !== "";
 
                 return isValidDomain && isValidAlias; // require the alias to be set in the case of domain
             }
@@ -161,7 +172,9 @@ export async function createSiteResource(
             clientIds,
             tcpPortRangeString,
             udpPortRangeString,
-            disableIcmp
+            disableIcmp,
+            authDaemonPort,
+            authDaemonMode
         } = parsedBody.data;
 
         // Verify the site exists and belongs to the org
@@ -182,7 +195,9 @@ export async function createSiteResource(
             .limit(1);
 
         if (!org) {
-            return next(createHttpError(HttpCode.NOT_FOUND, "Organization not found"));
+            return next(
+                createHttpError(HttpCode.NOT_FOUND, "Organization not found")
+            );
         }
 
         if (!org.subnet || !org.utilitySubnet) {
@@ -195,10 +210,13 @@ export async function createSiteResource(
         }
 
         // Only check if destination is an IP address
-        const isIp = z.union([z.ipv4(), z.ipv6()]).safeParse(destination).success;
+        const isIp = z
+            .union([z.ipv4(), z.ipv6()])
+            .safeParse(destination).success;
         if (
             isIp &&
-            (isIpInCidr(destination, org.subnet) || isIpInCidr(destination, org.utilitySubnet))
+            (isIpInCidr(destination, org.subnet) ||
+                isIpInCidr(destination, org.utilitySubnet))
         ) {
             return next(
                 createHttpError(
@@ -255,6 +273,11 @@ export async function createSiteResource(
             }
         }
 
+        const isLicensedSshPam = await isLicensedOrSubscribed(
+            orgId,
+            tierMatrix.sshPam
+        );
+
         const niceId = await getUniqueSiteResourceName(orgId);
         let aliasAddress: string | null = null;
         if (mode == "host") {
@@ -265,25 +288,29 @@ export async function createSiteResource(
         let newSiteResource: SiteResource | undefined;
         await db.transaction(async (trx) => {
             // Create the site resource
+            const insertValues: typeof siteResources.$inferInsert = {
+                siteId,
+                niceId,
+                orgId,
+                name,
+                mode: mode as "host" | "cidr",
+                destination,
+                enabled,
+                alias,
+                aliasAddress,
+                tcpPortRangeString,
+                udpPortRangeString,
+                disableIcmp
+            };
+            if (isLicensedSshPam) {
+                if (authDaemonPort !== undefined)
+                    insertValues.authDaemonPort = authDaemonPort;
+                if (authDaemonMode !== undefined)
+                    insertValues.authDaemonMode = authDaemonMode;
+            }
             [newSiteResource] = await trx
                 .insert(siteResources)
-                .values({
-                    siteId,
-                    niceId,
-                    orgId,
-                    name,
-                    mode,
-                    // protocol: mode === "port" ? protocol : null,
-                    // proxyPort: mode === "port" ? proxyPort : null,
-                    // destinationPort: mode === "port" ? destinationPort : null,
-                    destination,
-                    enabled,
-                    alias,
-                    aliasAddress,
-                    tcpPortRangeString,
-                    udpPortRangeString,
-                    disableIcmp
-                })
+                .values(insertValues)
                 .returning();
 
             const siteResourceId = newSiteResource.siteResourceId;

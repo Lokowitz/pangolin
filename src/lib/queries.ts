@@ -1,5 +1,12 @@
 import { build } from "@server/build";
+import type { QueryRequestAnalyticsResponse } from "@server/routers/auditLogs";
 import type { ListClientsResponse } from "@server/routers/client";
+import type { ListDomainsResponse } from "@server/routers/domain";
+import type {
+    GetResourceWhitelistResponse,
+    ListResourceNamesResponse,
+    ListResourcesResponse
+} from "@server/routers/resource";
 import type { ListRolesResponse } from "@server/routers/role";
 import type { ListSitesResponse } from "@server/routers/site";
 import type {
@@ -7,20 +14,19 @@ import type {
     ListSiteResourceRolesResponse,
     ListSiteResourceUsersResponse
 } from "@server/routers/siteResource";
+import type { ListTargetsResponse } from "@server/routers/target";
 import type { ListUsersResponse } from "@server/routers/user";
 import type ResponseT from "@server/types/Response";
-import { keepPreviousData, queryOptions } from "@tanstack/react-query";
-import type { AxiosInstance, AxiosResponse } from "axios";
+import {
+    infiniteQueryOptions,
+    keepPreviousData,
+    queryOptions
+} from "@tanstack/react-query";
+import type { AxiosResponse } from "axios";
 import z from "zod";
 import { remote } from "./api";
 import { durationToMs } from "./durationToMs";
-import type { QueryRequestAnalyticsResponse } from "@server/routers/auditLogs";
-import type {
-    GetResourceWhitelistResponse,
-    ListResourceNamesResponse
-} from "@server/routers/resource";
-import type { ListTargetsResponse } from "@server/routers/target";
-import type { ListDomainsResponse } from "@server/routers/domain";
+import { wait } from "./wait";
 
 export type ProductUpdate = {
     link: string | null;
@@ -41,12 +47,13 @@ export type LatestVersionResponse = {
 };
 
 export const productUpdatesQueries = {
-    list: (enabled: boolean) =>
+    list: (enabled: boolean, version?: string) =>
         queryOptions({
             queryKey: ["PRODUCT_UPDATES"] as const,
             queryFn: async ({ signal }) => {
                 const sp = new URLSearchParams({
-                    build
+                    build,
+                    ...(version ? { version } : {})
                 });
                 const data = await remote.get<ResponseT<ProductUpdate[]>>(
                     `/product-updates?${sp.toString()}`,
@@ -84,25 +91,13 @@ export const productUpdatesQueries = {
         })
 };
 
-export const clientFilterSchema = z.object({
-    filter: z.enum(["machine", "user"]),
-    limit: z.int().prefault(1000).optional()
-});
-
 export const orgQueries = {
-    clients: ({
-        orgId,
-        filters
-    }: {
-        orgId: string;
-        filters: z.infer<typeof clientFilterSchema>;
-    }) =>
+    clients: ({ orgId }: { orgId: string }) =>
         queryOptions({
-            queryKey: ["ORG", orgId, "CLIENTS", filters] as const,
+            queryKey: ["ORG", orgId, "CLIENTS"] as const,
             queryFn: async ({ signal, meta }) => {
                 const sp = new URLSearchParams({
-                    ...filters,
-                    limit: (filters.limit ?? 1000).toString()
+                    pageSize: "10000"
                 });
 
                 const res = await meta!.api.get<
@@ -139,9 +134,13 @@ export const orgQueries = {
         queryOptions({
             queryKey: ["ORG", orgId, "SITES"] as const,
             queryFn: async ({ signal, meta }) => {
+                const sp = new URLSearchParams({
+                    pageSize: "10000"
+                });
+
                 const res = await meta!.api.get<
                     AxiosResponse<ListSitesResponse>
-                >(`/org/${orgId}/sites`, { signal });
+                >(`/org/${orgId}/sites?${sp.toString()}`, { signal });
                 return res.data.data.sites;
             }
         }),
@@ -156,7 +155,13 @@ export const orgQueries = {
                 return res.data.data.domains;
             }
         }),
-    identityProviders: ({ orgId }: { orgId: string }) =>
+    identityProviders: ({
+        orgId,
+        useOrgOnlyIdp
+    }: {
+        orgId: string;
+        useOrgOnlyIdp?: boolean;
+    }) =>
         queryOptions({
             queryKey: ["ORG", orgId, "IDPS"] as const,
             queryFn: async ({ signal, meta }) => {
@@ -164,8 +169,29 @@ export const orgQueries = {
                     AxiosResponse<{
                         idps: { idpId: number; name: string }[];
                     }>
-                >(build === "saas" ? `/org/${orgId}/idp` : "/idp", { signal });
+                >(
+                    build === "saas" || useOrgOnlyIdp
+                        ? `/org/${orgId}/idp`
+                        : "/idp",
+                    { signal }
+                );
                 return res.data.data.idps;
+            }
+        }),
+
+    resources: ({ orgId }: { orgId: string }) =>
+        queryOptions({
+            queryKey: ["ORG", orgId, "RESOURCES"] as const,
+            queryFn: async ({ signal, meta }) => {
+                const sp = new URLSearchParams({
+                    pageSize: "10000"
+                });
+
+                const res = await meta!.api.get<
+                    AxiosResponse<ListResourcesResponse>
+                >(`/org/${orgId}/resources?${sp.toString()}`, { signal });
+
+                return res.data.data.resources;
             }
         })
 };
@@ -176,19 +202,16 @@ export const logAnalyticsFiltersSchema = z.object({
         .refine((val) => !isNaN(Date.parse(val)), {
             error: "timeStart must be a valid ISO date string"
         })
-        .optional(),
+        .optional()
+        .catch(undefined),
     timeEnd: z
         .string()
         .refine((val) => !isNaN(Date.parse(val)), {
             error: "timeEnd must be a valid ISO date string"
         })
-        .optional(),
-    resourceId: z
-        .string()
         .optional()
-        .transform(Number)
-        .pipe(z.int().positive())
-        .optional()
+        .catch(undefined),
+    resourceId: z.coerce.number().optional().catch(undefined)
 });
 
 export type LogAnalyticsFilters = z.TypeOf<typeof logAnalyticsFiltersSchema>;
@@ -228,7 +251,7 @@ export const resourceQueries = {
             queryFn: async ({ signal, meta }) => {
                 const res = await meta!.api.get<
                     AxiosResponse<ListSiteResourceUsersResponse>
-                >(`/site-resource/${resourceId}/users`, { signal });
+                >(`/resource/${resourceId}/users`, { signal });
                 return res.data.data.users;
             }
         }),
@@ -238,18 +261,39 @@ export const resourceQueries = {
             queryFn: async ({ signal, meta }) => {
                 const res = await meta!.api.get<
                     AxiosResponse<ListSiteResourceRolesResponse>
-                >(`/site-resource/${resourceId}/roles`, { signal });
+                >(`/resource/${resourceId}/roles`, { signal });
 
                 return res.data.data.roles;
             }
         }),
-    resourceClients: ({ resourceId }: { resourceId: number }) =>
+    siteResourceUsers: ({ siteResourceId }: { siteResourceId: number }) =>
         queryOptions({
-            queryKey: ["RESOURCES", resourceId, "CLIENTS"] as const,
+            queryKey: ["SITE_RESOURCES", siteResourceId, "USERS"] as const,
+            queryFn: async ({ signal, meta }) => {
+                const res = await meta!.api.get<
+                    AxiosResponse<ListSiteResourceUsersResponse>
+                >(`/site-resource/${siteResourceId}/users`, { signal });
+                return res.data.data.users;
+            }
+        }),
+    siteResourceRoles: ({ siteResourceId }: { siteResourceId: number }) =>
+        queryOptions({
+            queryKey: ["SITE_RESOURCES", siteResourceId, "ROLES"] as const,
+            queryFn: async ({ signal, meta }) => {
+                const res = await meta!.api.get<
+                    AxiosResponse<ListSiteResourceRolesResponse>
+                >(`/site-resource/${siteResourceId}/roles`, { signal });
+
+                return res.data.data.roles;
+            }
+        }),
+    siteResourceClients: ({ siteResourceId }: { siteResourceId: number }) =>
+        queryOptions({
+            queryKey: ["SITE_RESOURCES", siteResourceId, "CLIENTS"] as const,
             queryFn: async ({ signal, meta }) => {
                 const res = await meta!.api.get<
                     AxiosResponse<ListSiteResourceClientsResponse>
-                >(`/site-resource/${resourceId}/clients`, { signal });
+                >(`/site-resource/${siteResourceId}/clients`, { signal });
 
                 return res.data.data.clients;
             }
@@ -286,6 +330,109 @@ export const resourceQueries = {
                     signal
                 });
                 return res.data.data;
+            }
+        })
+};
+
+export const approvalFiltersSchema = z.object({
+    approvalState: z
+        .enum(["pending", "approved", "denied", "all"])
+        .default("pending")
+        .catch("pending")
+});
+
+export type ApprovalItem = {
+    approvalId: number;
+    orgId: string;
+    clientId: number | null;
+    niceId: string | null;
+    decision: "pending" | "approved" | "denied";
+    type: "user_device";
+    user: {
+        name: string | null;
+        userId: string;
+        username: string;
+        email: string | null;
+    };
+    deviceName: string | null;
+    fingerprint: {
+        platform: string | null;
+        osVersion: string | null;
+        kernelVersion: string | null;
+        arch: string | null;
+        deviceModel: string | null;
+        serialNumber: string | null;
+        username: string | null;
+        hostname: string | null;
+    } | null;
+};
+
+export const approvalQueries = {
+    listApprovals: (
+        orgId: string,
+        filters: z.infer<typeof approvalFiltersSchema>
+    ) =>
+        infiniteQueryOptions({
+            queryKey: ["APPROVALS", orgId, filters] as const,
+            queryFn: async ({ signal, pageParam, meta }) => {
+                const sp = new URLSearchParams();
+
+                if (filters.approvalState) {
+                    sp.set("approvalState", filters.approvalState);
+                }
+                if (pageParam) {
+                    sp.set("cursorPending", pageParam.cursorPending.toString());
+                    sp.set(
+                        "cursorTimestamp",
+                        pageParam.cursorTimestamp.toString()
+                    );
+                }
+
+                const res = await meta!.api.get<
+                    AxiosResponse<{
+                        approvals: ApprovalItem[];
+                        pagination: {
+                            total: number;
+                            limit: number;
+                            cursorPending: number | null;
+                            cursorTimestamp: number | null;
+                        };
+                    }>
+                >(`/org/${orgId}/approvals?${sp.toString()}`, {
+                    signal
+                });
+                return res.data.data;
+            },
+            initialPageParam: null as {
+                cursorPending: number;
+                cursorTimestamp: number;
+            } | null,
+            placeholderData: keepPreviousData,
+            getNextPageParam: ({ pagination }) =>
+                pagination.cursorPending != null &&
+                pagination.cursorTimestamp != null
+                    ? {
+                          cursorPending: pagination.cursorPending,
+                          cursorTimestamp: pagination.cursorTimestamp
+                      }
+                    : null
+        }),
+    pendingCount: (orgId: string) =>
+        queryOptions({
+            queryKey: ["APPROVALS", orgId, "COUNT", "pending"] as const,
+            queryFn: async ({ signal, meta }) => {
+                const res = await meta!.api.get<
+                    AxiosResponse<{ count: number }>
+                >(`/org/${orgId}/approvals/count?approvalState=pending`, {
+                    signal
+                });
+                return res.data.data.count;
+            },
+            refetchInterval: (query) => {
+                if (query.state.data) {
+                    return durationToMs(30, "seconds");
+                }
+                return false;
             }
         })
 };

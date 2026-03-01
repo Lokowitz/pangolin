@@ -15,7 +15,8 @@ import {
     TokenPayload,
     WebSocketRequest,
     WSMessage,
-    AuthenticatedWebSocket
+    AuthenticatedWebSocket,
+    SendMessageOptions
 } from "./types";
 import { validateSessionToken } from "@server/auth/sessions/app";
 
@@ -34,6 +35,8 @@ const NODE_ID = uuidv4();
 
 // Client tracking map (local to this node)
 const connectedClients: Map<string, AuthenticatedWebSocket[]> = new Map();
+// Config version tracking map (clientId -> version)
+const clientConfigVersions: Map<string, number> = new Map();
 // Helper to get map key
 const getClientMapKey = (clientId: string) => clientId;
 
@@ -52,6 +55,13 @@ const addClient = async (
     const existingClients = connectedClients.get(mapKey) || [];
     existingClients.push(ws);
     connectedClients.set(mapKey, existingClients);
+
+    // Initialize config version to 0 if not already set, otherwise use existing
+    if (!clientConfigVersions.has(clientId)) {
+        clientConfigVersions.set(clientId, 0);
+    }
+    // Set the current config version on the websocket
+    ws.configVersion = clientConfigVersions.get(clientId) || 0;
 
     logger.info(
         `Client added to tracking - ${clientType.toUpperCase()} ID: ${clientId}, Connection ID: ${connectionId}, Total connections: ${existingClients.length}`
@@ -84,14 +94,28 @@ const removeClient = async (
 // Local message sending (within this node)
 const sendToClientLocal = async (
     clientId: string,
-    message: WSMessage
+    message: WSMessage,
+    options: SendMessageOptions = {}
 ): Promise<boolean> => {
     const mapKey = getClientMapKey(clientId);
     const clients = connectedClients.get(mapKey);
     if (!clients || clients.length === 0) {
         return false;
     }
-    const messageString = JSON.stringify(message);
+
+    // Include config version in message
+    const configVersion = clientConfigVersions.get(clientId) || 0;
+    // Update version on all client connections
+    clients.forEach((client) => {
+        client.configVersion = configVersion;
+    });
+
+    const messageWithVersion = {
+        ...message,
+        configVersion
+    };
+
+    const messageString = JSON.stringify(messageWithVersion);
     clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(messageString);
@@ -102,14 +126,30 @@ const sendToClientLocal = async (
 
 const broadcastToAllExceptLocal = async (
     message: WSMessage,
-    excludeClientId?: string
+    excludeClientId?: string,
+    options: SendMessageOptions = {}
 ): Promise<void> => {
     connectedClients.forEach((clients, mapKey) => {
-        const [type, id] = mapKey.split(":");
-        if (!(excludeClientId && id === excludeClientId)) {
+        const clientId = mapKey; // mapKey is the clientId
+        if (!(excludeClientId && clientId === excludeClientId)) {
+            // Handle config version per client
+            if (options.incrementConfigVersion) {
+                const currentVersion = clientConfigVersions.get(clientId) || 0;
+                const newVersion = currentVersion + 1;
+                clientConfigVersions.set(clientId, newVersion);
+                clients.forEach((client) => {
+                    client.configVersion = newVersion;
+                });
+            }
+            // Include config version in message for this client
+            const configVersion = clientConfigVersions.get(clientId) || 0;
+            const messageWithVersion = {
+                ...message,
+                configVersion
+            };
             clients.forEach((client) => {
                 if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify(message));
+                    client.send(JSON.stringify(messageWithVersion));
                 }
             });
         }
@@ -119,10 +159,18 @@ const broadcastToAllExceptLocal = async (
 // Cross-node message sending
 const sendToClient = async (
     clientId: string,
-    message: WSMessage
+    message: WSMessage,
+    options: SendMessageOptions = {}
 ): Promise<boolean> => {
+    // Increment config version if requested
+    if (options.incrementConfigVersion) {
+        const currentVersion = clientConfigVersions.get(clientId) || 0;
+        const newVersion = currentVersion + 1;
+        clientConfigVersions.set(clientId, newVersion);
+    }
+
     // Try to send locally first
-    const localSent = await sendToClientLocal(clientId, message);
+    const localSent = await sendToClientLocal(clientId, message, options);
 
     logger.debug(
         `sendToClient: Message type ${message.type} sent to clientId ${clientId}`
@@ -133,10 +181,11 @@ const sendToClient = async (
 
 const broadcastToAllExcept = async (
     message: WSMessage,
-    excludeClientId?: string
+    excludeClientId?: string,
+    options: SendMessageOptions = {}
 ): Promise<void> => {
     // Broadcast locally
-    await broadcastToAllExceptLocal(message, excludeClientId);
+    await broadcastToAllExceptLocal(message, excludeClientId, options);
 };
 
 // Check if a client has active connections across all nodes
@@ -144,6 +193,13 @@ const hasActiveConnections = async (clientId: string): Promise<boolean> => {
     const mapKey = getClientMapKey(clientId);
     const clients = connectedClients.get(mapKey);
     return !!(clients && clients.length > 0);
+};
+
+// Get the current config version for a client
+const getClientConfigVersion = async (clientId: string): Promise<number | undefined> => {
+    const version = clientConfigVersions.get(clientId);
+    logger.debug(`getClientConfigVersion called for clientId: ${clientId}, returning: ${version} (type: ${typeof version})`);
+    return version;
 };
 
 // Get all active nodes for a client
@@ -259,15 +315,21 @@ const setupConnection = async (
                 if (response.broadcast) {
                     await broadcastToAllExcept(
                         response.message,
-                        response.excludeSender ? clientId : undefined
+                        response.excludeSender ? clientId : undefined,
+                        response.options
                     );
                 } else if (response.targetClientId) {
                     await sendToClient(
                         response.targetClientId,
-                        response.message
+                        response.message,
+                        response.options
                     );
                 } else {
-                    ws.send(JSON.stringify(response.message));
+                    await sendToClient(
+                        clientId,
+                        response.message,
+                        response.options
+                    );
                 }
             }
         } catch (error) {
@@ -434,5 +496,6 @@ export {
     getActiveNodes,
     disconnectClient,
     NODE_ID,
-    cleanup
+    cleanup,
+    getClientConfigVersion
 };

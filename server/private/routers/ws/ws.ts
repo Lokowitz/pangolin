@@ -43,7 +43,8 @@ import {
     WSMessage,
     TokenPayload,
     WebSocketRequest,
-    RedisMessage
+    RedisMessage,
+    SendMessageOptions
 } from "@server/routers/ws";
 import { validateSessionToken } from "@server/auth/sessions/app";
 
@@ -118,12 +119,21 @@ const processMessage = async (
             if (response.broadcast) {
                 await broadcastToAllExcept(
                     response.message,
-                    response.excludeSender ? clientId : undefined
+                    response.excludeSender ? clientId : undefined,
+                    response.options
                 );
             } else if (response.targetClientId) {
-                await sendToClient(response.targetClientId, response.message);
+                await sendToClient(
+                    response.targetClientId,
+                    response.message,
+                    response.options
+                );
             } else {
-                ws.send(JSON.stringify(response.message));
+                await sendToClient(
+                    clientId,
+                    response.message,
+                    response.options
+                );
             }
         }
     } catch (error) {
@@ -172,6 +182,9 @@ const REDIS_CHANNEL = "websocket_messages";
 // Client tracking map (local to this node)
 const connectedClients: Map<string, AuthenticatedWebSocket[]> = new Map();
 
+// Config version tracking map (local to this node, resets on server restart)
+const clientConfigVersions: Map<string, number> = new Map();
+
 // Recovery tracking
 let isRedisRecoveryInProgress = false;
 
@@ -182,6 +195,8 @@ const getClientMapKey = (clientId: string) => clientId;
 const getConnectionsKey = (clientId: string) => `ws:connections:${clientId}`;
 const getNodeConnectionsKey = (nodeId: string, clientId: string) =>
     `ws:node:${nodeId}:${clientId}`;
+const getConfigVersionKey = (clientId: string) =>
+    `ws:configVersion:${clientId}`;
 
 // Initialize Redis subscription for cross-node messaging
 const initializeRedisSubscription = async (): Promise<void> => {
@@ -304,6 +319,45 @@ const addClient = async (
     existingClients.push(ws);
     connectedClients.set(mapKey, existingClients);
 
+    // Get or initialize config version
+    let configVersion = 0;
+
+    // Check Redis first if enabled
+    if (redisManager.isRedisEnabled()) {
+        try {
+            const redisVersion = await redisManager.get(getConfigVersionKey(clientId));
+            if (redisVersion !== null) {
+                configVersion = parseInt(redisVersion, 10);
+                // Sync to local cache
+                clientConfigVersions.set(clientId, configVersion);
+            } else if (!clientConfigVersions.has(clientId)) {
+                // No version in Redis or local cache, initialize to 0
+                await redisManager.set(getConfigVersionKey(clientId), "0");
+                clientConfigVersions.set(clientId, 0);
+            } else {
+                // Use local cache version and sync to Redis
+                configVersion = clientConfigVersions.get(clientId) || 0;
+                await redisManager.set(getConfigVersionKey(clientId), configVersion.toString());
+            }
+        } catch (error) {
+            logger.error("Failed to get/set config version in Redis:", error);
+            // Fall back to local cache
+            if (!clientConfigVersions.has(clientId)) {
+                clientConfigVersions.set(clientId, 0);
+            }
+            configVersion = clientConfigVersions.get(clientId) || 0;
+        }
+    } else {
+        // Redis not enabled, use local cache only
+        if (!clientConfigVersions.has(clientId)) {
+            clientConfigVersions.set(clientId, 0);
+        }
+        configVersion = clientConfigVersions.get(clientId) || 0;
+    }
+
+    // Set config version on websocket
+    ws.configVersion = configVersion;
+
     // Add to Redis tracking if enabled
     if (redisManager.isRedisEnabled()) {
         try {
@@ -322,7 +376,7 @@ const addClient = async (
     }
 
     logger.info(
-        `Client added to tracking - ${clientType.toUpperCase()} ID: ${clientId}, Connection ID: ${connectionId}, Total connections: ${existingClients.length}`
+        `Client added to tracking - ${clientType.toUpperCase()} ID: ${clientId}, Connection ID: ${connectionId}, Total connections: ${existingClients.length}, Config version: ${configVersion}`
     );
 };
 
@@ -377,53 +431,133 @@ const removeClient = async (
     }
 };
 
+// Helper to get the current config version for a client
+const getClientConfigVersion = async (clientId: string): Promise<number | undefined> => {
+    // Try Redis first if available
+    if (redisManager.isRedisEnabled()) {
+        try {
+            const redisVersion = await redisManager.get(
+                getConfigVersionKey(clientId)
+            );
+            if (redisVersion !== null) {
+                const version = parseInt(redisVersion, 10);
+                // Sync local cache with Redis
+                clientConfigVersions.set(clientId, version);
+                return version;
+            }
+        } catch (error) {
+            logger.error("Failed to get config version from Redis:", error);
+        }
+    }
+
+    // Fall back to local cache
+    return clientConfigVersions.get(clientId);
+};
+
+// Helper to increment and get the new config version for a client
+const incrementClientConfigVersion = async (
+    clientId: string
+): Promise<number> => {
+    let newVersion: number;
+
+    if (redisManager.isRedisEnabled()) {
+        try {
+            // Use Redis INCR for atomic increment across nodes
+            newVersion = await redisManager.incr(getConfigVersionKey(clientId));
+            // Sync local cache
+            clientConfigVersions.set(clientId, newVersion);
+            return newVersion;
+        } catch (error) {
+            logger.error("Failed to increment config version in Redis:", error);
+            // Fall through to local increment
+        }
+    }
+
+    // Local increment
+    const currentVersion = clientConfigVersions.get(clientId) || 0;
+    newVersion = currentVersion + 1;
+    clientConfigVersions.set(clientId, newVersion);
+    return newVersion;
+};
+
 // Local message sending (within this node)
 const sendToClientLocal = async (
     clientId: string,
-    message: WSMessage
+    message: WSMessage,
+    options: SendMessageOptions = {}
 ): Promise<boolean> => {
     const mapKey = getClientMapKey(clientId);
     const clients = connectedClients.get(mapKey);
     if (!clients || clients.length === 0) {
         return false;
     }
-    const messageString = JSON.stringify(message);
+
+    // Handle config version
+    const configVersion = await getClientConfigVersion(clientId);
+
+    // Add config version to message
+    const messageWithVersion = {
+        ...message,
+        configVersion
+    };
+
+    const messageString = JSON.stringify(messageWithVersion);
     clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(messageString);
         }
     });
 
-    logger.debug(
-        `sendToClient: Message type ${message.type} sent to clientId ${clientId}`
-    );
-
     return true;
 };
 
 const broadcastToAllExceptLocal = async (
     message: WSMessage,
-    excludeClientId?: string
+    excludeClientId?: string,
+    options: SendMessageOptions = {}
 ): Promise<void> => {
-    connectedClients.forEach((clients, mapKey) => {
+    for (const [mapKey, clients] of connectedClients.entries()) {
         const [type, id] = mapKey.split(":");
-        if (!(excludeClientId && id === excludeClientId)) {
+        const clientId = mapKey; // mapKey is the clientId
+        if (!(excludeClientId && clientId === excludeClientId)) {
+            // Handle config version per client
+            let configVersion = await getClientConfigVersion(clientId);
+            if (options.incrementConfigVersion) {
+                configVersion = await incrementClientConfigVersion(clientId);
+            }
+
+            // Add config version to message
+            const messageWithVersion = {
+                ...message,
+                configVersion
+            };
+
             clients.forEach((client) => {
                 if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify(message));
+                    client.send(JSON.stringify(messageWithVersion));
                 }
             });
         }
-    });
+    }
 };
 
 // Cross-node message sending (via Redis)
 const sendToClient = async (
     clientId: string,
-    message: WSMessage
+    message: WSMessage,
+    options: SendMessageOptions = {}
 ): Promise<boolean> => {
+    let configVersion = await getClientConfigVersion(clientId);
+    if (options.incrementConfigVersion) {
+        configVersion = await incrementClientConfigVersion(clientId);
+    }
+
+    logger.debug(
+        `sendToClient: Message type ${message.type} sent to clientId ${clientId} (new configVersion: ${configVersion})`
+    );
+
     // Try to send locally first
-    const localSent = await sendToClientLocal(clientId, message);
+    const localSent = await sendToClientLocal(clientId, message, options);
 
     // Only send via Redis if the client is not connected locally and Redis is enabled
     if (!localSent && redisManager.isRedisEnabled()) {
@@ -431,7 +565,10 @@ const sendToClient = async (
             const redisMessage: RedisMessage = {
                 type: "direct",
                 targetClientId: clientId,
-                message,
+                message: {
+                    ...message,
+                    configVersion
+                },
                 fromNodeId: NODE_ID
             };
 
@@ -458,19 +595,22 @@ const sendToClient = async (
 
 const broadcastToAllExcept = async (
     message: WSMessage,
-    excludeClientId?: string
+    excludeClientId?: string,
+    options: SendMessageOptions = {}
 ): Promise<void> => {
     // Broadcast locally
-    await broadcastToAllExceptLocal(message, excludeClientId);
+    await broadcastToAllExceptLocal(message, excludeClientId, options);
 
     // If Redis is enabled, also broadcast via Redis pub/sub to other nodes
+    // Note: For broadcasts, we include the options so remote nodes can handle versioning
     if (redisManager.isRedisEnabled()) {
         try {
             const redisMessage: RedisMessage = {
                 type: "broadcast",
                 excludeClientId,
                 message,
-                fromNodeId: NODE_ID
+                fromNodeId: NODE_ID,
+                options
             };
 
             await redisManager.publish(
@@ -936,5 +1076,6 @@ export {
     getActiveNodes,
     disconnectClient,
     NODE_ID,
-    cleanup
+    cleanup,
+    getClientConfigVersion
 };

@@ -3,7 +3,7 @@ import {
     LoadLoginPageBrandingResponse,
     LoadLoginPageResponse
 } from "@server/routers/loginPage/types";
-import IdpLoginButtons from "@app/components/private/IdpLoginButtons";
+import IdpLoginButtons from "@app/components/IdpLoginButtons";
 import {
     Card,
     CardContent,
@@ -116,7 +116,14 @@ export default async function OrgLoginPage({
                     )}
                 </CardContent>
             </Card>
+            <p className="text-center text-muted-foreground mt-4">
+                <Link
+                    href={`${env.app.dashboardUrl}/auth/login${buildQueryString(searchParams)}`}
+                    className="underline"
+                >
+                    {t("loginBack")}
+                </Link>
+            </p>
         </div>
     );
 }
-

@@ -34,6 +34,12 @@ import { FeatureId } from "@server/lib/billing";
 import { usageService } from "@server/lib/billing/usageService";
 import { build } from "@server/build";
 import { calculateUserClientsForOrgs } from "@server/lib/calculateUserClientsForOrgs";
+import { isSubscribed } from "#dynamic/lib/isSubscribed";
+import { tierMatrix } from "@server/lib/billing/tierMatrix";
+import {
+    assignUserToOrg,
+    removeUserFromOrg
+} from "@server/lib/userOrg";
 
 const ensureTrailingSlash = (url: string): string => {
     return url;
@@ -326,6 +332,33 @@ export async function validateOidcCallback(
                     .where(eq(idpOrg.idpId, existingIdp.idp.idpId))
                     .innerJoin(orgs, eq(orgs.orgId, idpOrg.orgId));
                 allOrgs = idpOrgs.map((o) => o.orgs);
+
+                // TODO: when there are multiple orgs we need to do this better!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+                if (allOrgs.length > 1) {
+                    // for some reason there is more than one org
+                    logger.error(
+                        "More than one organization linked to this IdP. This should not happen with auto-provisioning enabled."
+                    );
+                    return next(
+                        createHttpError(
+                            HttpCode.INTERNAL_SERVER_ERROR,
+                            "Multiple organizations linked to this IdP. Please contact support."
+                        )
+                    );
+                }
+
+                const subscribed = await isSubscribed(
+                    allOrgs[0].orgId,
+                    tierMatrix.autoProvisioning
+                );
+                if (!subscribed) {
+                    return next(
+                        createHttpError(
+                            HttpCode.FORBIDDEN,
+                            "This organization's current plan does not support this feature."
+                        )
+                    );
+                }
             } else {
                 allOrgs = await db.select().from(orgs);
             }
@@ -407,6 +440,7 @@ export async function validateOidcCallback(
                 }
             }
 
+            // These are the orgs that the user should be provisioned into based on the IdP mappings and the token claims
             logger.debug("User org info", { userOrgInfo });
 
             let existingUserId = existingUser?.userId;
@@ -425,15 +459,32 @@ export async function validateOidcCallback(
                         );
 
                     if (!existingUserOrgs.length) {
-                        // delete all auto -provisioned user orgs
-                        await db
-                            .delete(userOrgs)
+                        // delete all auto-provisioned user orgs
+                        const autoProvisionedUserOrgs = await db
+                            .select()
+                            .from(userOrgs)
                             .where(
                                 and(
                                     eq(userOrgs.userId, existingUser.userId),
                                     eq(userOrgs.autoProvisioned, true)
                                 )
                             );
+                        const orgIdsToRemove = autoProvisionedUserOrgs.map(
+                            (uo) => uo.orgId
+                        );
+                        if (orgIdsToRemove.length > 0) {
+                            const orgsToRemove = await db
+                                .select()
+                                .from(orgs)
+                                .where(inArray(orgs.orgId, orgIdsToRemove));
+                            for (const org of orgsToRemove) {
+                                await removeUserFromOrg(
+                                    org,
+                                    existingUser.userId,
+                                    db
+                                );
+                            }
+                        }
 
                         await calculateUserClientsForOrgs(existingUser.userId);
 
@@ -455,7 +506,7 @@ export async function validateOidcCallback(
                 }
             }
 
-            const orgUserCounts: { orgId: string; userCount: number }[] = [];
+                const orgUserCounts: { orgId: string; userCount: number }[] = [];
 
             // sync the user with the orgs and roles
             await db.transaction(async (trx) => {
@@ -509,15 +560,14 @@ export async function validateOidcCallback(
                 );
 
                 if (orgsToDelete.length > 0) {
-                    await trx.delete(userOrgs).where(
-                        and(
-                            eq(userOrgs.userId, userId!),
-                            inArray(
-                                userOrgs.orgId,
-                                orgsToDelete.map((org) => org.orgId)
-                            )
-                        )
-                    );
+                    const orgIdsToRemove = orgsToDelete.map((org) => org.orgId);
+                    const fullOrgsToRemove = await trx
+                        .select()
+                        .from(orgs)
+                        .where(inArray(orgs.orgId, orgIdsToRemove));
+                    for (const org of fullOrgsToRemove) {
+                        await removeUserFromOrg(org, userId!, trx);
+                    }
                 }
 
                 // Update roles for existing auto-provisioned orgs where the role has changed
@@ -558,15 +608,24 @@ export async function validateOidcCallback(
                 );
 
                 if (orgsToAdd.length > 0) {
-                    await trx.insert(userOrgs).values(
-                        orgsToAdd.map((org) => ({
-                            userId: userId!,
-                            orgId: org.orgId,
-                            roleId: org.roleId,
-                            autoProvisioned: true,
-                            dateCreated: new Date().toISOString()
-                        }))
-                    );
+                    for (const org of orgsToAdd) {
+                        const [fullOrg] = await trx
+                            .select()
+                            .from(orgs)
+                            .where(eq(orgs.orgId, org.orgId));
+                        if (fullOrg) {
+                            await assignUserToOrg(
+                                fullOrg,
+                                {
+                                    orgId: org.orgId,
+                                    userId: userId!,
+                                    roleId: org.roleId,
+                                    autoProvisioned: true,
+                                },
+                                trx
+                            );
+                        }
+                    }
                 }
 
                 // Loop through all the orgs and get the total number of users from the userOrgs table
@@ -587,7 +646,7 @@ export async function validateOidcCallback(
             });
 
             for (const orgCount of orgUserCounts) {
-                await usageService.updateDaily(
+                await usageService.updateCount(
                     orgCount.orgId,
                     FeatureId.USERS,
                     orgCount.userCount

@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, type ReactNode } from "react";
+import React, { useState, useEffect, type ReactNode, useEffectEvent } from "react";
 import { Card, CardContent } from "@app/components/ui/card";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useEnvContext } from "@app/hooks/useEnvContext";
 
 type DismissableBannerProps = {
     storageKey: string;
@@ -24,6 +25,12 @@ export const DismissableBanner = ({
 }: DismissableBannerProps) => {
     const [isDismissed, setIsDismissed] = useState(true);
     const t = useTranslations();
+
+    const { env } = useEnvContext();
+
+    if (env.flags.disableProductHelpBanners) {
+        return null;
+    }
 
     useEffect(() => {
         const dismissedData = localStorage.getItem(storageKey);
@@ -64,10 +71,10 @@ export const DismissableBanner = ({
     }
 
     return (
-        <Card className="mb-6 relative border-primary/30 bg-gradient-to-br from-primary/10 via-background to-background overflow-hidden">
+        <Card className="mb-6 relative border-primary/30 bg-linear-to-br from-primary/10 via-background to-background overflow-hidden">
             <button
                 onClick={handleDismiss}
-                className="absolute top-3 right-3 z-10 p-1.5 rounded-md hover:bg-background/80 transition-colors"
+                className="absolute top-3 right-3 z-10 p-1.5 rounded-md hover:bg-background/80 transition-colors cursor-pointer"
                 aria-label={t("dismiss")}
             >
                 <X className="w-4 h-4 text-muted-foreground" />
@@ -84,7 +91,7 @@ export const DismissableBanner = ({
                         </p>
                     </div>
                     {children && (
-                        <div className="flex flex-wrap gap-3 lg:flex-shrink-0 lg:justify-end">
+                        <div className="flex flex-wrap gap-3 lg:shrink-0 lg:justify-end">
                             {children}
                         </div>
                     )}
@@ -95,4 +102,3 @@ export const DismissableBanner = ({
 };
 
 export default DismissableBanner;
-

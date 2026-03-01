@@ -30,7 +30,8 @@ const bodySchema = z.strictObject({
     scopes: z.string().optional(),
     autoProvision: z.boolean().optional(),
     defaultRoleMapping: z.string().optional(),
-    defaultOrgMapping: z.string().optional()
+    defaultOrgMapping: z.string().optional(),
+    tags: z.string().optional()
 });
 
 export type UpdateIdpResponse = {
@@ -94,8 +95,18 @@ export async function updateOidcIdp(
             name,
             autoProvision,
             defaultRoleMapping,
-            defaultOrgMapping
+            defaultOrgMapping,
+            tags
         } = parsedBody.data;
+
+        if (process.env.IDENTITY_PROVIDER_MODE === "org") {
+            return next(
+                createHttpError(
+                    HttpCode.BAD_REQUEST,
+                    "Global IdP creation is not allowed in the current identity provider mode. Set app.identity_provider_mode to 'global' in the private configuration to enable this feature."
+                )
+            );
+        }
 
         // Check if IDP exists and is of type OIDC
         const [existingIdp] = await db
@@ -127,7 +138,8 @@ export async function updateOidcIdp(
                 name,
                 autoProvision,
                 defaultRoleMapping,
-                defaultOrgMapping
+                defaultOrgMapping,
+                tags
             };
 
             // only update if at least one key is not undefined

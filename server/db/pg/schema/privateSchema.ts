@@ -10,7 +10,15 @@ import {
     index
 } from "drizzle-orm/pg-core";
 import { InferSelectModel } from "drizzle-orm";
-import { domains, orgs, targets, users, exitNodes, sessions } from "./schema";
+import {
+    domains,
+    orgs,
+    targets,
+    users,
+    exitNodes,
+    sessions,
+    clients
+} from "./schema";
 
 export const certificates = pgTable("certificates", {
     certId: serial("certId").primaryKey(),
@@ -74,11 +82,14 @@ export const subscriptions = pgTable("subscriptions", {
     canceledAt: bigint("canceledAt", { mode: "number" }),
     createdAt: bigint("createdAt", { mode: "number" }).notNull(),
     updatedAt: bigint("updatedAt", { mode: "number" }),
-    billingCycleAnchor: bigint("billingCycleAnchor", { mode: "number" })
+    version: integer("version"),
+    billingCycleAnchor: bigint("billingCycleAnchor", { mode: "number" }),
+    type: varchar("type", { length: 50 }) // tier1, tier2, tier3, or license
 });
 
 export const subscriptionItems = pgTable("subscriptionItems", {
     subscriptionItemId: serial("subscriptionItemId").primaryKey(),
+    stripeSubscriptionItemId: varchar("stripeSubscriptionItemId", { length: 255 }),
     subscriptionId: varchar("subscriptionId", { length: 255 })
         .notNull()
         .references(() => subscriptions.subscriptionId, {
@@ -86,6 +97,7 @@ export const subscriptionItems = pgTable("subscriptionItems", {
         }),
     planId: varchar("planId", { length: 255 }).notNull(),
     priceId: varchar("priceId", { length: 255 }),
+    featureId: varchar("featureId", { length: 255 }),
     meterId: varchar("meterId", { length: 255 }),
     unitAmount: real("unitAmount"),
     tiers: text("tiers"),
@@ -128,6 +140,7 @@ export const limits = pgTable("limits", {
         })
         .notNull(),
     value: real("value"),
+    override: boolean("override").default(false),
     description: text("description")
 });
 
@@ -206,7 +219,7 @@ export const loginPageOrg = pgTable("loginPageOrg", {
 
 export const loginPageBranding = pgTable("loginPageBranding", {
     loginPageBrandingId: serial("loginPageBrandingId").primaryKey(),
-    logoUrl: text("logoUrl").notNull(),
+    logoUrl: text("logoUrl"),
     logoWidth: integer("logoWidth").notNull(),
     logoHeight: integer("logoHeight").notNull(),
     primaryColor: text("primaryColor"),
@@ -289,6 +302,33 @@ export const accessAuditLog = pgTable(
     ]
 );
 
+export const approvals = pgTable("approvals", {
+    approvalId: serial("approvalId").primaryKey(),
+    timestamp: integer("timestamp").notNull(), // this is EPOCH time in seconds
+    orgId: varchar("orgId")
+        .references(() => orgs.orgId, {
+            onDelete: "cascade"
+        })
+        .notNull(),
+    clientId: integer("clientId").references(() => clients.clientId, {
+        onDelete: "cascade"
+    }), // clients reference user devices (in this case)
+    userId: varchar("userId")
+        .references(() => users.userId, {
+            // optionally tied to a user and in this case delete when the user deletes
+            onDelete: "cascade"
+        })
+        .notNull(),
+    decision: varchar("decision")
+        .$type<"approved" | "denied" | "pending">()
+        .default("pending")
+        .notNull(),
+    type: varchar("type")
+        .$type<"user_device" /*| 'proxy' // for later */>()
+        .notNull()
+});
+
+export type Approval = InferSelectModel<typeof approvals>;
 export type Limit = InferSelectModel<typeof limits>;
 export type Account = InferSelectModel<typeof account>;
 export type Certificate = InferSelectModel<typeof certificates>;

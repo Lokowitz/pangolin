@@ -16,7 +16,6 @@ import { SwitchInput } from "@app/components/SwitchInput";
 import { Tag, TagInput } from "@app/components/tags/tag-input";
 import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
 import { Button } from "@app/components/ui/button";
-import { CheckboxWithLabel } from "@app/components/ui/checkbox";
 import {
     Form,
     FormControl,
@@ -37,13 +36,15 @@ import {
 import type { ResourceContextType } from "@app/contexts/resourceContext";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { useOrgContext } from "@app/hooks/useOrgContext";
+import { usePaidStatus } from "@app/hooks/usePaidStatus";
 import { useResourceContext } from "@app/hooks/useResourceContext";
-import { useSubscriptionStatusContext } from "@app/hooks/useSubscriptionStatusContext";
 import { toast } from "@app/hooks/useToast";
 import { createApiClient, formatAxiosError } from "@app/lib/api";
+import { getUserDisplayName } from "@app/lib/getUserDisplayName";
 import { orgQueries, resourceQueries } from "@app/lib/queries";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { build } from "@server/build";
+import { tierMatrix } from "@server/lib/billing/tierMatrix";
 import { UserType } from "@server/types/UserTypes";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import SetResourcePasswordForm from "components/SetResourcePasswordForm";
@@ -96,7 +97,7 @@ export default function ResourceAuthenticationPage() {
     const router = useRouter();
     const t = useTranslations();
 
-    const subscription = useSubscriptionStatusContext();
+    const { isPaidUser } = usePaidStatus();
 
     const queryClient = useQueryClient();
     const { data: resourceRoles = [], isLoading: isLoadingResourceRoles } =
@@ -130,7 +131,8 @@ export default function ResourceAuthenticationPage() {
     );
     const { data: orgIdps = [], isLoading: isLoadingOrgIdps } = useQuery(
         orgQueries.identityProviders({
-            orgId: org.org.orgId
+            orgId: org.org.orgId,
+            useOrgOnlyIdp: env.app.identityProviderMode === "org"
         })
     );
 
@@ -154,13 +156,16 @@ export default function ResourceAuthenticationPage() {
     const allUsers = useMemo(() => {
         return orgUsers.map((user) => ({
             id: user.id.toString(),
-            text: `${user.email || user.username}${user.type !== UserType.Internal ? ` (${user.idpName})` : ""}`
+            text: `${getUserDisplayName({
+                email: user.email,
+                username: user.username
+            })}${user.type !== UserType.Internal ? ` (${user.idpName})` : ""}`
         }));
     }, [orgUsers]);
 
     const allIdps = useMemo(() => {
         if (build === "saas") {
-            if (subscription?.subscribed) {
+            if (isPaidUser(tierMatrix.orgOidc)) {
                 return orgIdps.map((idp) => ({
                     id: idp.idpId,
                     text: idp.name
@@ -182,11 +187,12 @@ export default function ResourceAuthenticationPage() {
         number | null
     >(null);
 
-    const [ssoEnabled, setSsoEnabled] = useState(resource.sso);
+    const [ssoEnabled, setSsoEnabled] = useState(resource.sso ?? false);
 
-    const [autoLoginEnabled, setAutoLoginEnabled] = useState(
-        resource.skipToIdpId !== null && resource.skipToIdpId !== undefined
-    );
+    useEffect(() => {
+        setSsoEnabled(resource.sso ?? false);
+    }, [resource.sso]);
+
     const [selectedIdpId, setSelectedIdpId] = useState<number | null>(
         resource.skipToIdpId || null
     );
@@ -232,7 +238,10 @@ export default function ResourceAuthenticationPage() {
             "users",
             resourceUsers.map((i) => ({
                 id: i.userId.toString(),
-                text: `${i.email || i.username}${i.type !== UserType.Internal ? ` (${i.idpName})` : ""}`
+                text: `${getUserDisplayName({
+                    email: i.email,
+                    username: i.username
+                })}${i.type !== UserType.Internal ? ` (${i.idpName})` : ""}`
             }))
         );
 
@@ -243,19 +252,8 @@ export default function ResourceAuthenticationPage() {
                 text: w.email
             }))
         );
-        if (autoLoginEnabled && !selectedIdpId && orgIdps.length > 0) {
-            setSelectedIdpId(orgIdps[0].idpId);
-        }
         hasInitializedRef.current = true;
-    }, [
-        pageLoading,
-        resourceRoles,
-        resourceUsers,
-        whitelist,
-        autoLoginEnabled,
-        selectedIdpId,
-        orgIdps
-    ]);
+    }, [pageLoading, resourceRoles, resourceUsers, whitelist, orgIdps]);
 
     const [, submitUserRolesForm, loadingSaveUsersRoles] = useActionState(
         onSubmitUsersRoles,
@@ -269,16 +267,6 @@ export default function ResourceAuthenticationPage() {
         const data = usersRolesForm.getValues();
 
         try {
-            // Validate that an IDP is selected if auto login is enabled
-            if (autoLoginEnabled && !selectedIdpId) {
-                toast({
-                    variant: "destructive",
-                    title: t("error"),
-                    description: t("selectIdpRequired")
-                });
-                return;
-            }
-
             const jobs = [
                 api.post(`/resource/${resource.resourceId}/roles`, {
                     roleIds: data.roles.map((i) => parseInt(i.id))
@@ -288,7 +276,7 @@ export default function ResourceAuthenticationPage() {
                 }),
                 api.post(`/resource/${resource.resourceId}`, {
                     sso: ssoEnabled,
-                    skipToIdpId: autoLoginEnabled ? selectedIdpId : null
+                    skipToIdpId: selectedIdpId
                 })
             ];
 
@@ -296,7 +284,7 @@ export default function ResourceAuthenticationPage() {
 
             updateResource({
                 sso: ssoEnabled,
-                skipToIdpId: autoLoginEnabled ? selectedIdpId : null
+                skipToIdpId: selectedIdpId
             });
 
             updateAuthInfo({
@@ -307,17 +295,18 @@ export default function ResourceAuthenticationPage() {
                 title: t("resourceAuthSettingsSave"),
                 description: t("resourceAuthSettingsSaveDescription")
             });
-            await queryClient.invalidateQueries({
-                predicate(query) {
-                    const resourceKey = resourceQueries.resourceClients({
-                        resourceId: resource.resourceId
-                    }).queryKey;
-                    return (
-                        query.queryKey[0] === resourceKey[0] &&
-                        query.queryKey[1] === resourceKey[1]
-                    );
-                }
-            });
+            // invalidate resource queries
+            await queryClient.invalidateQueries(
+                resourceQueries.resourceUsers({
+                    resourceId: resource.resourceId
+                })
+            );
+            await queryClient.invalidateQueries(
+                resourceQueries.resourceRoles({
+                    resourceId: resource.resourceId
+                })
+            );
+
             router.refresh();
         } catch (e) {
             console.error(e);
@@ -398,7 +387,7 @@ export default function ResourceAuthenticationPage() {
         api.post(`/resource/${resource.resourceId}/header-auth`, {
             user: null,
             password: null,
-            extendedCompatibility: null,
+            extendedCompatibility: null
         })
             .then(() => {
                 toast({
@@ -487,7 +476,7 @@ export default function ResourceAuthenticationPage() {
                             <SwitchInput
                                 id="sso-toggle"
                                 label={t("ssoUse")}
-                                defaultChecked={resource.sso}
+                                checked={ssoEnabled}
                                 onCheckedChange={(val) => setSsoEnabled(val)}
                             />
 
@@ -618,86 +607,53 @@ export default function ResourceAuthenticationPage() {
                                     )}
 
                                     {ssoEnabled && allIdps.length > 0 && (
-                                        <>
-                                            <div className="space-y-2 mb-3">
-                                                <CheckboxWithLabel
-                                                    label={t(
-                                                        "autoLoginExternalIdp"
-                                                    )}
-                                                    checked={autoLoginEnabled}
-                                                    onCheckedChange={(
-                                                        checked
-                                                    ) => {
-                                                        setAutoLoginEnabled(
-                                                            checked as boolean
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">
+                                                {t("defaultIdentityProvider")}
+                                            </label>
+                                            <Select
+                                                onValueChange={(value) => {
+                                                    if (value === "none") {
+                                                        setSelectedIdpId(null);
+                                                    } else {
+                                                        setSelectedIdpId(
+                                                            parseInt(value)
                                                         );
-                                                        if (
-                                                            checked &&
-                                                            allIdps.length > 0
-                                                        ) {
-                                                            setSelectedIdpId(
-                                                                allIdps[0].id
-                                                            );
-                                                        } else {
-                                                            setSelectedIdpId(
-                                                                null
-                                                            );
-                                                        }
-                                                    }}
-                                                />
-                                                <p className="text-sm text-muted-foreground">
-                                                    {t(
-                                                        "autoLoginExternalIdpDescription"
-                                                    )}
-                                                </p>
-                                            </div>
-
-                                            {autoLoginEnabled && (
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium">
-                                                        {t("defaultIdentityProvider")}
-                                                    </label>
-                                                    <Select
-                                                        onValueChange={(
-                                                            value
-                                                        ) =>
-                                                            setSelectedIdpId(
-                                                                parseInt(value)
-                                                            )
-                                                        }
-                                                        value={
-                                                            selectedIdpId
-                                                                ? selectedIdpId.toString()
-                                                                : undefined
-                                                        }
-                                                    >
-                                                        <SelectTrigger className="w-full mt-1">
-                                                            <SelectValue
-                                                                placeholder={t(
-                                                                    "selectIdpPlaceholder"
-                                                                )}
-                                                            />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {allIdps.map(
-                                                                (idp) => (
-                                                                    <SelectItem
-                                                                        key={
-                                                                            idp.id
-                                                                        }
-                                                                        value={idp.id.toString()}
-                                                                    >
-                                                                        {
-                                                                            idp.text
-                                                                        }
-                                                                    </SelectItem>
-                                                                )
-                                                            )}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            )}
-                                        </>
+                                                    }
+                                                }}
+                                                value={
+                                                    selectedIdpId
+                                                        ? selectedIdpId.toString()
+                                                        : "none"
+                                                }
+                                            >
+                                                <SelectTrigger className="w-full mt-1">
+                                                    <SelectValue
+                                                        placeholder={t(
+                                                            "selectIdpPlaceholder"
+                                                        )}
+                                                    />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">
+                                                        {t("none")}
+                                                    </SelectItem>
+                                                    {allIdps.map((idp) => (
+                                                        <SelectItem
+                                                            key={idp.id}
+                                                            value={idp.id.toString()}
+                                                        >
+                                                            {idp.text}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <p className="text-sm text-muted-foreground">
+                                                {t(
+                                                    "defaultIdentityProviderDescription"
+                                                )}
+                                            </p>
+                                        </div>
                                     )}
                                 </form>
                             </Form>
@@ -824,6 +780,8 @@ export default function ResourceAuthenticationPage() {
                 <OneTimePasswordFormSection
                     resource={resource}
                     updateResource={updateResource}
+                    whitelist={whitelist}
+                    isLoadingWhiteList={isLoadingWhiteList}
                 />
             </SettingsContainer>
         </>
@@ -833,16 +791,26 @@ export default function ResourceAuthenticationPage() {
 type OneTimePasswordFormSectionProps = Pick<
     ResourceContextType,
     "resource" | "updateResource"
->;
+> & {
+    whitelist: Array<{ email: string }>;
+    isLoadingWhiteList: boolean;
+};
 
 function OneTimePasswordFormSection({
     resource,
-    updateResource
+    updateResource,
+    whitelist,
+    isLoadingWhiteList
 }: OneTimePasswordFormSectionProps) {
     const { env } = useEnvContext();
     const [whitelistEnabled, setWhitelistEnabled] = useState(
-        resource.emailWhitelistEnabled
+        resource.emailWhitelistEnabled ?? false
     );
+
+    useEffect(() => {
+        setWhitelistEnabled(resource.emailWhitelistEnabled);
+    }, [resource.emailWhitelistEnabled]);
+
     const queryClient = useQueryClient();
 
     const [loadingSaveWhitelist, startTransition] = useTransition();
@@ -857,6 +825,18 @@ function OneTimePasswordFormSection({
     const [activeEmailTagIndex, setActiveEmailTagIndex] = useState<
         number | null
     >(null);
+
+    useEffect(() => {
+        if (isLoadingWhiteList) return;
+
+        whitelistForm.setValue(
+            "emails",
+            whitelist.map((w) => ({
+                id: w.email,
+                text: w.email
+            }))
+        );
+    }, [isLoadingWhiteList, whitelist, whitelistForm]);
 
     async function saveWhitelist() {
         try {
@@ -923,7 +903,7 @@ function OneTimePasswordFormSection({
                     <SwitchInput
                         id="whitelist-toggle"
                         label={t("otpEmailWhitelist")}
-                        defaultChecked={resource.emailWhitelistEnabled}
+                        checked={whitelistEnabled}
                         onCheckedChange={setWhitelistEnabled}
                         disabled={!env.email.emailEnabled}
                     />

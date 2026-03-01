@@ -32,20 +32,24 @@ export async function addPeer(
         olmId = olm.olmId;
     }
 
-    await sendToClient(olmId, {
-        type: "olm/wg/peer/add",
-        data: {
-            siteId: peer.siteId,
-            name: peer.name,
-            publicKey: peer.publicKey,
-            endpoint: peer.endpoint,
-            relayEndpoint: peer.relayEndpoint,
-            serverIP: peer.serverIP,
-            serverPort: peer.serverPort,
-            remoteSubnets: peer.remoteSubnets, // optional, comma-separated list of subnets that this site can access
-            aliases: peer.aliases
-        }
-    }).catch((error) => {
+    await sendToClient(
+        olmId,
+        {
+            type: "olm/wg/peer/add",
+            data: {
+                siteId: peer.siteId,
+                name: peer.name,
+                publicKey: peer.publicKey,
+                endpoint: peer.endpoint,
+                relayEndpoint: peer.relayEndpoint,
+                serverIP: peer.serverIP,
+                serverPort: peer.serverPort,
+                remoteSubnets: peer.remoteSubnets, // optional, comma-separated list of subnets that this site can access
+                aliases: peer.aliases
+            }
+        },
+        { incrementConfigVersion: true }
+    ).catch((error) => {
         logger.warn(`Error sending message:`, error);
     });
 
@@ -70,13 +74,17 @@ export async function deletePeer(
         olmId = olm.olmId;
     }
 
-    await sendToClient(olmId, {
-        type: "olm/wg/peer/remove",
-        data: {
-            publicKey,
-            siteId: siteId
-        }
-    }).catch((error) => {
+    await sendToClient(
+        olmId,
+        {
+            type: "olm/wg/peer/remove",
+            data: {
+                publicKey,
+                siteId: siteId
+            }
+        },
+        { incrementConfigVersion: true }
+    ).catch((error) => {
         logger.warn(`Error sending message:`, error);
     });
 
@@ -109,19 +117,23 @@ export async function updatePeer(
         olmId = olm.olmId;
     }
 
-    await sendToClient(olmId, {
-        type: "olm/wg/peer/update",
-        data: {
-            siteId: peer.siteId,
-            publicKey: peer.publicKey,
-            endpoint: peer.endpoint,
-            relayEndpoint: peer.relayEndpoint,
-            serverIP: peer.serverIP,
-            serverPort: peer.serverPort,
-            remoteSubnets: peer.remoteSubnets,
-            aliases: peer.aliases
-        }
-    }).catch((error) => {
+    await sendToClient(
+        olmId,
+        {
+            type: "olm/wg/peer/update",
+            data: {
+                siteId: peer.siteId,
+                publicKey: peer.publicKey,
+                endpoint: peer.endpoint,
+                relayEndpoint: peer.relayEndpoint,
+                serverIP: peer.serverIP,
+                serverPort: peer.serverPort,
+                remoteSubnets: peer.remoteSubnets,
+                aliases: peer.aliases
+            }
+        },
+        { incrementConfigVersion: true }
+    ).catch((error) => {
         logger.warn(`Error sending message:`, error);
     });
 
@@ -151,17 +163,21 @@ export async function initPeerAddHandshake(
         olmId = olm.olmId;
     }
 
-    await sendToClient(olmId, {
-        type: "olm/wg/peer/holepunch/site/add",
-        data: {
-            siteId: peer.siteId,
-            exitNode: {
-                publicKey: peer.exitNode.publicKey,
-                relayPort: config.getRawConfig().gerbil.clients_start_port,
-                endpoint: peer.exitNode.endpoint
+    await sendToClient(
+        olmId,
+        {
+            type: "olm/wg/peer/holepunch/site/add",
+            data: {
+                siteId: peer.siteId,
+                exitNode: {
+                    publicKey: peer.exitNode.publicKey,
+                    relayPort: config.getRawConfig().gerbil.clients_start_port,
+                    endpoint: peer.exitNode.endpoint
+                }
             }
-        }
-    }).catch((error) => {
+        },
+        { incrementConfigVersion: true }
+    ).catch((error) => {
         logger.warn(`Error sending message:`, error);
     });
 

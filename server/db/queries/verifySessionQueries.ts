@@ -1,6 +1,4 @@
-import {
-    db, loginPage, LoginPage, loginPageOrg, Org, orgs,
-} from "@server/db";
+import { db, loginPage, LoginPage, loginPageOrg, Org, orgs, roles } from "@server/db";
 import {
     Resource,
     ResourcePassword,
@@ -27,7 +25,7 @@ export type ResourceWithAuth = {
     pincode: ResourcePincode | null;
     password: ResourcePassword | null;
     headerAuth: ResourceHeaderAuth | null;
-    headerAuthExtendedCompatibility: ResourceHeaderAuthExtendedCompatibility | null
+    headerAuthExtendedCompatibility: ResourceHeaderAuthExtendedCompatibility | null;
     org: Org;
 };
 
@@ -59,12 +57,12 @@ export async function getResourceByDomain(
         )
         .leftJoin(
             resourceHeaderAuthExtendedCompatibility,
-            eq(resourceHeaderAuthExtendedCompatibility.resourceId, resources.resourceId)
+            eq(
+                resourceHeaderAuthExtendedCompatibility.resourceId,
+                resources.resourceId
+            )
         )
-        .innerJoin(
-            orgs,
-            eq(orgs.orgId, resources.orgId)
-        )
+        .innerJoin(orgs, eq(orgs.orgId, resources.orgId))
         .where(eq(resources.fullDomain, domain))
         .limit(1);
 
@@ -77,7 +75,8 @@ export async function getResourceByDomain(
         pincode: result.resourcePincode,
         password: result.resourcePassword,
         headerAuth: result.resourceHeaderAuth,
-        headerAuthExtendedCompatibility: result.resourceHeaderAuthExtendedCompatibility,
+        headerAuthExtendedCompatibility:
+            result.resourceHeaderAuthExtendedCompatibility,
         org: result.orgs
     };
 }
@@ -109,9 +108,17 @@ export async function getUserSessionWithUser(
  */
 export async function getUserOrgRole(userId: string, orgId: string) {
     const userOrgRole = await db
-        .select()
+        .select({
+            userId: userOrgs.userId,
+            orgId: userOrgs.orgId,
+            roleId: userOrgs.roleId,
+            isOwner: userOrgs.isOwner,
+            autoProvisioned: userOrgs.autoProvisioned,
+            roleName: roles.name
+        })
         .from(userOrgs)
         .where(and(eq(userOrgs.userId, userId), eq(userOrgs.orgId, orgId)))
+        .leftJoin(roles, eq(userOrgs.roleId, roles.roleId))
         .limit(1);
 
     return userOrgRole.length > 0 ? userOrgRole[0] : null;

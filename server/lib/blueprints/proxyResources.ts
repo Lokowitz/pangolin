@@ -2,7 +2,8 @@ import {
     domains,
     orgDomains,
     Resource,
-    resourceHeaderAuth, resourceHeaderAuthExtendedCompatibility,
+    resourceHeaderAuth,
+    resourceHeaderAuthExtendedCompatibility,
     resourcePincode,
     resourceRules,
     resourceWhitelist,
@@ -16,8 +17,8 @@ import {
     userResources,
     users
 } from "@server/db";
-import {resources, targets, sites} from "@server/db";
-import {eq, and, asc, or, ne, count, isNotNull} from "drizzle-orm";
+import { resources, targets, sites } from "@server/db";
+import { eq, and, asc, or, ne, count, isNotNull } from "drizzle-orm";
 import {
     Config,
     ConfigSchema,
@@ -25,12 +26,13 @@ import {
     TargetData
 } from "./types";
 import logger from "@server/logger";
-import {createCertificate} from "#dynamic/routers/certificates/createCertificate";
-import {pickPort} from "@server/routers/target/helpers";
-import {resourcePassword} from "@server/db";
-import {hashPassword} from "@server/auth/password";
-import {isValidCIDR, isValidIP, isValidUrlGlobPattern} from "../validators";
-import {get} from "http";
+import { createCertificate } from "#dynamic/routers/certificates/createCertificate";
+import { pickPort } from "@server/routers/target/helpers";
+import { resourcePassword } from "@server/db";
+import { hashPassword } from "@server/auth/password";
+import { isValidCIDR, isValidIP, isValidUrlGlobPattern } from "../validators";
+import { isLicensedOrSubscribed } from "#dynamic/lib/isLicencedOrSubscribed";
+import { tierMatrix } from "../billing/tierMatrix";
 
 export type ProxyResourcesResults = {
     proxyResource: Resource;
@@ -63,7 +65,7 @@ export async function updateProxyResources(
             if (targetSiteId) {
                 // Look up site by niceId
                 [site] = await trx
-                    .select({siteId: sites.siteId})
+                    .select({ siteId: sites.siteId })
                     .from(sites)
                     .where(
                         and(
@@ -75,7 +77,7 @@ export async function updateProxyResources(
             } else if (siteId) {
                 // Use the provided siteId directly, but verify it belongs to the org
                 [site] = await trx
-                    .select({siteId: sites.siteId})
+                    .select({ siteId: sites.siteId })
                     .from(sites)
                     .where(
                         and(eq(sites.siteId, siteId), eq(sites.orgId, orgId))
@@ -93,7 +95,7 @@ export async function updateProxyResources(
 
             let internalPortToCreate;
             if (!targetData["internal-port"]) {
-                const {internalPort, targetIps} = await pickPort(
+                const { internalPort, targetIps } = await pickPort(
                     site.siteId!,
                     trx
                 );
@@ -209,6 +211,15 @@ export async function updateProxyResources(
                 resource = existingResource;
             } else {
                 // Update existing resource
+
+                const isLicensed = await isLicensedOrSubscribed(
+                    orgId,
+                    tierMatrix.maintencePage
+                );
+                if (!isLicensed) {
+                    resourceData.maintenance = undefined;
+                }
+
                 [resource] = await trx
                     .update(resources)
                     .set({
@@ -228,12 +239,19 @@ export async function updateProxyResources(
                         tlsServerName: resourceData["tls-server-name"] || null,
                         emailWhitelistEnabled: resourceData.auth?.[
                             "whitelist-users"
-                            ]
+                        ]
                             ? resourceData.auth["whitelist-users"].length > 0
                             : false,
                         headers: headers || null,
                         applyRules:
-                            resourceData.rules && resourceData.rules.length > 0
+                            resourceData.rules && resourceData.rules.length > 0,
+                        maintenanceModeEnabled:
+                            resourceData.maintenance?.enabled,
+                        maintenanceModeType: resourceData.maintenance?.type,
+                        maintenanceTitle: resourceData.maintenance?.title,
+                        maintenanceMessage: resourceData.maintenance?.message,
+                        maintenanceEstimatedTime:
+                            resourceData.maintenance?.["estimated-time"]
                     })
                     .where(
                         eq(resources.resourceId, existingResource.resourceId)
@@ -303,8 +321,13 @@ export async function updateProxyResources(
                     const headerAuthPassword =
                         resourceData.auth?.["basic-auth"]?.password;
                     const headerAuthExtendedCompatibility =
-                        resourceData.auth?.["basic-auth"]?.extendedCompatibility;
-                    if (headerAuthUser && headerAuthPassword && headerAuthExtendedCompatibility !== null) {
+                        resourceData.auth?.["basic-auth"]
+                            ?.extendedCompatibility;
+                    if (
+                        headerAuthUser &&
+                        headerAuthPassword &&
+                        headerAuthExtendedCompatibility !== null
+                    ) {
                         const headerAuthHash = await hashPassword(
                             Buffer.from(
                                 `${headerAuthUser}:${headerAuthPassword}`
@@ -315,10 +338,13 @@ export async function updateProxyResources(
                                 resourceId: existingResource.resourceId,
                                 headerAuthHash
                             }),
-                            trx.insert(resourceHeaderAuthExtendedCompatibility).values({
-                                resourceId: existingResource.resourceId,
-                                extendedCompatibilityIsActivated: headerAuthExtendedCompatibility
-                            })
+                            trx
+                                .insert(resourceHeaderAuthExtendedCompatibility)
+                                .values({
+                                    resourceId: existingResource.resourceId,
+                                    extendedCompatibilityIsActivated:
+                                        headerAuthExtendedCompatibility
+                                })
                         ]);
                     }
                 }
@@ -380,7 +406,7 @@ export async function updateProxyResources(
                     if (targetSiteId) {
                         // Look up site by niceId
                         [site] = await trx
-                            .select({siteId: sites.siteId})
+                            .select({ siteId: sites.siteId })
                             .from(sites)
                             .where(
                                 and(
@@ -392,7 +418,7 @@ export async function updateProxyResources(
                     } else if (siteId) {
                         // Use the provided siteId directly, but verify it belongs to the org
                         [site] = await trx
-                            .select({siteId: sites.siteId})
+                            .select({ siteId: sites.siteId })
                             .from(sites)
                             .where(
                                 and(
@@ -437,7 +463,7 @@ export async function updateProxyResources(
                     if (checkIfTargetChanged(existingTarget, updatedTarget)) {
                         let internalPortToUpdate;
                         if (!targetData["internal-port"]) {
-                            const {internalPort, targetIps} = await pickPort(
+                            const { internalPort, targetIps } = await pickPort(
                                 site.siteId!,
                                 trx
                             );
@@ -560,13 +586,18 @@ export async function updateProxyResources(
 
             // Sync rules
             for (const [index, rule] of resourceData.rules?.entries() || []) {
+                const intendedPriority = rule.priority ?? index + 1;
                 const existingRule = existingRules[index];
                 if (existingRule) {
                     if (
                         existingRule.action !== getRuleAction(rule.action) ||
                         existingRule.match !== rule.match.toUpperCase() ||
                         existingRule.value !==
-                            getRuleValue(rule.match.toUpperCase(), rule.value)
+                            getRuleValue(
+                                rule.match.toUpperCase(),
+                                rule.value
+                            ) ||
+                        existingRule.priority !== intendedPriority
                     ) {
                         validateRule(rule);
                         await trx
@@ -577,7 +608,8 @@ export async function updateProxyResources(
                                 value: getRuleValue(
                                     rule.match.toUpperCase(),
                                     rule.value
-                                )
+                                ),
+                                priority: intendedPriority
                             })
                             .where(
                                 eq(resourceRules.ruleId, existingRule.ruleId)
@@ -593,7 +625,7 @@ export async function updateProxyResources(
                             rule.match.toUpperCase(),
                             rule.value
                         ),
-                        priority: index + 1 // start priorities at 1
+                        priority: intendedPriority
                     });
                 }
             }
@@ -622,6 +654,14 @@ export async function updateProxyResources(
                 );
             }
 
+            const isLicensed = await isLicensedOrSubscribed(
+                orgId,
+                tierMatrix.maintencePage
+            );
+            if (!isLicensed) {
+                resourceData.maintenance = undefined;
+            }
+
             // Create new resource
             const [newResource] = await trx
                 .insert(resources)
@@ -643,7 +683,13 @@ export async function updateProxyResources(
                     ssl: resourceSsl,
                     headers: headers || null,
                     applyRules:
-                        resourceData.rules && resourceData.rules.length > 0
+                        resourceData.rules && resourceData.rules.length > 0,
+                    maintenanceModeEnabled: resourceData.maintenance?.enabled,
+                    maintenanceModeType: resourceData.maintenance?.type,
+                    maintenanceTitle: resourceData.maintenance?.title,
+                    maintenanceMessage: resourceData.maintenance?.message,
+                    maintenanceEstimatedTime:
+                        resourceData.maintenance?.["estimated-time"]
                 })
                 .returning();
 
@@ -674,9 +720,14 @@ export async function updateProxyResources(
                 const headerAuthUser = resourceData.auth?.["basic-auth"]?.user;
                 const headerAuthPassword =
                     resourceData.auth?.["basic-auth"]?.password;
-                const headerAuthExtendedCompatibility = resourceData.auth?.["basic-auth"]?.extendedCompatibility;
+                const headerAuthExtendedCompatibility =
+                    resourceData.auth?.["basic-auth"]?.extendedCompatibility;
 
-                if (headerAuthUser && headerAuthPassword && headerAuthExtendedCompatibility !== null) {
+                if (
+                    headerAuthUser &&
+                    headerAuthPassword &&
+                    headerAuthExtendedCompatibility !== null
+                ) {
                     const headerAuthHash = await hashPassword(
                         Buffer.from(
                             `${headerAuthUser}:${headerAuthPassword}`
@@ -688,10 +739,13 @@ export async function updateProxyResources(
                             resourceId: newResource.resourceId,
                             headerAuthHash
                         }),
-                        trx.insert(resourceHeaderAuthExtendedCompatibility).values({
-                            resourceId: newResource.resourceId,
-                            extendedCompatibilityIsActivated: headerAuthExtendedCompatibility
-                        }),
+                        trx
+                            .insert(resourceHeaderAuthExtendedCompatibility)
+                            .values({
+                                resourceId: newResource.resourceId,
+                                extendedCompatibilityIsActivated:
+                                    headerAuthExtendedCompatibility
+                            })
                     ]);
                 }
             }
@@ -759,7 +813,7 @@ export async function updateProxyResources(
                     action: getRuleAction(rule.action),
                     match: rule.match.toUpperCase(),
                     value: getRuleValue(rule.match.toUpperCase(), rule.value),
-                    priority: index + 1 // start priorities at 1
+                    priority: rule.priority ?? index + 1
                 });
             }
 
@@ -890,7 +944,12 @@ async function syncUserResources(
             .select()
             .from(users)
             .innerJoin(userOrgs, eq(users.userId, userOrgs.userId))
-            .where(and(eq(users.username, username), eq(userOrgs.orgId, orgId)))
+            .where(
+                and(
+                    or(eq(users.username, username), eq(users.email, username)),
+                    eq(userOrgs.orgId, orgId)
+                )
+            )
             .limit(1);
 
         if (!user) {
@@ -1043,7 +1102,7 @@ async function getDomain(
     trx: Transaction
 ) {
     const [fullDomainExists] = await trx
-        .select({resourceId: resources.resourceId})
+        .select({ resourceId: resources.resourceId })
         .from(resources)
         .where(
             and(

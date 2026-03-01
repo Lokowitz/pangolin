@@ -10,6 +10,7 @@ import { getTranslations } from "next-intl/server";
 import { getCachedOrg } from "@app/lib/api/getCachedOrg";
 import { getCachedOrgUser } from "@app/lib/api/getCachedOrgUser";
 import { build } from "@server/build";
+import { pullEnv } from "@app/lib/pullEnv";
 
 type GeneralSettingsProps = {
     children: React.ReactNode;
@@ -23,6 +24,7 @@ export default async function GeneralSettingsPage({
     const { orgId } = await params;
 
     const user = await verifySession();
+    const env = pullEnv();
 
     if (!user) {
         redirect(`/`);
@@ -51,14 +53,21 @@ export default async function GeneralSettingsPage({
             title: t("general"),
             href: `/{orgId}/settings/general`,
             exact: true
-        }
+        },
+        {
+            title: t("security"),
+            href: `/{orgId}/settings/general/security`
+        },
+        // PaidFeaturesAlert
+        ...(!env.flags.disableEnterpriseFeatures
+            ? [
+                  {
+                      title: t("authPage"),
+                      href: `/{orgId}/settings/general/auth-page`
+                  }
+              ]
+            : [])
     ];
-    if (build !== "oss") {
-        navItems.push({
-            title: t("authPage"),
-            href: `/{orgId}/settings/general/auth-page`
-        });
-    }
 
     return (
         <>
@@ -69,9 +78,11 @@ export default async function GeneralSettingsPage({
                         description={t("orgSettingsDescription")}
                     />
 
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <OrgInfoCard />
-                        <HorizontalTabs items={navItems}>{children}</HorizontalTabs>
+                        <HorizontalTabs items={navItems}>
+                            {children}
+                        </HorizontalTabs>
                     </div>
                 </OrgUserProvider>
             </OrgProvider>

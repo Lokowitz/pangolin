@@ -42,8 +42,8 @@ export function OrgSelectionForm() {
         ? env.branding.logo?.authPage?.width || 175
         : 175;
     const logoHeight = isUnlocked()
-        ? env.branding.logo?.authPage?.height || 58
-        : 58;
+        ? env.branding.logo?.authPage?.height || 44
+        : 44;
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -95,7 +95,7 @@ export function OrgSelectionForm() {
                             <p className="text-sm text-muted-foreground">
                                 {t("orgAuthWhatsThis")}{" "}
                                 <Link
-                                    href="https://docs.pangolin.net/manage/identity-providers/add-an-idp"
+                                    href="https://docs.pangolin.net/manage/organizations/org-id"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="underline"

@@ -1,5 +1,5 @@
 import AuthPageBrandingForm from "@app/components/AuthPageBrandingForm";
-import AuthPageSettings from "@app/components/private/AuthPageSettings";
+import AuthPageSettings from "@app/components/AuthPageSettings";
 import { SettingsContainer } from "@app/components/Settings";
 import { internal } from "@app/lib/api";
 import { authCookieHeader } from "@app/lib/api/cookies";
@@ -11,6 +11,7 @@ import {
     GetLoginPageResponse
 } from "@server/routers/loginPage/types";
 import { AxiosResponse } from "axios";
+import { redirect } from "next/navigation";
 
 export interface AuthPageProps {
     params: Promise<{ orgId: string }>;
@@ -18,6 +19,7 @@ export interface AuthPageProps {
 
 export default async function AuthPage(props: AuthPageProps) {
     const orgId = (await props.params).orgId;
+
     let subscriptionStatus: GetOrgTierResponse | null = null;
     try {
         const subRes = await getCachedSubscription(orgId);

@@ -9,7 +9,7 @@ import {
     Resource,
     resources
 } from "@server/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
 import createHttpError from "http-errors";
@@ -23,7 +23,8 @@ import { OpenAPITags } from "@server/openApi";
 import { createCertificate } from "#dynamic/routers/certificates/createCertificate";
 import { validateAndConstructDomain } from "@server/lib/domainUtils";
 import { build } from "@server/build";
-import { isLicensedOrSubscribed } from "@server/lib/isLicencedOrSubscribed";
+import { isLicensedOrSubscribed } from "#dynamic/lib/isLicencedOrSubscribed";
+import { tierMatrix } from "@server/lib/billing/tierMatrix";
 
 const updateResourceParamsSchema = z.strictObject({
     resourceId: z.string().transform(Number).pipe(z.int().positive())
@@ -32,7 +33,15 @@ const updateResourceParamsSchema = z.strictObject({
 const updateHttpResourceBodySchema = z
     .strictObject({
         name: z.string().min(1).max(255).optional(),
-        niceId: z.string().min(1).max(255).optional(),
+        niceId: z
+            .string()
+            .min(1)
+            .max(255)
+            .regex(
+                /^[a-zA-Z0-9-]+$/,
+                "niceId can only contain letters, numbers, and dashes"
+            )
+            .optional(),
         subdomain: subdomainSchema.nullable().optional(),
         ssl: z.boolean().optional(),
         sso: z.boolean().optional(),
@@ -54,7 +63,8 @@ const updateHttpResourceBodySchema = z
         maintenanceModeType: z.enum(["forced", "automatic"]).optional(),
         maintenanceTitle: z.string().max(255).nullable().optional(),
         maintenanceMessage: z.string().max(2000).nullable().optional(),
-        maintenanceEstimatedTime: z.string().max(100).nullable().optional()
+        maintenanceEstimatedTime: z.string().max(100).nullable().optional(),
+        postAuthPath: z.string().nullable().optional()
     })
     .refine((data) => Object.keys(data).length > 0, {
         error: "At least one field must be provided for update"
@@ -246,14 +256,13 @@ async function updateHttpResource(
             .where(
                 and(
                     eq(resources.niceId, updateData.niceId),
-                    eq(resources.orgId, resource.orgId)
+                    eq(resources.orgId, resource.orgId),
+                    ne(resources.resourceId, resource.resourceId) // exclude the current resource from the search
                 )
-            );
+            )
+            .limit(1);
 
-        if (
-            existingResource &&
-            existingResource.resourceId !== resource.resourceId
-        ) {
+        if (existingResource) {
             return next(
                 createHttpError(
                     HttpCode.CONFLICT,
@@ -341,10 +350,11 @@ async function updateHttpResource(
         headers = null;
     }
 
-    const isLicensed = await isLicensedOrSubscribed(resource.orgId);
-    if (build == "enterprise" && !isLicensed) {
-        logger.warn("Server is not licensed! Clearing set maintenance screen values");
-        // null the maintenance mode fields if not licensed
+    const isLicensed = await isLicensedOrSubscribed(
+        resource.orgId,
+        tierMatrix.maintencePage
+    );
+    if (!isLicensed) {
         updateData.maintenanceModeEnabled = undefined;
         updateData.maintenanceModeType = undefined;
         updateData.maintenanceTitle = undefined;

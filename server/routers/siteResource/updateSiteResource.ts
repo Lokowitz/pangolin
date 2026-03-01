@@ -32,6 +32,8 @@ import {
     getClientSiteResourceAccess,
     rebuildClientAssociationsFromSiteResource
 } from "@server/lib/rebuildClientAssociations";
+import { isLicensedOrSubscribed } from "#dynamic/lib/isLicencedOrSubscribed";
+import { tierMatrix } from "@server/lib/billing/tierMatrix";
 
 const updateSiteResourceParamsSchema = z.strictObject({
     siteResourceId: z.string().transform(Number).pipe(z.int().positive())
@@ -41,6 +43,7 @@ const updateSiteResourceSchema = z
     .strictObject({
         name: z.string().min(1).max(255).optional(),
         siteId: z.int(),
+        // niceId: z.string().min(1).max(255).regex(/^[a-zA-Z0-9-]+$/, "niceId can only contain letters, numbers, and dashes").optional(),
         // mode: z.enum(["host", "cidr", "port"]).optional(),
         mode: z.enum(["host", "cidr"]).optional(),
         // protocol: z.enum(["tcp", "udp"]).nullish(),
@@ -60,7 +63,9 @@ const updateSiteResourceSchema = z
         clientIds: z.array(z.int()),
         tcpPortRangeString: portRangeStringSchema,
         udpPortRangeString: portRangeStringSchema,
-        disableIcmp: z.boolean().optional()
+        disableIcmp: z.boolean().optional(),
+        authDaemonPort: z.int().positive().nullish(),
+        authDaemonMode: z.enum(["site", "remote"]).optional()
     })
     .strict()
     .refine(
@@ -171,7 +176,9 @@ export async function updateSiteResource(
             clientIds,
             tcpPortRangeString,
             udpPortRangeString,
-            disableIcmp
+            disableIcmp,
+            authDaemonPort,
+            authDaemonMode
         } = parsedBody.data;
 
         const [site] = await db
@@ -197,6 +204,11 @@ export async function updateSiteResource(
             );
         }
 
+        const isLicensedSshPam = await isLicensedOrSubscribed(
+            existingSiteResource.orgId,
+            tierMatrix.sshPam
+        );
+
         const [org] = await db
             .select()
             .from(orgs)
@@ -204,7 +216,9 @@ export async function updateSiteResource(
             .limit(1);
 
         if (!org) {
-            return next(createHttpError(HttpCode.NOT_FOUND, "Organization not found"));
+            return next(
+                createHttpError(HttpCode.NOT_FOUND, "Organization not found")
+            );
         }
 
         if (!org.subnet || !org.utilitySubnet) {
@@ -217,10 +231,13 @@ export async function updateSiteResource(
         }
 
         // Only check if destination is an IP address
-        const isIp = z.union([z.ipv4(), z.ipv6()]).safeParse(destination).success;
+        const isIp = z
+            .union([z.ipv4(), z.ipv6()])
+            .safeParse(destination).success;
         if (
             isIp &&
-            (isIpInCidr(destination!, org.subnet) || isIpInCidr(destination!, org.utilitySubnet))
+            (isIpInCidr(destination!, org.subnet) ||
+                isIpInCidr(destination!, org.utilitySubnet))
         ) {
             return next(
                 createHttpError(
@@ -295,13 +312,25 @@ export async function updateSiteResource(
                 const [insertedSiteResource] = await trx
                     .insert(siteResources)
                     .values({
-                        ...existingSiteResource,
+                        ...existingSiteResource
                     })
                     .returning();
 
                 // wait some time to allow for messages to be handled
                 await new Promise((resolve) => setTimeout(resolve, 750));
 
+                const sshPamSet =
+                    isLicensedSshPam &&
+                    (authDaemonPort !== undefined || authDaemonMode !== undefined)
+                        ? {
+                              ...(authDaemonPort !== undefined && {
+                                  authDaemonPort
+                              }),
+                              ...(authDaemonMode !== undefined && {
+                                  authDaemonMode
+                              })
+                          }
+                        : {};
                 [updatedSiteResource] = await trx
                     .update(siteResources)
                     .set({
@@ -313,7 +342,8 @@ export async function updateSiteResource(
                         alias: alias && alias.trim() ? alias : null,
                         tcpPortRangeString: tcpPortRangeString,
                         udpPortRangeString: udpPortRangeString,
-                        disableIcmp: disableIcmp
+                        disableIcmp: disableIcmp,
+                        ...sshPamSet
                     })
                     .where(
                         and(
@@ -391,6 +421,18 @@ export async function updateSiteResource(
                 );
             } else {
                 // Update the site resource
+                const sshPamSet =
+                    isLicensedSshPam &&
+                    (authDaemonPort !== undefined || authDaemonMode !== undefined)
+                        ? {
+                              ...(authDaemonPort !== undefined && {
+                                  authDaemonPort
+                              }),
+                              ...(authDaemonMode !== undefined && {
+                                  authDaemonMode
+                              })
+                          }
+                        : {};
                 [updatedSiteResource] = await trx
                     .update(siteResources)
                     .set({
@@ -402,7 +444,8 @@ export async function updateSiteResource(
                         alias: alias && alias.trim() ? alias : null,
                         tcpPortRangeString: tcpPortRangeString,
                         udpPortRangeString: udpPortRangeString,
-                        disableIcmp: disableIcmp
+                        disableIcmp: disableIcmp,
+                        ...sshPamSet
                     })
                     .where(
                         and(eq(siteResources.siteResourceId, siteResourceId))
@@ -517,9 +560,14 @@ export async function handleMessagingForUpdatedSiteResource(
     site: { siteId: number; orgId: string },
     trx: Transaction
 ) {
-
-    logger.debug("handleMessagingForUpdatedSiteResource: existingSiteResource is: ", existingSiteResource);
-    logger.debug("handleMessagingForUpdatedSiteResource: updatedSiteResource is: ", updatedSiteResource);
+    logger.debug(
+        "handleMessagingForUpdatedSiteResource: existingSiteResource is: ",
+        existingSiteResource
+    );
+    logger.debug(
+        "handleMessagingForUpdatedSiteResource: updatedSiteResource is: ",
+        updatedSiteResource
+    );
 
     const { mergedAllClients } =
         await rebuildClientAssociationsFromSiteResource(

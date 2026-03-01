@@ -36,6 +36,12 @@
 </div>
 
 <p align="center">
+    <a href="https://docs.pangolin.net/careers/join-us">
+        <img src="https://img.shields.io/badge/🚀_We're_Hiring!-Join_Our_Team-brightgreen?style=for-the-badge" alt="We're Hiring!" />
+    </a>
+</p>
+
+<p align="center">
     <strong>
         Start testing Pangolin at <a href="https://app.pangolin.net/auth/signup">app.pangolin.net</a>
     </strong>
@@ -74,6 +80,8 @@ Download the Pangolin client for your platform:
 - [Mac](https://pangolin.net/downloads/mac)
 - [Windows](https://pangolin.net/downloads/windows)
 - [Linux](https://pangolin.net/downloads/linux)
+- [iOS](https://pangolin.net/downloads/ios)
+- [Android](https://pangolin.net/downloads/android)
 
 ## Get Started
 

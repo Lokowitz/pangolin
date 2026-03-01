@@ -1,5 +1,7 @@
 "use client";
 
+import AutoProvisionConfigWidget from "@app/components/AutoProvisionConfigWidget";
+import { PaidFeaturesAlert } from "@app/components/PaidFeaturesAlert";
 import {
     SettingsContainer,
     SettingsSection,
@@ -10,6 +12,10 @@ import {
     SettingsSectionHeader,
     SettingsSectionTitle
 } from "@app/components/Settings";
+import HeaderTitle from "@app/components/SettingsSectionTitle";
+import { StrategySelect } from "@app/components/StrategySelect";
+import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
+import { Button } from "@app/components/ui/button";
 import {
     Form,
     FormControl,
@@ -19,29 +25,23 @@ import {
     FormLabel,
     FormMessage
 } from "@app/components/ui/form";
-import HeaderTitle from "@app/components/SettingsSectionTitle";
-import { z } from "zod";
-import { createElement, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@app/components/ui/input";
-import { Button } from "@app/components/ui/button";
-import { createApiClient, formatAxiosError } from "@app/lib/api";
 import { useEnvContext } from "@app/hooks/useEnvContext";
-import { toast } from "@app/hooks/useToast";
-import { useParams, useRouter } from "next/navigation";
-import { Checkbox } from "@app/components/ui/checkbox";
-import { Alert, AlertDescription, AlertTitle } from "@app/components/ui/alert";
-import { InfoIcon, ExternalLink } from "lucide-react";
-import { StrategySelect } from "@app/components/StrategySelect";
-import { SwitchInput } from "@app/components/SwitchInput";
-import { Badge } from "@app/components/ui/badge";
 import { useLicenseStatusContext } from "@app/hooks/useLicenseStatusContext";
+import { usePaidStatus } from "@app/hooks/usePaidStatus";
+import { toast } from "@app/hooks/useToast";
+import { createApiClient, formatAxiosError } from "@app/lib/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { tierMatrix } from "@server/lib/billing/tierMatrix";
+import { ListRolesResponse } from "@server/routers/role";
+import { AxiosResponse } from "axios";
+import { InfoIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import AutoProvisionConfigWidget from "@app/components/private/AutoProvisionConfigWidget";
-import { AxiosResponse } from "axios";
-import { ListRolesResponse } from "@server/routers/role";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 export default function Page() {
     const { env } = useEnvContext();
@@ -52,8 +52,8 @@ export default function Page() {
     const [roleMappingMode, setRoleMappingMode] = useState<
         "role" | "expression"
     >("role");
-    const { isUnlocked } = useLicenseStatusContext();
     const t = useTranslations();
+    const { isPaidUser } = usePaidStatus();
 
     const params = useParams();
 
@@ -285,7 +285,7 @@ export default function Page() {
                 <Button
                     variant="outline"
                     onClick={() => {
-                        router.push("/admin/idp");
+                        router.push(`/${params.orgId}/settings/idp`);
                     }}
                 >
                     {t("idpSeeAll")}
@@ -364,6 +364,9 @@ export default function Page() {
                     </SettingsSectionHeader>
                     <SettingsSectionBody>
                         <SettingsSectionForm>
+                            <PaidFeaturesAlert
+                                tiers={tierMatrix.autoProvisioning}
+                            />
                             <Form {...form}>
                                 <form
                                     className="space-y-4"
@@ -809,7 +812,7 @@ export default function Page() {
                 </Button>
                 <Button
                     type="submit"
-                    disabled={createLoading}
+                    disabled={createLoading || !isPaidUser(tierMatrix.orgOidc)}
                     loading={createLoading}
                     onClick={() => {
                         // log any issues with the form

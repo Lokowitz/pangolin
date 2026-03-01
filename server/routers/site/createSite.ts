@@ -6,7 +6,7 @@ import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
 import createHttpError from "http-errors";
 import logger from "@server/logger";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { getUniqueSiteName } from "../../db/names";
 import { addPeer } from "../gerbil/peers";
 import { fromError } from "zod-validation-error";
@@ -18,6 +18,8 @@ import { isValidIP } from "@server/lib/validators";
 import { isIpInCidr } from "@server/lib/ip";
 import { verifyExitNodeOrgAccess } from "#dynamic/lib/exitNodes";
 import { build } from "@server/build";
+import { usageService } from "@server/lib/billing/usageService";
+import { FeatureId } from "@server/lib/billing";
 
 const createSiteParamsSchema = z.strictObject({
     orgId: z.string()
@@ -124,6 +126,35 @@ export async function createSite(
                     `Organization with ID ${orgId} not found`
                 )
             );
+        }
+
+        if (build == "saas") {
+            const usage = await usageService.getUsage(orgId, FeatureId.SITES);
+            if (!usage) {
+                return next(
+                    createHttpError(
+                        HttpCode.NOT_FOUND,
+                        "No usage data found for this organization"
+                    )
+                );
+            }
+            const rejectSites = await usageService.checkLimitSet(
+                orgId,
+
+                FeatureId.SITES,
+                {
+                    ...usage,
+                    instantaneousValue: (usage.instantaneousValue || 0) + 1
+                } // We need to add one to know if we are violating the limit
+            );
+            if (rejectSites) {
+                return next(
+                    createHttpError(
+                        HttpCode.FORBIDDEN,
+                        "Site limit exceeded. Please upgrade your plan."
+                    )
+                );
+            }
         }
 
         let updatedAddress = null;
@@ -256,10 +287,21 @@ export async function createSite(
 
         const niceId = await getUniqueSiteName(orgId);
 
-        let newSite: Site;
-
+        let newSite: Site | undefined;
         await db.transaction(async (trx) => {
-            if (type == "wireguard" || type == "newt") {
+            if (type == "newt") {
+                [newSite] = await trx
+                    .insert(sites)
+                    .values({
+                        orgId,
+                        name,
+                        niceId,
+                        address: updatedAddress || null,
+                        type,
+                        dockerSocketEnabled: true
+                    })
+                    .returning();
+            } else if (type == "wireguard") {
                 // we are creating a site with an exit node (tunneled)
                 if (!subnet) {
                     return next(
@@ -311,11 +353,9 @@ export async function createSite(
                         exitNodeId,
                         name,
                         niceId,
-                        address: updatedAddress || null,
                         subnet,
                         type,
-                        dockerSocketEnabled: type == "newt",
-                        ...(pubKey && type == "wireguard" && { pubKey })
+                        pubKey: pubKey || null
                     })
                     .returning();
             } else if (type == "local") {
@@ -402,13 +442,24 @@ export async function createSite(
                 });
             }
 
-            return response<CreateSiteResponse>(res, {
-                data: newSite,
-                success: true,
-                error: false,
-                message: "Site created successfully",
-                status: HttpCode.CREATED
-            });
+            await usageService.add(orgId, FeatureId.SITES, 1, trx);
+        });
+
+        if (!newSite) {
+            return next(
+                createHttpError(
+                    HttpCode.INTERNAL_SERVER_ERROR,
+                    "Failed to create site"
+                )
+            );
+        }
+
+        return response<CreateSiteResponse>(res, {
+            data: newSite,
+            success: true,
+            error: false,
+            message: "Site created successfully",
+            status: HttpCode.CREATED
         });
     } catch (error) {
         logger.error(error);

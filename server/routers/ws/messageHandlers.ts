@@ -5,7 +5,8 @@ import {
     handleDockerStatusMessage,
     handleDockerContainersMessage,
     handleNewtPingRequestMessage,
-    handleApplyBlueprintMessage
+    handleApplyBlueprintMessage,
+    handleNewtPingMessage
 } from "../newt";
 import {
     handleOlmRegisterMessage,
@@ -13,9 +14,11 @@ import {
     handleOlmPingMessage,
     startOlmOfflineChecker,
     handleOlmServerPeerAddMessage,
-    handleOlmUnRelayMessage
+    handleOlmUnRelayMessage,
+    handleOlmDisconnecingMessage
 } from "../olm";
 import { handleHealthcheckStatusMessage } from "../target";
+import { handleRoundTripMessage } from "./handleRoundTripMessage";
 import { MessageHandler } from "./types";
 
 export const messageHandlers: Record<string, MessageHandler> = {
@@ -24,6 +27,8 @@ export const messageHandlers: Record<string, MessageHandler> = {
     "olm/wg/relay": handleOlmRelayMessage,
     "olm/wg/unrelay": handleOlmUnRelayMessage,
     "olm/ping": handleOlmPingMessage,
+    "olm/disconnecting": handleOlmDisconnecingMessage,
+    "newt/ping": handleNewtPingMessage,
     "newt/wg/register": handleNewtRegisterMessage,
     "newt/wg/get-config": handleGetConfigMessage,
     "newt/receive-bandwidth": handleReceiveBandwidthMessage,
@@ -31,7 +36,8 @@ export const messageHandlers: Record<string, MessageHandler> = {
     "newt/socket/containers": handleDockerContainersMessage,
     "newt/ping/request": handleNewtPingRequestMessage,
     "newt/blueprint/apply": handleApplyBlueprintMessage,
-    "newt/healthcheck/status": handleHealthcheckStatusMessage
+    "newt/healthcheck/status": handleHealthcheckStatusMessage,
+    "ws/round-trip/complete": handleRoundTripMessage
 };
 
 startOlmOfflineChecker(); // this is to handle the offline check for olms

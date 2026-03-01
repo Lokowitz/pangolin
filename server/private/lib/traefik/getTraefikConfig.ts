@@ -47,24 +47,33 @@ const redirectHttpsMiddlewareName = "redirect-to-https";
 const redirectToRootMiddlewareName = "redirect-to-root";
 const badgerMiddlewareName = "badger";
 
+// Define extended target type with site information
+type TargetWithSite = Target & {
+    resourceId: number;
+    targetId: number;
+    ip: string | null;
+    method: string | null;
+    port: number | null;
+    internalPort: number | null;
+    enabled: boolean;
+    health: string | null;
+    site: {
+        siteId: number;
+        type: string;
+        subnet: string | null;
+        exitNodeId: number | null;
+        online: boolean;
+    };
+};
+
 export async function getTraefikConfig(
     exitNodeId: number,
     siteTypes: string[],
     filterOutNamespaceDomains = false,
     generateLoginPageRouters = false,
-    allowRawResources = true
+    allowRawResources = true,
+    allowMaintenancePage = true
 ): Promise<any> {
-    // Define extended target type with site information
-    type TargetWithSite = Target & {
-        site: {
-            siteId: number;
-            type: string;
-            subnet: string | null;
-            exitNodeId: number | null;
-            online: boolean;
-        };
-    };
-
     // Get resources with their targets and sites in a single optimized query
     // Start from sites on this exit node, then join to targets and resources
     const resourcesWithTargetsAndSites = await db
@@ -146,10 +155,6 @@ export async function getTraefikConfig(
                         eq(sites.type, "local"),
                         sql`(${build != "saas" ? 1 : 0} = 1)` // Dont allow undefined local sites in cloud
                     )
-                ),
-                or(
-                    ne(targetHealthCheck.hcHealth, "unhealthy"), // Exclude unhealthy targets
-                    isNull(targetHealthCheck.hcHealth) // Include targets with no health check record
                 ),
                 inArray(sites.type, siteTypes),
                 allowRawResources
@@ -233,7 +238,7 @@ export async function getTraefikConfig(
                 maintenanceModeType: row.maintenanceModeType,
                 maintenanceTitle: row.maintenanceTitle,
                 maintenanceMessage: row.maintenanceMessage,
-                maintenanceEstimatedTime: row.maintenanceEstimatedTime,
+                maintenanceEstimatedTime: row.maintenanceEstimatedTime
             });
         }
 
@@ -246,6 +251,7 @@ export async function getTraefikConfig(
             port: row.port,
             internalPort: row.internalPort,
             enabled: row.targetEnabled,
+            health: row.hcHealth,
             site: {
                 siteId: row.siteId,
                 type: row.siteType,
@@ -291,7 +297,7 @@ export async function getTraefikConfig(
 
     // get the key and the resource
     for (const [key, resource] of resourcesMap.entries()) {
-        const targets = resource.targets;
+        const targets = resource.targets as TargetWithSite[];
 
         const routerName = `${key}-${resource.name}-router`;
         const serviceName = `${key}-${resource.name}-service`;
@@ -352,18 +358,6 @@ export async function getTraefikConfig(
                 }
             }
 
-            if (resource.ssl) {
-                config_output.http.routers![routerName + "-redirect"] = {
-                    entryPoints: [
-                        config.getRawConfig().traefik.http_entrypoint
-                    ],
-                    middlewares: [redirectHttpsMiddlewareName],
-                    service: serviceName,
-                    rule: rule,
-                    priority: priority
-                };
-            }
-
             let tls = {};
             if (!privateConfig.getRawPrivateConfig().flags.use_pangolin_dns) {
                 const domainParts = fullDomain.split(".");
@@ -408,12 +402,12 @@ export async function getTraefikConfig(
                     certResolver: resolverName,
                     ...(preferWildcard
                         ? {
-                            domains: [
-                                {
-                                    main: wildCard
-                                }
-                            ]
-                        }
+                              domains: [
+                                  {
+                                      main: wildCard
+                                  }
+                              ]
+                          }
                         : {})
                 };
             } else {
@@ -429,23 +423,27 @@ export async function getTraefikConfig(
                 }
             }
 
-            const availableServers = (targets as TargetWithSite[]).filter(
-                (target: TargetWithSite) => {
-                    if (!target.enabled) return false;
+            if (resource.ssl) {
+                config_output.http.routers![routerName + "-redirect"] = {
+                    entryPoints: [
+                        config.getRawConfig().traefik.http_entrypoint
+                    ],
+                    middlewares: [redirectHttpsMiddlewareName],
+                    service: serviceName,
+                    rule: rule,
+                    priority: priority
+                };
+            }
 
-                    const anySitesOnline = (targets as TargetWithSite[]).some(
-                        (t: TargetWithSite) => t.site.online
-                    );
-                    if (anySitesOnline && !target.site.online) return false;
+            const availableServers = targets.filter((target) => {
+                if (!target.enabled) return false;
 
-                    if (target.site.type === "local" || target.site.type === "wireguard") {
-                        return target.ip && target.port && target.method;
-                    } else if (target.site.type === "newt") {
-                        return target.internalPort && target.method && target.site.subnet;
-                    }
-                    return false;
-                }
-            );
+                if (!target.site.online) return false;
+
+                if (target.health == "unhealthy") return false;
+
+                return true;
+            });
 
             const hasHealthyServers = availableServers.length > 0;
 
@@ -458,21 +456,23 @@ export async function getTraefikConfig(
                     // );
                 } else if (resource.maintenanceModeType === "automatic") {
                     showMaintenancePage = !hasHealthyServers;
-                    if (showMaintenancePage) {
-                        logger.warn(
-                            `Resource ${resource.name} (${fullDomain}) has no healthy servers - showing maintenance page (AUTOMATIC mode)`
-                        );
-                    }
+                    // if (showMaintenancePage) {
+                    //     logger.warn(
+                    //         `Resource ${resource.name} (${fullDomain}) has no healthy servers - showing maintenance page (AUTOMATIC mode)`
+                    //     );
+                    // }
                 }
             }
 
-            if (showMaintenancePage) {
+            if (showMaintenancePage && allowMaintenancePage) {
                 const maintenanceServiceName = `${key}-maintenance-service`;
                 const maintenanceRouterName = `${key}-maintenance-router`;
                 const rewriteMiddlewareName = `${key}-maintenance-rewrite`;
 
-                const entrypointHttp = config.getRawConfig().traefik.http_entrypoint;
-                const entrypointHttps = config.getRawConfig().traefik.https_entrypoint;
+                const entrypointHttp =
+                    config.getRawConfig().traefik.http_entrypoint;
+                const entrypointHttps =
+                    config.getRawConfig().traefik.https_entrypoint;
 
                 const fullDomain = resource.fullDomain;
                 const domainParts = fullDomain.split(".");
@@ -481,11 +481,16 @@ export async function getTraefikConfig(
                     : fullDomain;
 
                 const maintenancePort = config.getRawConfig().server.next_port;
-                const maintenanceHost = config.getRawConfig().server.internal_hostname;
+                const maintenanceHost =
+                    config.getRawConfig().server.internal_hostname;
 
                 config_output.http.services[maintenanceServiceName] = {
                     loadBalancer: {
-                        servers: [{ url: `http://${maintenanceHost}:${maintenancePort}` }],
+                        servers: [
+                            {
+                                url: `http://${maintenanceHost}:${maintenancePort}`
+                            }
+                        ],
                         passHostHeader: true
                     }
                 };
@@ -503,7 +508,9 @@ export async function getTraefikConfig(
                 };
 
                 config_output.http.routers[maintenanceRouterName] = {
-                    entryPoints: [resource.ssl ? entrypointHttps : entrypointHttp],
+                    entryPoints: [
+                        resource.ssl ? entrypointHttps : entrypointHttp
+                    ],
                     service: maintenanceServiceName,
                     middlewares: [rewriteMiddlewareName],
                     rule: rule,
@@ -512,13 +519,16 @@ export async function getTraefikConfig(
                 };
 
                 // Router to allow Next.js assets to load without rewrite
-                config_output.http.routers[`${maintenanceRouterName}-assets`] = {
-                    entryPoints: [resource.ssl ? entrypointHttps : entrypointHttp],
-                    service: maintenanceServiceName,
-                    rule: `Host(\`${fullDomain}\`) && (PathPrefix(\`/_next\`) || PathRegexp(\`^/__nextjs*\`))`,
-                    priority: 2001,
-                    ...(resource.ssl ? { tls } : {})
-                };
+                config_output.http.routers[`${maintenanceRouterName}-assets`] =
+                    {
+                        entryPoints: [
+                            resource.ssl ? entrypointHttps : entrypointHttp
+                        ],
+                        service: maintenanceServiceName,
+                        rule: `Host(\`${fullDomain}\`) && (PathPrefix(\`/_next\`) || PathRegexp(\`^/__nextjs*\`))`,
+                        priority: 2001,
+                        ...(resource.ssl ? { tls } : {})
+                    };
 
                 // logger.info(`Maintenance mode active for ${fullDomain}`);
 
@@ -654,14 +664,18 @@ export async function getTraefikConfig(
                         // RECEIVE BANDWIDTH ENDPOINT.
 
                         // TODO: HOW TO HANDLE ^^^^^^ BETTER
-                        const anySitesOnline = (
-                            targets as TargetWithSite[]
-                        ).some((target: TargetWithSite) => target.site.online);
+                        const anySitesOnline = targets.some(
+                            (target) => target.site.online
+                        );
 
                         return (
-                            (targets as TargetWithSite[])
-                                .filter((target: TargetWithSite) => {
+                            targets
+                                .filter((target) => {
                                     if (!target.enabled) {
+                                        return false;
+                                    }
+
+                                    if (target.health == "unhealthy") {
                                         return false;
                                     }
 
@@ -692,7 +706,7 @@ export async function getTraefikConfig(
                                     }
                                     return true;
                                 })
-                                .map((target: TargetWithSite) => {
+                                .map((target) => {
                                     if (
                                         target.site.type === "local" ||
                                         target.site.type === "wireguard"
@@ -719,14 +733,14 @@ export async function getTraefikConfig(
                     })(),
                     ...(resource.stickySession
                         ? {
-                            sticky: {
-                                cookie: {
-                                    name: "p_sticky", // TODO: make this configurable via config.yml like other cookies
-                                    secure: resource.ssl,
-                                    httpOnly: true
-                                }
-                            }
-                        }
+                              sticky: {
+                                  cookie: {
+                                      name: "p_sticky", // TODO: make this configurable via config.yml like other cookies
+                                      secure: resource.ssl,
+                                      httpOnly: true
+                                  }
+                              }
+                          }
                         : {})
                 }
             };
@@ -778,12 +792,12 @@ export async function getTraefikConfig(
                 loadBalancer: {
                     servers: (() => {
                         // Check if any sites are online
-                        const anySitesOnline = (
-                            targets as TargetWithSite[]
-                        ).some((target: TargetWithSite) => target.site.online);
+                        const anySitesOnline = targets.some(
+                            (target) => target.site.online
+                        );
 
-                        return (targets as TargetWithSite[])
-                            .filter((target: TargetWithSite) => {
+                        return targets
+                            .filter((target) => {
                                 if (!target.enabled) {
                                     return false;
                                 }
@@ -810,7 +824,7 @@ export async function getTraefikConfig(
                                 }
                                 return true;
                             })
-                            .map((target: TargetWithSite) => {
+                            .map((target) => {
                                 if (
                                     target.site.type === "local" ||
                                     target.site.type === "wireguard"
@@ -829,18 +843,18 @@ export async function getTraefikConfig(
                     })(),
                     ...(resource.proxyProtocol && protocol == "tcp" // proxy protocol only works for tcp
                         ? {
-                            serversTransport: `${ppPrefix}${resource.proxyProtocolVersion || 1}@file` // TODO: does @file here cause issues?
-                        }
+                              serversTransport: `${ppPrefix}${resource.proxyProtocolVersion || 1}@file` // TODO: does @file here cause issues?
+                          }
                         : {}),
                     ...(resource.stickySession
                         ? {
-                            sticky: {
-                                ipStrategy: {
-                                    depth: 0,
-                                    sourcePort: true
-                                }
-                            }
-                        }
+                              sticky: {
+                                  ipStrategy: {
+                                      depth: 0,
+                                      sourcePort: true
+                                  }
+                              }
+                          }
                         : {})
                 }
             };
@@ -888,9 +902,10 @@ export async function getTraefikConfig(
                     loadBalancer: {
                         servers: [
                             {
-                                url: `http://${config.getRawConfig().server
-                                    .internal_hostname
-                                    }:${config.getRawConfig().server.next_port}`
+                                url: `http://${
+                                    config.getRawConfig().server
+                                        .internal_hostname
+                                }:${config.getRawConfig().server.next_port}`
                             }
                         ]
                     }

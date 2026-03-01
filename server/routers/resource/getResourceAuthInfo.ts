@@ -1,19 +1,20 @@
-import {Request, Response, NextFunction} from "express";
-import {z} from "zod";
+import { Request, Response, NextFunction } from "express";
+import { z } from "zod";
 import {
     db,
-    resourceHeaderAuth, resourceHeaderAuthExtendedCompatibility,
+    resourceHeaderAuth,
+    resourceHeaderAuthExtendedCompatibility,
     resourcePassword,
     resourcePincode,
     resources
 } from "@server/db";
-import {eq} from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
 import createHttpError from "http-errors";
-import {fromError} from "zod-validation-error";
+import { fromError } from "zod-validation-error";
 import logger from "@server/logger";
-import {build} from "@server/build";
+import { build } from "@server/build";
 
 const getResourceAuthInfoSchema = z.strictObject({
     resourceGuid: z.string()
@@ -34,6 +35,7 @@ export type GetResourceAuthInfoResponse = {
     whitelist: boolean;
     skipToIdpId: number | null;
     orgId: string;
+    postAuthPath: string | null;
 };
 
 export async function getResourceAuthInfo(
@@ -52,68 +54,68 @@ export async function getResourceAuthInfo(
             );
         }
 
-        const {resourceGuid} = parsedParams.data;
+        const { resourceGuid } = parsedParams.data;
 
         const isGuidInteger = /^\d+$/.test(resourceGuid);
 
         const [result] =
             isGuidInteger && build === "saas"
                 ? await db
-                    .select()
-                    .from(resources)
-                    .leftJoin(
-                        resourcePincode,
-                        eq(resourcePincode.resourceId, resources.resourceId)
-                    )
-                    .leftJoin(
-                        resourcePassword,
-                        eq(resourcePassword.resourceId, resources.resourceId)
-                    )
+                      .select()
+                      .from(resources)
+                      .leftJoin(
+                          resourcePincode,
+                          eq(resourcePincode.resourceId, resources.resourceId)
+                      )
+                      .leftJoin(
+                          resourcePassword,
+                          eq(resourcePassword.resourceId, resources.resourceId)
+                      )
 
-                    .leftJoin(
-                        resourceHeaderAuth,
-                        eq(
-                            resourceHeaderAuth.resourceId,
-                            resources.resourceId
-                        )
-                    )
-                    .leftJoin(
-                        resourceHeaderAuthExtendedCompatibility,
-                        eq(
-                            resourceHeaderAuthExtendedCompatibility.resourceId,
-                            resources.resourceId
-                        )
-                    )
-                    .where(eq(resources.resourceId, Number(resourceGuid)))
-                    .limit(1)
+                      .leftJoin(
+                          resourceHeaderAuth,
+                          eq(
+                              resourceHeaderAuth.resourceId,
+                              resources.resourceId
+                          )
+                      )
+                      .leftJoin(
+                          resourceHeaderAuthExtendedCompatibility,
+                          eq(
+                              resourceHeaderAuthExtendedCompatibility.resourceId,
+                              resources.resourceId
+                          )
+                      )
+                      .where(eq(resources.resourceId, Number(resourceGuid)))
+                      .limit(1)
                 : await db
-                    .select()
-                    .from(resources)
-                    .leftJoin(
-                        resourcePincode,
-                        eq(resourcePincode.resourceId, resources.resourceId)
-                    )
-                    .leftJoin(
-                        resourcePassword,
-                        eq(resourcePassword.resourceId, resources.resourceId)
-                    )
+                      .select()
+                      .from(resources)
+                      .leftJoin(
+                          resourcePincode,
+                          eq(resourcePincode.resourceId, resources.resourceId)
+                      )
+                      .leftJoin(
+                          resourcePassword,
+                          eq(resourcePassword.resourceId, resources.resourceId)
+                      )
 
-                    .leftJoin(
-                        resourceHeaderAuth,
-                        eq(
-                            resourceHeaderAuth.resourceId,
-                            resources.resourceId
-                        )
-                    )
-                    .leftJoin(
-                        resourceHeaderAuthExtendedCompatibility,
-                        eq(
-                            resourceHeaderAuthExtendedCompatibility.resourceId,
-                            resources.resourceId
-                        )
-                    )
-                    .where(eq(resources.resourceGuid, resourceGuid))
-                    .limit(1);
+                      .leftJoin(
+                          resourceHeaderAuth,
+                          eq(
+                              resourceHeaderAuth.resourceId,
+                              resources.resourceId
+                          )
+                      )
+                      .leftJoin(
+                          resourceHeaderAuthExtendedCompatibility,
+                          eq(
+                              resourceHeaderAuthExtendedCompatibility.resourceId,
+                              resources.resourceId
+                          )
+                      )
+                      .where(eq(resources.resourceGuid, resourceGuid))
+                      .limit(1);
 
         const resource = result?.resources;
         if (!resource) {
@@ -125,7 +127,8 @@ export async function getResourceAuthInfo(
         const pincode = result?.resourcePincode;
         const password = result?.resourcePassword;
         const headerAuth = result?.resourceHeaderAuth;
-        const headerAuthExtendedCompatibility = result?.resourceHeaderAuthExtendedCompatibility;
+        const headerAuthExtendedCompatibility =
+            result?.resourceHeaderAuthExtendedCompatibility;
 
         const url = `${resource.ssl ? "https" : "http"}://${resource.fullDomain}`;
 
@@ -138,13 +141,15 @@ export async function getResourceAuthInfo(
                 password: password !== null,
                 pincode: pincode !== null,
                 headerAuth: headerAuth !== null,
-                headerAuthExtendedCompatibility: headerAuthExtendedCompatibility !== null,
+                headerAuthExtendedCompatibility:
+                    headerAuthExtendedCompatibility !== null,
                 sso: resource.sso,
                 blockAccess: resource.blockAccess,
                 url,
                 whitelist: resource.emailWhitelistEnabled,
                 skipToIdpId: resource.skipToIdpId,
-                orgId: resource.orgId
+                orgId: resource.orgId,
+                postAuthPath: resource.postAuthPath ?? null
             },
             success: true,
             error: false,
