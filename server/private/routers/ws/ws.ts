@@ -12,22 +12,21 @@
  */
 
 import { Router, Request, Response } from "express";
+import zlib from "zlib";
 import { Server as HttpServer } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 import { Socket } from "net";
 import {
     Newt,
     newts,
-    NewtSession,
-    olms,
     Olm,
-    OlmSession,
+    olms,
     RemoteExitNode,
-    RemoteExitNodeSession,
-    remoteExitNodes
+    remoteExitNodes,
 } from "@server/db";
 import { eq } from "drizzle-orm";
 import { db } from "@server/db";
+import { recordPing } from "@server/routers/newt/pingAccumulator";
 import { validateNewtSessionToken } from "@server/auth/sessions/newt";
 import { validateOlmSessionToken } from "@server/auth/sessions/olm";
 import logger from "@server/logger";
@@ -57,11 +56,13 @@ const MAX_PENDING_MESSAGES = 50; // Maximum messages to queue during connection 
 const processMessage = async (
     ws: AuthenticatedWebSocket,
     data: Buffer,
+    isBinary: boolean,
     clientId: string,
     clientType: ClientType
 ): Promise<void> => {
     try {
-        const message: WSMessage = JSON.parse(data.toString());
+        const messageBuffer = isBinary ? zlib.gunzipSync(data) : data;
+        const message: WSMessage = JSON.parse(messageBuffer.toString());
 
         // logger.debug(
         //     `Processing message from ${clientType.toUpperCase()} ID: ${clientId}, type: ${message.type}`
@@ -76,7 +77,7 @@ const processMessage = async (
             clientId,
             message.type, // Pass message type for granular limiting
             100, // max requests per window
-            20, // max requests per message type per window
+            100, // max requests per message type per window
             60 * 1000 // window in milliseconds
         );
         if (rateLimitResult.isLimited) {
@@ -163,8 +164,16 @@ const processPendingMessages = async (
     );
 
     const jobs = [];
-    for (const messageData of ws.pendingMessages) {
-        jobs.push(processMessage(ws, messageData, clientId, clientType));
+    for (const pending of ws.pendingMessages) {
+        jobs.push(
+            processMessage(
+                ws,
+                pending.data,
+                pending.isBinary,
+                clientId,
+                clientType
+            )
+        );
     }
 
     await Promise.all(jobs);
@@ -184,6 +193,8 @@ const connectedClients: Map<string, AuthenticatedWebSocket[]> = new Map();
 
 // Config version tracking map (local to this node, resets on server restart)
 const clientConfigVersions: Map<string, number> = new Map();
+
+
 
 // Recovery tracking
 let isRedisRecoveryInProgress = false;
@@ -325,7 +336,9 @@ const addClient = async (
     // Check Redis first if enabled
     if (redisManager.isRedisEnabled()) {
         try {
-            const redisVersion = await redisManager.get(getConfigVersionKey(clientId));
+            const redisVersion = await redisManager.get(
+                getConfigVersionKey(clientId)
+            );
             if (redisVersion !== null) {
                 configVersion = parseInt(redisVersion, 10);
                 // Sync to local cache
@@ -337,7 +350,10 @@ const addClient = async (
             } else {
                 // Use local cache version and sync to Redis
                 configVersion = clientConfigVersions.get(clientId) || 0;
-                await redisManager.set(getConfigVersionKey(clientId), configVersion.toString());
+                await redisManager.set(
+                    getConfigVersionKey(clientId),
+                    configVersion.toString()
+                );
             }
         } catch (error) {
             logger.error("Failed to get/set config version in Redis:", error);
@@ -432,7 +448,9 @@ const removeClient = async (
 };
 
 // Helper to get the current config version for a client
-const getClientConfigVersion = async (clientId: string): Promise<number | undefined> => {
+const getClientConfigVersion = async (
+    clientId: string
+): Promise<number | undefined> => {
     // Try Redis first if available
     if (redisManager.isRedisEnabled()) {
         try {
@@ -502,11 +520,26 @@ const sendToClientLocal = async (
     };
 
     const messageString = JSON.stringify(messageWithVersion);
-    clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(messageString);
-        }
-    });
+    if (options.compress) {
+        logger.debug(
+            `Message size before compression: ${messageString.length} bytes`
+        );
+        const compressed = zlib.gzipSync(Buffer.from(messageString, "utf8"));
+        logger.debug(
+            `Message size after compression: ${compressed.length} bytes`
+        );
+        clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(compressed);
+            }
+        });
+    } else {
+        clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(messageString);
+            }
+        });
+    }
 
     return true;
 };
@@ -532,11 +565,22 @@ const broadcastToAllExceptLocal = async (
                 configVersion
             };
 
-            clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify(messageWithVersion));
-                }
-            });
+            if (options.compress) {
+                const compressed = zlib.gzipSync(
+                    Buffer.from(JSON.stringify(messageWithVersion), "utf8")
+                );
+                clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(compressed);
+                    }
+                });
+            } else {
+                clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(JSON.stringify(messageWithVersion));
+                    }
+                });
+            }
         }
     }
 };
@@ -762,7 +806,7 @@ const setupConnection = async (
     }
 
     // Set up message handler FIRST to prevent race condition
-    ws.on("message", async (data) => {
+    ws.on("message", async (data, isBinary) => {
         if (!ws.isFullyConnected) {
             // Queue message for later processing with limits
             ws.pendingMessages = ws.pendingMessages || [];
@@ -777,11 +821,17 @@ const setupConnection = async (
             logger.debug(
                 `Queueing message from ${clientType.toUpperCase()} ID: ${clientId} (connection not fully established)`
             );
-            ws.pendingMessages.push(data as Buffer);
+            ws.pendingMessages.push({ data: data as Buffer, isBinary });
             return;
         }
 
-        await processMessage(ws, data as Buffer, clientId, clientType);
+        await processMessage(
+            ws,
+            data as Buffer,
+            isBinary,
+            clientId,
+            clientType
+        );
     });
 
     // Set up other event handlers before async operations
@@ -795,6 +845,19 @@ const setupConnection = async (
             `Client disconnected - ${clientType.toUpperCase()} ID: ${clientId}`
         );
     });
+
+    if (clientType === "newt") {
+        const newtClient = client as Newt;
+        ws.on("ping", () => {
+            if (!newtClient.siteId) return;
+            // Record the ping in the accumulator instead of writing to the
+            // database on every WS ping frame. The accumulator flushes all
+            // pending pings in a single batched UPDATE every ~10s, which
+            // prevents connection pool exhaustion under load (especially
+            // with cross-region latency to the database).
+            recordPing(newtClient.siteId);
+        });
+    }
 
     ws.on("error", (error: Error) => {
         logger.error(

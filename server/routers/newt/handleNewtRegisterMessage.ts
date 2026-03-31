@@ -5,9 +5,7 @@ import { eq } from "drizzle-orm";
 import { addPeer, deletePeer } from "../gerbil/peers";
 import logger from "@server/logger";
 import config from "@server/lib/config";
-import {
-    findNextAvailableCidr,
-} from "@server/lib/ip";
+import { findNextAvailableCidr } from "@server/lib/ip";
 import {
     selectBestExitNode,
     verifyExitNodeOrgAccess
@@ -15,6 +13,7 @@ import {
 import { fetchContainers } from "./dockerSocket";
 import { lockManager } from "#dynamic/lib/lock";
 import { buildTargetConfigurationForNewtClient } from "./buildConfiguration";
+import { canCompress } from "@server/lib/clientVersionChecks";
 
 export type ExitNodePingResult = {
     exitNodeId: number;
@@ -44,7 +43,7 @@ export const handleNewtRegisterMessage: MessageHandler = async (context) => {
 
     const siteId = newt.siteId;
 
-    const { publicKey, pingResults, newtVersion, backwardsCompatible } =
+    const { publicKey, pingResults, newtVersion, backwardsCompatible, chainId } =
         message.data;
     if (!publicKey) {
         logger.warn("Public key not provided");
@@ -212,8 +211,12 @@ export const handleNewtRegisterMessage: MessageHandler = async (context) => {
                     udp: udpTargets,
                     tcp: tcpTargets
                 },
-                healthCheckTargets: validHealthCheckTargets
+                healthCheckTargets: validHealthCheckTargets,
+                chainId: chainId
             }
+        },
+        options: {
+            compress: canCompress(newt.version, "newt")
         },
         broadcast: false, // Send to all clients
         excludeSender: false // Include sender in broadcast

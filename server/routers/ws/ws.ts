@@ -1,10 +1,12 @@
 import { Router, Request, Response } from "express";
+import zlib from "zlib";
 import { Server as HttpServer } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 import { Socket } from "net";
-import { Newt, newts, NewtSession, olms, Olm, OlmSession } from "@server/db";
+import { Newt, newts, NewtSession, olms, Olm, OlmSession, sites } from "@server/db";
 import { eq } from "drizzle-orm";
 import { db } from "@server/db";
+import { recordPing } from "@server/routers/newt/pingAccumulator";
 import { validateNewtSessionToken } from "@server/auth/sessions/newt";
 import { validateOlmSessionToken } from "@server/auth/sessions/olm";
 import { messageHandlers } from "./messageHandlers";
@@ -116,11 +118,20 @@ const sendToClientLocal = async (
     };
 
     const messageString = JSON.stringify(messageWithVersion);
-    clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(messageString);
-        }
-    });
+    if (options.compress) {
+        const compressed = zlib.gzipSync(Buffer.from(messageString, "utf8"));
+        clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(compressed);
+            }
+        });
+    } else {
+        clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(messageString);
+            }
+        });
+    }
     return true;
 };
 
@@ -147,11 +158,22 @@ const broadcastToAllExceptLocal = async (
                 ...message,
                 configVersion
             };
-            clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify(messageWithVersion));
-                }
-            });
+            if (options.compress) {
+                const compressed = zlib.gzipSync(
+                    Buffer.from(JSON.stringify(messageWithVersion), "utf8")
+                );
+                clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(compressed);
+                    }
+                });
+            } else {
+                clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(JSON.stringify(messageWithVersion));
+                    }
+                });
+            }
         }
     });
 };
@@ -286,9 +308,12 @@ const setupConnection = async (
         clientType === "newt" ? (client as Newt).newtId : (client as Olm).olmId;
     await addClient(clientType, clientId, ws);
 
-    ws.on("message", async (data) => {
+    ws.on("message", async (data, isBinary) => {
         try {
-            const message: WSMessage = JSON.parse(data.toString());
+            const messageBuffer = isBinary
+                ? zlib.gunzipSync(data as Buffer)
+                : (data as Buffer);
+            const message: WSMessage = JSON.parse(messageBuffer.toString());
 
             if (!message.type || typeof message.type !== "string") {
                 throw new Error(
@@ -355,6 +380,23 @@ const setupConnection = async (
             `Client disconnected - ${clientType.toUpperCase()} ID: ${clientId}`
         );
     });
+
+    // Handle WebSocket protocol-level pings from older newt clients that do
+    // not send application-level "newt/ping" messages. Update the site's
+    // online state and lastPing timestamp so the offline checker treats them
+    // the same as modern newt clients.
+    if (clientType === "newt") {
+        const newtClient = client as Newt;
+        ws.on("ping", () => {
+            if (!newtClient.siteId) return;
+            // Record the ping in the accumulator instead of writing to the
+            // database on every WS ping frame. The accumulator flushes all
+            // pending pings in a single batched UPDATE every ~10s, which
+            // prevents connection pool exhaustion under load (especially
+            // with cross-region latency to the database).
+            recordPing(newtClient.siteId);
+        });
+    }
 
     ws.on("error", (error: Error) => {
         logger.error(
