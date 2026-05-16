@@ -465,13 +465,13 @@ export default function GeneralPage() {
             cell: ({ row }) => {
                 return (
                     <Link
-                        href={`/${row.original.orgId}/settings/resources/proxy/${row.original.resourceNiceId}`}
+                        href={
+                            row.original.type === "ssh"
+                                ? `/${row.original.orgId}/settings/resources/client?query=${row.original.resourceNiceId}`
+                                : `/${row.original.orgId}/settings/resources/proxy/${row.original.resourceNiceId}`
+                        }
                     >
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs h-6"
-                        >
+                        <Button variant="outline" size="sm">
                             {row.original.resourceName}
                             <ArrowUpRight className="ml-2 h-3 w-3" />
                         </Button>
@@ -493,7 +493,8 @@ export default function GeneralPage() {
                                 {
                                     value: "whitelistedEmail",
                                     label: "Whitelisted Email"
-                                }
+                                },
+                                { value: "ssh", label: "SSH" }
                             ]}
                             selectedValue={filters.type}
                             onValueChange={(value) =>
@@ -507,13 +508,12 @@ export default function GeneralPage() {
                 );
             },
             cell: ({ row }) => {
-                // should be capitalized first letter
-                return (
-                    <span>
-                        {row.original.type.charAt(0).toUpperCase() +
-                            row.original.type.slice(1) || "-"}
-                    </span>
-                );
+                const typeLabel =
+                    row.original.type === "ssh"
+                        ? "SSH"
+                        : row.original.type.charAt(0).toUpperCase() +
+                          row.original.type.slice(1);
+                return <span>{typeLabel || "-"}</span>;
             }
         },
         {

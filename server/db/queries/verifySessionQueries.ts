@@ -1,4 +1,12 @@
-import { db, loginPage, LoginPage, loginPageOrg, Org, orgs, roles } from "@server/db";
+import {
+    db,
+    loginPage,
+    LoginPage,
+    loginPageOrg,
+    Org,
+    orgs,
+    roles
+} from "@server/db";
 import {
     Resource,
     ResourcePassword,
@@ -12,13 +20,12 @@ import {
     resources,
     roleResources,
     sessions,
-    userOrgs,
     userResources,
     users,
     ResourceHeaderAuthExtendedCompatibility,
     resourceHeaderAuthExtendedCompatibility
 } from "@server/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 
 export type ResourceWithAuth = {
     resource: Resource | null;
@@ -40,7 +47,17 @@ export type UserSessionWithUser = {
 export async function getResourceByDomain(
     domain: string
 ): Promise<ResourceWithAuth | null> {
-    const [result] = await db
+    // Build wildcard domain variants to match against.
+    // For a domain like "me.example.test.com", we want to match:
+    //   - "*.example.test.com" (subdomain wildcard)
+    //   - "*.test.com" (parent wildcard, i.e. just "*" subdomain on parent)
+    const parts = domain.split(".");
+    const wildcardCandidates: string[] = [];
+    for (let i = 1; i < parts.length; i++) {
+        wildcardCandidates.push(`*.${parts.slice(i).join(".")}`);
+    }
+
+    const potentialResults = await db
         .select()
         .from(resources)
         .leftJoin(
@@ -63,8 +80,29 @@ export async function getResourceByDomain(
             )
         )
         .innerJoin(orgs, eq(orgs.orgId, resources.orgId))
-        .where(eq(resources.fullDomain, domain))
-        .limit(1);
+        .where(
+            or(
+                // Exact match
+                eq(resources.fullDomain, domain),
+                // Wildcard match: resource fullDomain is one of the wildcard candidates
+                wildcardCandidates.length > 0
+                    ? and(
+                          eq(resources.wildcard, true),
+                          inArray(resources.fullDomain, wildcardCandidates)
+                      )
+                    : sql`false`
+            )
+        );
+
+    if (!potentialResults.length) {
+        return null;
+    }
+
+    // Prefer exact match over wildcard match
+    const exactMatch = potentialResults.find(
+        (r) => r.resources?.fullDomain === domain
+    );
+    const result = exactMatch ?? potentialResults[0];
 
     if (!result) {
         return null;
@@ -104,24 +142,15 @@ export async function getUserSessionWithUser(
 }
 
 /**
- * Get user organization role
+ * Get role name by role ID (for display).
  */
-export async function getUserOrgRole(userId: string, orgId: string) {
-    const userOrgRole = await db
-        .select({
-            userId: userOrgs.userId,
-            orgId: userOrgs.orgId,
-            roleId: userOrgs.roleId,
-            isOwner: userOrgs.isOwner,
-            autoProvisioned: userOrgs.autoProvisioned,
-            roleName: roles.name
-        })
-        .from(userOrgs)
-        .where(and(eq(userOrgs.userId, userId), eq(userOrgs.orgId, orgId)))
-        .leftJoin(roles, eq(userOrgs.roleId, roles.roleId))
+export async function getRoleName(roleId: number): Promise<string | null> {
+    const [row] = await db
+        .select({ name: roles.name })
+        .from(roles)
+        .where(eq(roles.roleId, roleId))
         .limit(1);
-
-    return userOrgRole.length > 0 ? userOrgRole[0] : null;
+    return row?.name ?? null;
 }
 
 /**
@@ -129,7 +158,7 @@ export async function getUserOrgRole(userId: string, orgId: string) {
  */
 export async function getRoleResourceAccess(
     resourceId: number,
-    roleId: number
+    roleIds: number[]
 ) {
     const roleResourceAccess = await db
         .select()
@@ -137,12 +166,11 @@ export async function getRoleResourceAccess(
         .where(
             and(
                 eq(roleResources.resourceId, resourceId),
-                eq(roleResources.roleId, roleId)
+                inArray(roleResources.roleId, roleIds)
             )
-        )
-        .limit(1);
+        );
 
-    return roleResourceAccess.length > 0 ? roleResourceAccess[0] : null;
+    return roleResourceAccess.length > 0 ? roleResourceAccess : null;
 }
 
 /**

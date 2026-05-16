@@ -2,7 +2,7 @@
 
 import CopyTextBox from "@app/components/CopyTextBox";
 import DomainPicker from "@app/components/DomainPicker";
-import HealthCheckDialog from "@app/components/HealthCheckDialog";
+import HealthCheckCredenza from "@app/components/HealthCheckCredenza";
 import {
     PathMatchDisplay,
     PathMatchModal,
@@ -82,8 +82,8 @@ import { AxiosResponse } from "axios";
 import {
     CircleCheck,
     CircleX,
+    ExternalLink,
     Info,
-    InfoIcon,
     Plus,
     Settings,
     SquareArrowOutUpRight
@@ -216,9 +216,7 @@ export default function Page() {
     const [remoteExitNodes, setRemoteExitNodes] = useState<
         ListRemoteExitNodesResponse["remoteExitNodes"]
     >([]);
-    const [loadingExitNodes, setLoadingExitNodes] = useState(
-        build === "saas"
-    );
+    const [loadingExitNodes, setLoadingExitNodes] = useState(build === "saas");
 
     const [createLoading, setCreateLoading] = useState(false);
     const [showSnippets, setShowSnippets] = useState(false);
@@ -282,6 +280,7 @@ export default function Page() {
             method: isHttp ? "http" : null,
             port: 0,
             siteId: sites.length > 0 ? sites[0].siteId : 0,
+            siteName: sites.length > 0 ? sites[0].name : "",
             path: isHttp ? null : null,
             pathMatchType: isHttp ? null : null,
             rewritePath: isHttp ? null : null,
@@ -304,6 +303,8 @@ export default function Page() {
             hcMode: null,
             hcUnhealthyInterval: null,
             hcTlsServerName: null,
+            hcHealthyThreshold: null,
+            hcUnhealthyThreshold: null,
             siteType: sites.length > 0 ? sites[0].type : null,
             new: true,
             updated: false
@@ -336,8 +337,7 @@ export default function Page() {
 
     // In saas mode with no exit nodes, force HTTP
     const showTypeSelector =
-        build !== "saas" ||
-        (!loadingExitNodes && remoteExitNodes.length > 0);
+        build !== "saas" || (!loadingExitNodes && remoteExitNodes.length > 0);
 
     const baseForm = useForm({
         resolver: zodResolver(baseResourceFormSchema),
@@ -490,7 +490,7 @@ export default function Page() {
                 const httpData = httpForm.getValues();
 
                 sanitizedSubdomain = httpData.subdomain
-                    ? finalizeSubdomainSanitize(httpData.subdomain)
+                    ? finalizeSubdomainSanitize(httpData.subdomain, true)
                     : undefined;
 
                 Object.assign(payload, {
@@ -554,7 +554,11 @@ export default function Page() {
                                 hcUnhealthyInterval:
                                     target.hcUnhealthyInterval || null,
                                 hcMode: target.hcMode || null,
-                                hcTlsServerName: target.hcTlsServerName
+                                hcTlsServerName: target.hcTlsServerName,
+                                hcHealthyThreshold:
+                                    target.hcHealthyThreshold || null,
+                                hcUnhealthyThreshold:
+                                    target.hcUnhealthyThreshold || null
                             };
 
                             // Only include path-related fields for HTTP resources
@@ -600,7 +604,10 @@ export default function Page() {
             toast({
                 variant: "destructive",
                 title: t("resourceErrorCreate"),
-                description: formatAxiosError(e, t("resourceErrorCreateMessageDescription"))
+                description: formatAxiosError(
+                    e,
+                    t("resourceErrorCreateMessageDescription")
+                )
             });
         }
 
@@ -693,19 +700,6 @@ export default function Page() {
             header: () => <span className="p-3">{t("healthCheck")}</span>,
             cell: ({ row }) => {
                 const status = row.original.hcHealth || "unknown";
-                const isEnabled = row.original.hcEnabled;
-
-                const getStatusColor = (status: string) => {
-                    switch (status) {
-                        case "healthy":
-                            return "green";
-                        case "unhealthy":
-                            return "red";
-                        case "unknown":
-                        default:
-                            return "secondary";
-                    }
-                };
 
                 const getStatusText = (status: string) => {
                     switch (status) {
@@ -719,19 +713,7 @@ export default function Page() {
                     }
                 };
 
-                const getStatusIcon = (status: string) => {
-                    switch (status) {
-                        case "healthy":
-                            return <CircleCheck className="w-3 h-3" />;
-                        case "unhealthy":
-                            return <CircleX className="w-3 h-3" />;
-                        case "unknown":
-                        default:
-                            return null;
-                    }
-                };
-
-                return (
+                   return (
                     <div className="flex items-center justify-center w-full">
                         {row.original.siteType === "newt" ? (
                             <Button
@@ -741,12 +723,16 @@ export default function Page() {
                                     openHealthCheckDialog(row.original)
                                 }
                             >
-                                <Settings className="h-4 w-4" />
-                                <div className="flex items-center gap-1">
-                                    {getStatusIcon(status)}
+                                <div
+                                    className={`flex items-center gap-2 ${status === "healthy" ? "text-green-500" : status === "unhealthy" ? "text-destructive" : "text-neutral-500"}`}
+                                >
+                                    <div
+                                        className={`w-2 h-2 rounded-full ${status === "healthy" ? "bg-green-500" : status === "unhealthy" ? "bg-destructive" : "bg-neutral-500"}`}
+                                    ></div>
                                     {getStatusText(status)}
                                 </div>
                             </Button>
+
                         ) : (
                             <span>-</span>
                         )}
@@ -775,7 +761,17 @@ export default function Page() {
                                     pathMatchType: row.original.pathMatchType
                                 }}
                                 onChange={(config) =>
-                                    updateTarget(row.original.targetId, config)
+                                    updateTarget(
+                                        row.original.targetId,
+                                        config.path === null &&
+                                            config.pathMatchType === null
+                                            ? {
+                                                  ...config,
+                                                  rewritePath: null,
+                                                  rewritePathType: null
+                                              }
+                                            : config
+                                    )
                                 }
                                 trigger={
                                     <Button
@@ -799,7 +795,17 @@ export default function Page() {
                                     pathMatchType: row.original.pathMatchType
                                 }}
                                 onChange={(config) =>
-                                    updateTarget(row.original.targetId, config)
+                                    updateTarget(
+                                        row.original.targetId,
+                                        config.path === null &&
+                                            config.pathMatchType === null
+                                            ? {
+                                                  ...config,
+                                                  rewritePath: null,
+                                                  rewritePathType: null
+                                              }
+                                            : config
+                                    )
                                 }
                                 trigger={
                                     <Button
@@ -826,7 +832,8 @@ export default function Page() {
             cell: ({ row }) => (
                 <ResourceTargetAddressItem
                     isHttp={isHttp}
-                    sites={sites}
+                    orgId={orgId!.toString()}
+                    // sites={sites}
                     getDockerStateForSite={getDockerStateForSite}
                     proxyTarget={row.original}
                     refreshContainersForSite={refreshContainersForSite}
@@ -989,6 +996,7 @@ export default function Page() {
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
+        getRowId: (row) => String(row.targetId),
         state: {
             pagination: {
                 pageIndex: 0,
@@ -1050,7 +1058,7 @@ export default function Page() {
                                                                 : null
                                                         );
                                                     }}
-                                                    cols={2}
+                                                    cols={3}
                                                 />
                                             </>
                                         )}
@@ -1107,28 +1115,31 @@ export default function Page() {
                                         </SettingsSectionDescription>
                                     </SettingsSectionHeader>
                                     <SettingsSectionBody>
-                                        <DomainPicker
-                                            orgId={orgId as string}
-                                            warnOnProvidedDomain={
-                                                remoteExitNodes.length >= 1
-                                            }
-                                            onDomainChange={(res) => {
-                                                if (!res) return;
+                                        <SettingsSectionForm>
+                                            <DomainPicker
+                                                allowWildcard={true}
+                                                orgId={orgId as string}
+                                                warnOnProvidedDomain={
+                                                    remoteExitNodes.length >= 1
+                                                }
+                                                onDomainChange={(res) => {
+                                                    if (!res) return;
 
-                                                httpForm.setValue(
-                                                    "subdomain",
-                                                    res.subdomain
-                                                );
-                                                httpForm.setValue(
-                                                    "domainId",
-                                                    res.domainId
-                                                );
-                                                console.log(
-                                                    "Domain changed:",
-                                                    res
-                                                );
-                                            }}
-                                        />
+                                                    httpForm.setValue(
+                                                        "subdomain",
+                                                        res.subdomain
+                                                    );
+                                                    httpForm.setValue(
+                                                        "domainId",
+                                                        res.domainId
+                                                    );
+                                                    console.log(
+                                                        "Domain changed:",
+                                                        res
+                                                    );
+                                                }}
+                                            />
+                                        </SettingsSectionForm>
                                     </SettingsSectionBody>
                                 </SettingsSection>
                             ) : (
@@ -1144,98 +1155,101 @@ export default function Page() {
                                         </SettingsSectionDescription>
                                     </SettingsSectionHeader>
                                     <SettingsSectionBody>
-                                        <Form {...tcpUdpForm}>
-                                            <form
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Enter") {
-                                                        e.preventDefault(); // block default enter refresh
-                                                    }
-                                                }}
-                                                className="space-y-4 grid gap-4 grid-cols-1 md:grid-cols-2 items-start"
-                                                id="tcp-udp-settings-form"
-                                            >
-                                                <Controller
-                                                    control={tcpUdpForm.control}
-                                                    name="protocol"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>
-                                                                {t("protocol")}
-                                                            </FormLabel>
-                                                            <Select
-                                                                onValueChange={
-                                                                    field.onChange
-                                                                }
-                                                                {...field}
-                                                            >
-                                                                <FormControl>
-                                                                    <SelectTrigger>
-                                                                        <SelectValue
-                                                                            placeholder={t(
-                                                                                "protocolSelect"
-                                                                            )}
-                                                                        />
-                                                                    </SelectTrigger>
-                                                                </FormControl>
-                                                                <SelectContent>
-                                                                    <SelectItem value="tcp">
-                                                                        TCP
-                                                                    </SelectItem>
-                                                                    <SelectItem value="udp">
-                                                                        UDP
-                                                                    </SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
+                                        <SettingsSectionForm>
+                                            <Form {...tcpUdpForm}>
+                                                <form
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            e.preventDefault(); // block default enter refresh
+                                                        }
+                                                    }}
+                                                    className="space-y-4 grid gap-4 grid-cols-1 md:grid-cols-2 items-start"
+                                                    id="tcp-udp-settings-form"
+                                                >
+                                                    <Controller
+                                                        control={
+                                                            tcpUdpForm.control
+                                                        }
+                                                        name="protocol"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>
+                                                                    {t(
+                                                                        "protocol"
+                                                                    )}
+                                                                </FormLabel>
+                                                                <Select
+                                                                    onValueChange={
+                                                                        field.onChange
+                                                                    }
+                                                                    {...field}
+                                                                >
+                                                                    <FormControl>
+                                                                        <SelectTrigger>
+                                                                            <SelectValue
+                                                                                placeholder={t(
+                                                                                    "protocolSelect"
+                                                                                )}
+                                                                            />
+                                                                        </SelectTrigger>
+                                                                    </FormControl>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="tcp">
+                                                                            TCP
+                                                                        </SelectItem>
+                                                                        <SelectItem value="udp">
+                                                                            UDP
+                                                                        </SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
 
-                                                <FormField
-                                                    control={tcpUdpForm.control}
-                                                    name="proxyPort"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>
-                                                                {t(
-                                                                    "resourcePortNumber"
-                                                                )}
-                                                            </FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    type="number"
-                                                                    value={
-                                                                        field.value ??
-                                                                        ""
-                                                                    }
-                                                                    onChange={(
-                                                                        e
-                                                                    ) =>
-                                                                        field.onChange(
+                                                    <FormField
+                                                        control={
+                                                            tcpUdpForm.control
+                                                        }
+                                                        name="proxyPort"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>
+                                                                    {t(
+                                                                        "resourcePortNumber"
+                                                                    )}
+                                                                </FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        type="number"
+                                                                        value={
+                                                                            field.value ??
+                                                                            ""
+                                                                        }
+                                                                        onChange={(
                                                                             e
-                                                                                .target
-                                                                                .value
-                                                                                ? parseInt(
-                                                                                      e
-                                                                                          .target
-                                                                                          .value
-                                                                                  )
-                                                                                : undefined
-                                                                        )
-                                                                    }
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                            <FormDescription>
-                                                                {t(
-                                                                    "resourcePortNumberDescription"
-                                                                )}
-                                                            </FormDescription>
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </form>
-                                        </Form>
+                                                                        ) =>
+                                                                            field.onChange(
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                                    ? parseInt(
+                                                                                          e
+                                                                                              .target
+                                                                                              .value
+                                                                                      )
+                                                                                    : undefined
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </form>
+                                            </Form>
+                                        </SettingsSectionForm>
                                     </SettingsSectionBody>
                                 </SettingsSection>
                             )}
@@ -1411,6 +1425,24 @@ export default function Page() {
                                             </Button>
                                         </div>
                                     )}
+                                    {build === "saas" &&
+                                        targets.length > 1 &&
+                                        new Set(targets.map((t) => t.siteId)).size >
+                                            1 && (
+                                            <p className="text-sm text-muted-foreground mt-3">
+                                                {t("proxyMultiSiteRoundRobinNodeHelp")}{" "}
+                                                <a
+                                                    href="https://docs.pangolin.net/manage/resources/public/targets#distributing-sites-load-across-servers"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-primary hover:underline inline-flex items-center gap-1"
+                                                >
+                                                    {t("learnMore")}
+                                                    <ExternalLink className="size-3.5 shrink-0" />
+                                                </a>
+                                                .
+                                            </p>
+                                        )}
                                 </SettingsSectionBody>
                             </SettingsSection>
 
@@ -1449,12 +1481,10 @@ export default function Page() {
                                 </Button>
                             </div>
                             {selectedTargetForHealthCheck && (
-                                <HealthCheckDialog
+                                <HealthCheckCredenza
+                                    mode="autoSave"
                                     open={healthCheckDialogOpen}
                                     setOpen={setHealthCheckDialogOpen}
-                                    targetId={
-                                        selectedTargetForHealthCheck.targetId
-                                    }
                                     targetAddress={`${selectedTargetForHealthCheck.ip}:${selectedTargetForHealthCheck.port}`}
                                     targetMethod={
                                         selectedTargetForHealthCheck.method ||
@@ -1489,7 +1519,7 @@ export default function Page() {
                                             selectedTargetForHealthCheck.hcPort ||
                                             selectedTargetForHealthCheck.port,
                                         hcFollowRedirects:
-                                            selectedTargetForHealthCheck.hcFollowRedirects ||
+                                            selectedTargetForHealthCheck.hcFollowRedirects ??
                                             true,
                                         hcStatus:
                                             selectedTargetForHealthCheck.hcStatus ||
@@ -1502,7 +1532,13 @@ export default function Page() {
                                             30,
                                         hcTlsServerName:
                                             selectedTargetForHealthCheck.hcTlsServerName ||
-                                            undefined
+                                            undefined,
+                                        hcHealthyThreshold:
+                                            selectedTargetForHealthCheck.hcHealthyThreshold ||
+                                            1,
+                                        hcUnhealthyThreshold:
+                                            selectedTargetForHealthCheck.hcUnhealthyThreshold ||
+                                            1
                                     }}
                                     onChanges={async (config) => {
                                         if (selectedTargetForHealthCheck) {

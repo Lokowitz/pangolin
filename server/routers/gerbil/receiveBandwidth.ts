@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { sql } from "drizzle-orm";
-import { db } from "@server/db";
+import { db, DB_TYPE } from "@server/db";
 import logger from "@server/logger";
 import createHttpError from "http-errors";
 import HttpCode from "@server/types/HttpCode";
@@ -88,12 +88,16 @@ async function dbQueryRows<T extends Record<string, unknown>>(
 ): Promise<T[]> {
     const anyDb = db as any;
     if (typeof anyDb.execute === "function") {
-        // PostgreSQL (node-postgres via Drizzle) — returns { rows: [...] } or an array
+        // PostgreSQL (node-postgres via Drizzle) - returns { rows: [...] } or an array
         const result = await anyDb.execute(query);
         return (Array.isArray(result) ? result : (result.rows ?? [])) as T[];
     }
-    // SQLite (better-sqlite3 via Drizzle) — returns an array directly
+    // SQLite (better-sqlite3 via Drizzle) - returns an array directly
     return (await anyDb.all(query)) as T[];
+}
+
+function isSQLite(): boolean {
+    return DB_TYPE == "sqlite";
 }
 
 /**
@@ -102,7 +106,7 @@ async function dbQueryRows<T extends Record<string, unknown>>(
  * Swaps out the accumulator before writing so that any bandwidth messages
  * received during the flush are captured in the new accumulator rather than
  * being lost or causing contention. Sites are updated in chunks via a single
- * batch UPDATE per chunk. Failed chunks are discarded — exact per-flush
+ * batch UPDATE per chunk. Failed chunks are discarded - exact per-flush
  * accuracy is not critical and re-queuing is not worth the added complexity.
  *
  * This function is exported so that the application's graceful-shutdown
@@ -121,7 +125,7 @@ export async function flushSiteBandwidthToDb(): Promise<void> {
     const currentTime = new Date().toISOString();
 
     // Sort by publicKey for consistent lock ordering across concurrent
-    // writers — deadlock-prevention strategy.
+    // writers - deadlock-prevention strategy.
     const sortedEntries = [...snapshot.entries()].sort(([a], [b]) =>
         a.localeCompare(b)
     );
@@ -141,19 +145,36 @@ export async function flushSiteBandwidthToDb(): Promise<void> {
         const chunk = sortedEntries.slice(i, i + BATCH_CHUNK_SIZE);
         const chunkEnd = i + chunk.length - 1;
 
-        // Build a parameterised VALUES list: (pubKey, bytesIn, bytesOut), ...
-        // Both PostgreSQL and SQLite (≥ 3.33.0, which better-sqlite3 bundles)
-        // support UPDATE … FROM (VALUES …), letting us update the whole chunk
-        // in a single query instead of N individual round-trips.
-        const valuesList = chunk.map(([publicKey, { bytesIn, bytesOut }]) =>
-            sql`(${publicKey}::text, ${bytesIn}::real, ${bytesOut}::real)`
-        );
-        const valuesClause = sql.join(valuesList, sql`, `);
-
         let rows: { orgId: string; pubKey: string }[] = [];
 
         try {
             rows = await withDeadlockRetry(async () => {
+                if (isSQLite()) {
+                    // SQLite: one UPDATE per row - no need for batch efficiency here.
+                    const results: { orgId: string; pubKey: string }[] = [];
+                    for (const [publicKey, { bytesIn, bytesOut }] of chunk) {
+                        const result = await dbQueryRows<{
+                            orgId: string;
+                            pubKey: string;
+                        }>(sql`
+                            UPDATE sites
+                            SET
+                                "bytesOut"            = COALESCE("bytesOut", 0) + ${bytesIn},
+                                "bytesIn"             = COALESCE("bytesIn", 0)  + ${bytesOut},
+                                "lastBandwidthUpdate" = ${currentTime}
+                            WHERE "pubKey" = ${publicKey}
+                            RETURNING "orgId", "pubKey"
+                        `);
+                        results.push(...result);
+                    }
+                    return results;
+                }
+
+                // PostgreSQL: batch UPDATE … FROM (VALUES …) - single round-trip per chunk.
+                const valuesList = chunk.map(([publicKey, { bytesIn, bytesOut }]) =>
+                    sql`(${publicKey}::text, ${bytesIn}::real, ${bytesOut}::real)`
+                );
+                const valuesClause = sql.join(valuesList, sql`, `);
                 return dbQueryRows<{ orgId: string; pubKey: string }>(sql`
                     UPDATE sites
                     SET
@@ -170,7 +191,7 @@ export async function flushSiteBandwidthToDb(): Promise<void> {
                 `Failed to flush bandwidth chunk [${i}–${chunkEnd}], discarding ${chunk.length} site(s):`,
                 error
             );
-            // Discard the chunk — exact per-flush accuracy is not critical.
+            // Discard the chunk - exact per-flush accuracy is not critical.
             continue;
         }
 
@@ -211,7 +232,7 @@ export async function flushSiteBandwidthToDb(): Promise<void> {
                     totalBandwidth
                 );
                 if (bandwidthUsage) {
-                    // Fire-and-forget — don't block the flush on limit checking.
+                    // Fire-and-forget - don't block the flush on limit checking.
                     usageService
                         .checkLimitSet(
                             orgId,
@@ -277,7 +298,7 @@ export async function updateSiteBandwidth(
     exitNodeId?: number
 ): Promise<void> {
     for (const { publicKey, bytesIn, bytesOut } of bandwidthData) {
-        // Skip peers that haven't transferred any data — writing zeros to the
+        // Skip peers that haven't transferred any data - writing zeros to the
         // database would be a no-op anyway.
         if (bytesIn <= 0 && bytesOut <= 0) {
             continue;

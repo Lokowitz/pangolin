@@ -1,96 +1,11 @@
-import { db, newts, sites } from "@server/db";
-import { hasActiveConnections, getClientConfigVersion } from "#dynamic/routers/ws";
+import { db, sites } from "@server/db";
+import { getClientConfigVersion } from "#dynamic/routers/ws";
 import { MessageHandler } from "@server/routers/ws";
 import { Newt } from "@server/db";
-import { eq, lt, isNull, and, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import logger from "@server/logger";
 import { sendNewtSyncMessage } from "./sync";
 import { recordPing } from "./pingAccumulator";
-
-// Track if the offline checker interval is running
-let offlineCheckerInterval: NodeJS.Timeout | null = null;
-const OFFLINE_CHECK_INTERVAL = 30 * 1000; // Check every 30 seconds
-const OFFLINE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
-
-/**
- * Starts the background interval that checks for newt sites that haven't
- * pinged recently and marks them as offline. For backward compatibility,
- * a site is only marked offline when there is no active WebSocket connection
- * either — so older newt versions that don't send pings but remain connected
- * continue to be treated as online.
- */
-export const startNewtOfflineChecker = (): void => {
-    if (offlineCheckerInterval) {
-        return; // Already running
-    }
-
-    offlineCheckerInterval = setInterval(async () => {
-        try {
-            const twoMinutesAgo = Math.floor(
-                (Date.now() - OFFLINE_THRESHOLD_MS) / 1000
-            );
-
-            // Find all online newt-type sites that haven't pinged recently
-            // (or have never pinged at all). Join newts to obtain the newtId
-            // needed for the WebSocket connection check.
-            const staleSites = await db
-                .select({
-                    siteId: sites.siteId,
-                    newtId: newts.newtId,
-                    lastPing: sites.lastPing
-                })
-                .from(sites)
-                .innerJoin(newts, eq(newts.siteId, sites.siteId))
-                .where(
-                    and(
-                        eq(sites.online, true),
-                        eq(sites.type, "newt"),
-                        or(
-                            lt(sites.lastPing, twoMinutesAgo),
-                            isNull(sites.lastPing)
-                        )
-                    )
-                );
-
-            for (const staleSite of staleSites) {
-                // Backward-compatibility check: if the newt still has an
-                // active WebSocket connection (older clients that don't send
-                // pings), keep the site online.
-                const isConnected = await hasActiveConnections(staleSite.newtId);
-                if (isConnected) {
-                    logger.debug(
-                        `Newt ${staleSite.newtId} has not pinged recently but is still connected via WebSocket — keeping site ${staleSite.siteId} online`
-                    );
-                    continue;
-                }
-
-                logger.info(
-                    `Marking site ${staleSite.siteId} offline: newt ${staleSite.newtId} has no recent ping and no active WebSocket connection`
-                );
-
-                await db
-                    .update(sites)
-                    .set({ online: false })
-                    .where(eq(sites.siteId, staleSite.siteId));
-            }
-        } catch (error) {
-            logger.error("Error in newt offline checker interval", { error });
-        }
-    }, OFFLINE_CHECK_INTERVAL);
-
-    logger.debug("Started newt offline checker interval");
-};
-
-/**
- * Stops the background interval that checks for offline newt sites.
- */
-export const stopNewtOfflineChecker = (): void => {
-    if (offlineCheckerInterval) {
-        clearInterval(offlineCheckerInterval);
-        offlineCheckerInterval = null;
-        logger.info("Stopped newt offline checker interval");
-    }
-};
 
 /**
  * Handles ping messages from newt clients.

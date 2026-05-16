@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { db, loginPage } from "@server/db";
+import { db, domainNamespaces, loginPage } from "@server/db";
 import {
     domains,
     orgDomains,
@@ -17,13 +17,16 @@ import createHttpError from "http-errors";
 import { eq, and } from "drizzle-orm";
 import { fromError } from "zod-validation-error";
 import logger from "@server/logger";
-import { subdomainSchema } from "@server/lib/schemas";
+import { subdomainSchema, wildcardSubdomainSchema } from "@server/lib/schemas";
 import config from "@server/lib/config";
 import { OpenAPITags, registry } from "@server/openApi";
 import { build } from "@server/build";
 import { createCertificate } from "#dynamic/routers/certificates/createCertificate";
 import { getUniqueResourceName } from "@server/db/names";
-import { validateAndConstructDomain } from "@server/lib/domainUtils";
+import { validateAndConstructDomain, checkWildcardDomainConflict } from "@server/lib/domainUtils";
+import { isSubscribed } from "#dynamic/lib/isSubscribed";
+import { isLicensedOrSubscribed } from "#dynamic/lib/isLicencedOrSubscribed";
+import { tierMatrix } from "@server/lib/billing/tierMatrix";
 
 const createResourceParamsSchema = z.strictObject({
     orgId: z.string()
@@ -42,7 +45,10 @@ const createHttpResourceSchema = z
     .refine(
         (data) => {
             if (data.subdomain) {
-                return subdomainSchema.safeParse(data.subdomain).success;
+                return (
+                    subdomainSchema.safeParse(data.subdomain).success ||
+                    wildcardSubdomainSchema.safeParse(data.subdomain).success
+                );
             }
             return true;
         },
@@ -112,7 +118,10 @@ export async function createResource(
 
         const { orgId } = parsedParams.data;
 
-        if (req.user && !req.userOrgRoleId) {
+        if (
+            req.user &&
+            (!req.userOrgRoleIds || req.userOrgRoleIds.length === 0)
+        ) {
             return next(
                 createHttpError(HttpCode.FORBIDDEN, "User does not have a role")
             );
@@ -193,6 +202,45 @@ async function createHttpResource(
     const subdomain = parsedBody.data.subdomain;
     const stickySession = parsedBody.data.stickySession;
 
+    // Wildcard subdomains are a paid feature
+    if (subdomain && subdomain.includes("*")) {
+        const isLicensed = await isLicensedOrSubscribed(
+            orgId,
+            tierMatrix.wildcardSubdomain
+        );
+        if (!isLicensed) {
+            return next(
+                createHttpError(
+                    HttpCode.FORBIDDEN,
+                    "Wildcard subdomains are not supported on your current plan. Please upgrade to access this feature."
+                )
+            );
+        }
+    }
+
+    if (build == "saas" && !isSubscribed(orgId!, tierMatrix.domainNamespaces)) {
+        // grandfather in existing users
+        const lastAllowedDate = new Date("2026-04-13");
+        const userCreatedDate = new Date(req.user?.dateCreated || new Date());
+        if (userCreatedDate > lastAllowedDate) {
+            // check if this domain id is a namespace domain and if so, reject
+            const domain = await db
+                .select()
+                .from(domainNamespaces)
+                .where(eq(domainNamespaces.domainId, domainId))
+                .limit(1);
+
+            if (domain.length > 0) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        "Your current subscription does not support custom domain namespaces. Please upgrade to access this feature."
+                    )
+                );
+            }
+        }
+    }
+
     // Validate domain and construct full domain
     const domainResult = await validateAndConstructDomain(
         domainId,
@@ -204,7 +252,7 @@ async function createHttpResource(
         return next(createHttpError(HttpCode.BAD_REQUEST, domainResult.error));
     }
 
-    const { fullDomain, subdomain: finalSubdomain } = domainResult;
+    const { fullDomain, subdomain: finalSubdomain, wildcard } = domainResult;
 
     logger.debug(`Full domain: ${fullDomain}`);
 
@@ -220,6 +268,13 @@ async function createHttpResource(
                 HttpCode.CONFLICT,
                 "Resource with that domain already exists"
             )
+        );
+    }
+
+    const wildcardConflict = await checkWildcardDomainConflict(fullDomain);
+    if (wildcardConflict.conflict) {
+        return next(
+            createHttpError(HttpCode.CONFLICT, wildcardConflict.message)
         );
     }
 
@@ -271,7 +326,9 @@ async function createHttpResource(
                 protocol: "tcp",
                 ssl: true,
                 stickySession: stickySession,
-                postAuthPath: postAuthPath
+                postAuthPath: postAuthPath,
+                wildcard,
+                health: "unknown"
             })
             .returning();
 
@@ -292,7 +349,7 @@ async function createHttpResource(
             resourceId: newResource[0].resourceId
         });
 
-        if (req.user && req.userOrgRoleId != adminRole[0].roleId) {
+        if (req.user && !req.userOrgRoleIds?.includes(adminRole[0].roleId)) {
             // make sure the user can access the resource
             await trx.insert(userResources).values({
                 userId: req.user?.userId!,
@@ -385,7 +442,7 @@ async function createRawResource(
             resourceId: newResource[0].resourceId
         });
 
-        if (req.user && req.userOrgRoleId != adminRole[0].roleId) {
+        if (req.user && !req.userOrgRoleIds?.includes(adminRole[0].roleId)) {
             // make sure the user can access the resource
             await trx.insert(userResources).values({
                 userId: req.user?.userId!,

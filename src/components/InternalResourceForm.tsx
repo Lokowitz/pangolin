@@ -1,15 +1,14 @@
 "use client";
 
+import { HorizontalTabs } from "@app/components/HorizontalTabs";
+import {
+    OptionSelect,
+    type OptionSelectOption
+} from "@app/components/OptionSelect";
+import { PaidFeaturesAlert } from "@app/components/PaidFeaturesAlert";
+import { StrategySelect } from "@app/components/StrategySelect";
 import { Tag, TagInput } from "@app/components/tags/tag-input";
 import { Button } from "@app/components/ui/button";
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList
-} from "@app/components/ui/command";
 import {
     Form,
     FormControl,
@@ -32,24 +31,38 @@ import {
     SelectValue
 } from "@app/components/ui/select";
 import { Switch } from "@app/components/ui/switch";
-import { getUserDisplayName } from "@app/lib/getUserDisplayName";
+import { useEnvContext } from "@app/hooks/useEnvContext";
+import { usePaidStatus } from "@app/hooks/usePaidStatus";
 import { cn } from "@app/lib/cn";
+import { getUserDisplayName } from "@app/lib/getUserDisplayName";
 import { orgQueries, resourceQueries } from "@app/lib/queries";
-import { useQueries, useQuery } from "@tanstack/react-query";
-import { ListSitesResponse } from "@server/routers/site";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { tierMatrix } from "@server/lib/billing/tierMatrix";
 import { UserType } from "@server/types/UserTypes";
-import { Check, ChevronsUpDown, ExternalLink } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import {
+    ArrowDownIcon,
+    ChevronDownIcon,
+    ChevronsUpDown,
+    ExternalLink
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEnvContext } from "@app/hooks/useEnvContext";
-import { usePaidStatus } from "@app/hooks/usePaidStatus";
-import { tierMatrix } from "@server/lib/billing/tierMatrix";
-import { HorizontalTabs } from "@app/components/HorizontalTabs";
-import { PaidFeaturesAlert } from "@app/components/PaidFeaturesAlert";
-import { StrategySelect } from "@app/components/StrategySelect";
+import {
+    MultiSitesSelector,
+    formatMultiSitesSelectorLabel
+} from "./multi-site-selector";
+import type { Selectedsite } from "./site-selector";
+
+import { MachinesSelector } from "./machines-selector";
+import DomainPicker from "@app/components/DomainPicker";
+import { SwitchInput } from "@app/components/SwitchInput";
+import CertificateStatus from "@app/components/CertificateStatus";
+import { UsersSelector } from "./users-selector";
+import { RolesSelector } from "./roles-selector";
+import { build } from "@server/build";
 
 // --- Helpers (shared) ---
 
@@ -123,15 +136,16 @@ export const cleanForFQDN = (name: string): string =>
 
 // --- Types ---
 
-type Site = ListSitesResponse["sites"][0];
+export type InternalResourceMode = "host" | "cidr" | "http";
 
 export type InternalResourceData = {
     id: number;
     name: string;
     orgId: string;
-    siteName: string;
-    mode: "host" | "cidr";
-    siteId: number;
+    siteNames: string[];
+    mode: InternalResourceMode;
+    siteIds: number[];
+    niceId: string;
     destination: string;
     alias?: string | null;
     tcpPortRangeString?: string | null;
@@ -139,21 +153,44 @@ export type InternalResourceData = {
     disableIcmp?: boolean;
     authDaemonMode?: "site" | "remote" | null;
     authDaemonPort?: number | null;
+    httpHttpsPort?: number | null;
+    scheme?: "http" | "https" | null;
+    ssl?: boolean;
+    subdomain?: string | null;
+    domainId?: string | null;
+    fullDomain?: string | null;
 };
 
 const tagSchema = z.object({ id: z.string(), text: z.string() });
 
+function buildSelectedSitesForResource(
+    resource: InternalResourceData
+): Selectedsite[] {
+    return resource.siteIds.map((siteId, idx) => ({
+        name: resource.siteNames[idx] ?? "",
+        siteId,
+        type: "newt" as const
+    }));
+}
+
 export type InternalResourceFormValues = {
     name: string;
-    siteId: number;
-    mode: "host" | "cidr";
+    siteIds: number[];
+    mode: InternalResourceMode;
     destination: string;
     alias?: string | null;
+    niceId?: string;
     tcpPortRangeString?: string | null;
     udpPortRangeString?: string | null;
     disableIcmp?: boolean;
     authDaemonMode?: "site" | "remote" | null;
     authDaemonPort?: number | null;
+    httpHttpsPort?: number | null;
+    scheme?: "http" | "https";
+    ssl?: boolean;
+    httpConfigSubdomain?: string | null;
+    httpConfigDomainId?: string | null;
+    httpConfigFullDomain?: string | null;
     roles?: z.infer<typeof tagSchema>[];
     users?: z.infer<typeof tagSchema>[];
     clients?: z.infer<typeof tagSchema>[];
@@ -163,28 +200,29 @@ type InternalResourceFormProps = {
     variant: "create" | "edit";
     resource?: InternalResourceData;
     open?: boolean;
-    sites: Site[];
     orgId: string;
     siteResourceId?: number;
     formId: string;
     onSubmit: (values: InternalResourceFormValues) => void | Promise<void>;
+    onSubmitDisabledChange?: (disabled: boolean) => void;
 };
 
 export function InternalResourceForm({
     variant,
     resource,
     open,
-    sites,
     orgId,
     siteResourceId,
     formId,
-    onSubmit
+    onSubmit,
+    onSubmitDisabledChange
 }: InternalResourceFormProps) {
     const t = useTranslations();
     const { env } = useEnvContext();
     const { isPaidUser } = usePaidStatus();
     const disableEnterpriseFeatures = env.flags.disableEnterpriseFeatures;
     const sshSectionDisabled = !isPaidUser(tierMatrix.sshPam);
+    const httpSectionDisabled = !isPaidUser(tierMatrix.httpPrivateResources);
 
     const nameRequiredKey =
         variant === "create"
@@ -214,6 +252,22 @@ export function InternalResourceForm({
         variant === "create"
             ? "createInternalResourceDialogModeCidr"
             : "editInternalResourceDialogModeCidr";
+    const modeHttpKey =
+        variant === "create"
+            ? "createInternalResourceDialogModeHttp"
+            : "editInternalResourceDialogModeHttp";
+    const schemeLabelKey =
+        variant === "create"
+            ? "createInternalResourceDialogScheme"
+            : "editInternalResourceDialogScheme";
+    const enableSslLabelKey =
+        variant === "create"
+            ? "createInternalResourceDialogEnableSsl"
+            : "editInternalResourceDialogEnableSsl";
+    const enableSslDescriptionKey =
+        variant === "create"
+            ? "createInternalResourceDialogEnableSslDescription"
+            : "editInternalResourceDialogEnableSslDescription";
     const destinationLabelKey =
         variant === "create"
             ? "createInternalResourceDialogDestination"
@@ -226,40 +280,98 @@ export function InternalResourceForm({
         variant === "create"
             ? "createInternalResourceDialogAlias"
             : "editInternalResourceDialogAlias";
+    const httpHttpsPortLabelKey =
+        variant === "create"
+            ? "createInternalResourceDialogModePort"
+            : "editInternalResourceDialogModePort";
+    const httpConfigurationTitleKey =
+        variant === "create"
+            ? "createInternalResourceDialogHttpConfiguration"
+            : "editInternalResourceDialogHttpConfiguration";
+    const httpConfigurationDescriptionKey =
+        variant === "create"
+            ? "createInternalResourceDialogHttpConfigurationDescription"
+            : "editInternalResourceDialogHttpConfigurationDescription";
 
-    const formSchema = z.object({
-        name: z.string().min(1, t(nameRequiredKey)).max(255, t(nameMaxKey)),
-        siteId: z
-            .number()
-            .int()
-            .positive(siteRequiredKey ? t(siteRequiredKey) : undefined),
-        mode: z.enum(["host", "cidr"]),
-        destination: z
-            .string()
-            .min(
-                1,
-                destinationRequiredKey
-                    ? { message: t(destinationRequiredKey) }
-                    : undefined
-            ),
-        alias: z.string().nullish(),
-        tcpPortRangeString: createPortRangeStringSchema(t),
-        udpPortRangeString: createPortRangeStringSchema(t),
-        disableIcmp: z.boolean().optional(),
-        authDaemonMode: z.enum(["site", "remote"]).optional().nullable(),
-        authDaemonPort: z.number().int().positive().optional().nullable(),
-        roles: z.array(tagSchema).optional(),
-        users: z.array(tagSchema).optional(),
-        clients: z.array(tagSchema).optional()
-    });
+    const siteIdsSchema = siteRequiredKey
+        ? z.array(z.number().int().positive()).min(1, t(siteRequiredKey))
+        : z.array(z.number().int().positive()).min(1);
+
+    const formSchema = z
+        .object({
+            name: z.string().min(1, t(nameRequiredKey)).max(255, t(nameMaxKey)),
+            siteIds: siteIdsSchema,
+            mode: z.enum(["host", "cidr", "http"]),
+            destination: z
+                .string()
+                .min(
+                    1,
+                    destinationRequiredKey
+                        ? { message: t(destinationRequiredKey) }
+                        : undefined
+                ),
+            alias: z.string().nullish(),
+            httpHttpsPort: z
+                .number()
+                .int()
+                .min(1)
+                .max(65535)
+                .optional()
+                .nullable(),
+            scheme: z.enum(["http", "https"]).optional(),
+            ssl: z.boolean().optional(),
+            httpConfigSubdomain: z.string().nullish(),
+            httpConfigDomainId: z.string().nullish(),
+            httpConfigFullDomain: z.string().nullish(),
+            niceId: z
+                .string()
+                .min(1)
+                .max(255)
+                .regex(/^[a-zA-Z0-9-]+$/)
+                .optional(),
+            tcpPortRangeString: createPortRangeStringSchema(t),
+            udpPortRangeString: createPortRangeStringSchema(t),
+            disableIcmp: z.boolean().optional(),
+            authDaemonMode: z.enum(["site", "remote"]).optional().nullable(),
+            authDaemonPort: z.number().int().positive().optional().nullable(),
+            roles: z.array(tagSchema).optional(),
+            users: z.array(tagSchema).optional(),
+            clients: z
+                .array(
+                    z.object({
+                        clientId: z.number(),
+                        name: z.string()
+                    })
+                )
+                .optional()
+        })
+        .superRefine((data, ctx) => {
+            if (data.mode !== "http") return;
+            if (!data.scheme) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: t("internalResourceDownstreamSchemeRequired"),
+                    path: ["scheme"]
+                });
+            }
+            if (
+                data.httpHttpsPort == null ||
+                !Number.isFinite(data.httpHttpsPort) ||
+                data.httpHttpsPort < 1
+            ) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: t("internalResourceHttpPortRequired"),
+                    path: ["httpHttpsPort"]
+                });
+            }
+        });
 
     type FormData = z.infer<typeof formSchema>;
 
-    const availableSites = sites.filter((s) => s.type === "newt");
-
     const rolesQuery = useQuery(orgQueries.roles({ orgId }));
     const usersQuery = useQuery(orgQueries.users({ orgId }));
-    const clientsQuery = useQuery(orgQueries.clients({ orgId }));
+    const clientsQuery = useQuery(orgQueries.machineClients({ orgId }));
     const resourceRolesQuery = useQuery({
         ...resourceQueries.siteResourceRoles({
             siteResourceId: siteResourceId ?? 0
@@ -317,12 +429,9 @@ export function InternalResourceForm({
             }));
         }
         if (clientsData) {
-            existingClients = (
-                clientsData as { clientId: number; name: string }[]
-            ).map((c) => ({
-                id: c.clientId.toString(),
-                text: c.name
-            }));
+            existingClients = [
+                ...(clientsData as { clientId: number; name: string }[])
+            ];
         }
     }
 
@@ -378,7 +487,7 @@ export function InternalResourceForm({
         variant === "edit" && resource
             ? {
                   name: resource.name,
-                  siteId: resource.siteId,
+                  siteIds: resource.siteIds,
                   mode: resource.mode ?? "host",
                   destination: resource.destination ?? "",
                   alias: resource.alias ?? null,
@@ -387,16 +496,29 @@ export function InternalResourceForm({
                   disableIcmp: resource.disableIcmp ?? false,
                   authDaemonMode: resource.authDaemonMode ?? "site",
                   authDaemonPort: resource.authDaemonPort ?? null,
+                  httpHttpsPort: resource.httpHttpsPort ?? null,
+                  scheme: resource.scheme ?? "http",
+                  ssl: resource.ssl ?? false,
+                  httpConfigSubdomain: resource.subdomain ?? null,
+                  httpConfigDomainId: resource.domainId ?? null,
+                  httpConfigFullDomain: resource.fullDomain ?? null,
+                  niceId: resource.niceId,
                   roles: [],
                   users: [],
                   clients: []
               }
             : {
                   name: "",
-                  siteId: availableSites[0]?.siteId ?? 0,
+                  siteIds: [],
                   mode: "host",
                   destination: "",
                   alias: null,
+                  httpHttpsPort: null,
+                  scheme: "http",
+                  ssl: true,
+                  httpConfigSubdomain: null,
+                  httpConfigDomainId: null,
+                  httpConfigFullDomain: null,
                   tcpPortRangeString: "*",
                   udpPortRangeString: "*",
                   disableIcmp: false,
@@ -407,12 +529,22 @@ export function InternalResourceForm({
                   clients: []
               };
 
+    const [selectedSites, setSelectedSites] = useState<Selectedsite[]>(() =>
+        variant === "edit" && resource
+            ? buildSelectedSitesForResource(resource)
+            : []
+    );
+
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
         defaultValues
     });
 
     const mode = form.watch("mode");
+    const httpConfigSubdomain = form.watch("httpConfigSubdomain");
+    const httpConfigDomainId = form.watch("httpConfigDomainId");
+    const httpConfigFullDomain = form.watch("httpConfigFullDomain");
+    const isHttpMode = mode === "http";
     const authDaemonMode = form.watch("authDaemonMode") ?? "site";
     const hasInitialized = useRef(false);
     const previousResourceId = useRef<number | null>(null);
@@ -432,10 +564,16 @@ export function InternalResourceForm({
         if (variant === "create" && open) {
             form.reset({
                 name: "",
-                siteId: availableSites[0]?.siteId ?? 0,
+                siteIds: [],
                 mode: "host",
                 destination: "",
                 alias: null,
+                httpHttpsPort: null,
+                scheme: "http",
+                ssl: true,
+                httpConfigSubdomain: null,
+                httpConfigDomainId: null,
+                httpConfigFullDomain: null,
                 tcpPortRangeString: "*",
                 udpPortRangeString: "*",
                 disableIcmp: false,
@@ -445,12 +583,13 @@ export function InternalResourceForm({
                 users: [],
                 clients: []
             });
+            setSelectedSites([]);
             setTcpPortMode("all");
             setUdpPortMode("all");
             setTcpCustomPorts("");
             setUdpCustomPorts("");
         }
-    }, [variant, open]);
+    }, [variant, open, form]);
 
     // Reset when edit dialog opens / resource changes
     useEffect(() => {
@@ -459,10 +598,16 @@ export function InternalResourceForm({
             if (resourceChanged) {
                 form.reset({
                     name: resource.name,
-                    siteId: resource.siteId,
+                    siteIds: resource.siteIds,
                     mode: resource.mode ?? "host",
                     destination: resource.destination ?? "",
                     alias: resource.alias ?? null,
+                    httpHttpsPort: resource.httpHttpsPort ?? null,
+                    scheme: resource.scheme ?? "http",
+                    ssl: resource.ssl ?? false,
+                    httpConfigSubdomain: resource.subdomain ?? null,
+                    httpConfigDomainId: resource.domainId ?? null,
+                    httpConfigFullDomain: resource.fullDomain ?? null,
                     tcpPortRangeString: resource.tcpPortRangeString ?? "*",
                     udpPortRangeString: resource.udpPortRangeString ?? "*",
                     disableIcmp: resource.disableIcmp ?? false,
@@ -472,6 +617,7 @@ export function InternalResourceForm({
                     users: [],
                     clients: []
                 });
+                setSelectedSites(buildSelectedSitesForResource(resource));
                 setTcpPortMode(
                     getPortModeFromString(resource.tcpPortRangeString)
                 );
@@ -525,12 +671,24 @@ export function InternalResourceForm({
         form
     ]);
 
+    useEffect(() => {
+        onSubmitDisabledChange?.(isHttpMode && httpSectionDisabled);
+    }, [isHttpMode, httpSectionDisabled, onSubmitDisabledChange]);
+
     return (
         <Form {...form}>
             <form
-                onSubmit={form.handleSubmit((values) =>
-                    onSubmit(values as InternalResourceFormValues)
-                )}
+                onSubmit={form.handleSubmit((values) => {
+                    const siteIds = values.siteIds;
+                    onSubmit({
+                        ...values,
+                        siteIds,
+                        clients: (values.clients ?? []).map((c) => ({
+                            id: c.clientId.toString(),
+                            text: c.name
+                        }))
+                    });
+                })}
                 className="space-y-6"
                 id={formId}
             >
@@ -548,87 +706,25 @@ export function InternalResourceForm({
                             </FormItem>
                         )}
                     />
-                    <FormField
-                        control={form.control}
-                        name="siteId"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                                <FormLabel>{t("site")}</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                variant="outline"
-                                                role="combobox"
-                                                className={cn(
-                                                    "w-full justify-between",
-                                                    !field.value &&
-                                                        "text-muted-foreground"
-                                                )}
-                                            >
-                                                {field.value
-                                                    ? availableSites.find(
-                                                          (s) =>
-                                                              s.siteId ===
-                                                              field.value
-                                                      )?.name
-                                                    : t("selectSite")}
-                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-full p-0">
-                                        <Command>
-                                            <CommandInput
-                                                placeholder={t("searchSites")}
-                                            />
-                                            <CommandList>
-                                                <CommandEmpty>
-                                                    {t("noSitesFound")}
-                                                </CommandEmpty>
-                                                <CommandGroup>
-                                                    {availableSites.map(
-                                                        (site) => (
-                                                            <CommandItem
-                                                                key={
-                                                                    site.siteId
-                                                                }
-                                                                value={
-                                                                    site.name
-                                                                }
-                                                                onSelect={() =>
-                                                                    field.onChange(
-                                                                        site.siteId
-                                                                    )
-                                                                }
-                                                            >
-                                                                <Check
-                                                                    className={cn(
-                                                                        "mr-2 h-4 w-4",
-                                                                        field.value ===
-                                                                            site.siteId
-                                                                            ? "opacity-100"
-                                                                            : "opacity-0"
-                                                                    )}
-                                                                />
-                                                                {site.name}
-                                                            </CommandItem>
-                                                        )
-                                                    )}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                    {variant === "edit" && (
+                        <FormField
+                            control={form.control}
+                            name="niceId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t("identifier")}</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    )}
                 </div>
 
                 <HorizontalTabs
-                    clientSide={true}
-                    defaultTab={0}
+                    clientSide
                     items={[
                         {
                             title: t(
@@ -640,12 +736,12 @@ export function InternalResourceForm({
                             title: t("editInternalResourceDialogAccessPolicy"),
                             href: "#"
                         },
-                        ...(disableEnterpriseFeatures || mode === "cidr"
+                        ...(disableEnterpriseFeatures || mode !== "host"
                             ? []
                             : [{ title: t("sshAccess"), href: "#" }])
                     ]}
                 >
-                    <div className="space-y-4 mt-4">
+                    <div className="space-y-4 mt-4 p-1">
                         <div>
                             <div className="mb-8">
                                 <label className="font-medium block">
@@ -659,60 +755,200 @@ export function InternalResourceForm({
                                     )}
                                 </div>
                             </div>
+                            <div className="space-y-2 mb-4">
+                                <div className="grid grid-cols-3 gap-4 items-start">
+                                    <div className="min-w-0 col-span-1">
+                                        <FormField
+                                            control={form.control}
+                                            name="siteIds"
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-col">
+                                                    <FormLabel>
+                                                        {t("sites")}
+                                                    </FormLabel>
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <FormControl>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    role="combobox"
+                                                                    className={cn(
+                                                                        "w-full justify-between",
+                                                                        selectedSites.length ===
+                                                                            0 &&
+                                                                            "text-muted-foreground"
+                                                                    )}
+                                                                >
+                                                                    <span className="truncate text-left">
+                                                                        {formatMultiSitesSelectorLabel(
+                                                                            selectedSites,
+                                                                            t
+                                                                        )}
+                                                                    </span>
+                                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                                </Button>
+                                                            </FormControl>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-full p-0">
+                                                            <MultiSitesSelector
+                                                                orgId={orgId}
+                                                                selectedSites={
+                                                                    selectedSites
+                                                                }
+                                                                filterTypes={[
+                                                                    "newt"
+                                                                ]}
+                                                                onSelectionChange={(
+                                                                    sites
+                                                                ) => {
+                                                                    setSelectedSites(
+                                                                        sites
+                                                                    );
+                                                                    field.onChange(
+                                                                        sites.map(
+                                                                            (
+                                                                                s
+                                                                            ) =>
+                                                                                s.siteId
+                                                                        )
+                                                                    );
+                                                                }}
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <div className="min-w-0 col-span-2">
+                                        <FormField
+                                            control={form.control}
+                                            name="mode"
+                                            render={({ field }) => {
+                                                const modeOptions: OptionSelectOption<InternalResourceMode>[] =
+                                                    [
+                                                        {
+                                                            value: "host",
+                                                            label: t(
+                                                                modeHostKey
+                                                            )
+                                                        },
+                                                        {
+                                                            value: "cidr",
+                                                            label: t(
+                                                                modeCidrKey
+                                                            )
+                                                        },
+                                                        ...(!disableEnterpriseFeatures
+                                                            ? [
+                                                                  {
+                                                                      value: "http" as const,
+                                                                      label: t(
+                                                                          modeHttpKey
+                                                                      )
+                                                                  }
+                                                              ]
+                                                            : [])
+                                                    ];
+                                                return (
+                                                    <FormItem>
+                                                        <FormLabel>
+                                                            {t(modeLabelKey)}
+                                                        </FormLabel>
+                                                        <OptionSelect<InternalResourceMode>
+                                                            options={
+                                                                modeOptions
+                                                            }
+                                                            value={field.value}
+                                                            onChange={
+                                                                field.onChange
+                                                            }
+                                                            cols={3}
+                                                        />
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                );
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                {selectedSites.length > 1 && (
+                                    <p className="text-sm text-muted-foreground">
+                                        {t(
+                                            "internalResourceFormMultiSiteRoutingHelp"
+                                        )}{" "}
+                                        <a
+                                            href="https://docs.pangolin.net/manage/resources/private/multi-site-routing"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline inline-flex items-center gap-1"
+                                        >
+                                            {t(
+                                                "internalResourceFormMultiSiteRoutingHelpLearnMore"
+                                            )}
+                                            <ExternalLink className="size-3.5 shrink-0" />
+                                        </a>
+                                        .
+                                    </p>
+                                )}
+                            </div>
                             <div
                                 className={cn(
                                     "grid gap-4 items-start",
-                                    mode === "cidr"
-                                        ? "grid-cols-4"
-                                        : "grid-cols-12"
+                                    mode === "cidr" && "grid-cols-1",
+                                    mode === "http" && "grid-cols-3",
+                                    mode === "host" && "grid-cols-2"
                                 )}
                             >
+                                {mode === "http" && (
+                                    <div className="min-w-0">
+                                        <FormField
+                                            control={form.control}
+                                            name="scheme"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        {t(schemeLabelKey)}
+                                                    </FormLabel>
+                                                    <Select
+                                                        onValueChange={
+                                                            field.onChange
+                                                        }
+                                                        value={
+                                                            field.value ??
+                                                            "http"
+                                                        }
+                                                        disabled={
+                                                            httpSectionDisabled
+                                                        }
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="http">
+                                                                http
+                                                            </SelectItem>
+                                                            <SelectItem value="https">
+                                                                https
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                )}
                                 <div
-                                    className={
-                                        mode === "cidr"
-                                            ? "col-span-1"
-                                            : "col-span-3"
-                                    }
-                                >
-                                    <FormField
-                                        control={form.control}
-                                        name="mode"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
-                                                    {t(modeLabelKey)}
-                                                </FormLabel>
-                                                <Select
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
-                                                    value={field.value}
-                                                >
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="host">
-                                                            {t(modeHostKey)}
-                                                        </SelectItem>
-                                                        <SelectItem value="cidr">
-                                                            {t(modeCidrKey)}
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <div
-                                    className={
-                                        mode === "cidr"
-                                            ? "col-span-3"
-                                            : "col-span-5"
-                                    }
+                                    className={cn(
+                                        mode === "cidr" && "col-span-1",
+                                        (mode === "http" || mode === "host") &&
+                                            "min-w-0"
+                                    )}
                                 >
                                     <FormField
                                         control={form.control}
@@ -723,15 +959,22 @@ export function InternalResourceForm({
                                                     {t(destinationLabelKey)}
                                                 </FormLabel>
                                                 <FormControl>
-                                                    <Input {...field} />
+                                                    <Input
+                                                        {...field}
+                                                        className="w-full"
+                                                        disabled={
+                                                            isHttpMode &&
+                                                            httpSectionDisabled
+                                                        }
+                                                    />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
                                 </div>
-                                {mode !== "cidr" && (
-                                    <div className="col-span-4">
+                                {mode === "host" && (
+                                    <div className="min-w-0">
                                         <FormField
                                             control={form.control}
                                             name="alias"
@@ -743,6 +986,7 @@ export function InternalResourceForm({
                                                     <FormControl>
                                                         <Input
                                                             {...field}
+                                                            className="w-full"
                                                             value={
                                                                 field.value ??
                                                                 ""
@@ -755,268 +999,479 @@ export function InternalResourceForm({
                                         />
                                     </div>
                                 )}
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="my-8">
-                                <label className="font-medium block">
-                                    {t("portRestrictions")}
-                                </label>
-                                <div className="text-sm text-muted-foreground">
-                                    {t(
-                                        "editInternalResourceDialogPortRestrictionsDescription"
-                                    )}
-                                </div>
-                            </div>
-                            <div
-                                className={cn(
-                                    "grid gap-4 items-start",
-                                    mode === "cidr"
-                                        ? "grid-cols-4"
-                                        : "grid-cols-12"
-                                )}
-                            >
-                                <div
-                                    className={
-                                        mode === "cidr"
-                                            ? "col-span-1"
-                                            : "col-span-3"
-                                    }
-                                >
-                                    <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                        {t("editInternalResourceDialogTcp")}
-                                    </FormLabel>
-                                </div>
-                                <div
-                                    className={
-                                        mode === "cidr"
-                                            ? "col-span-3"
-                                            : "col-span-9"
-                                    }
-                                >
-                                    <FormField
-                                        control={form.control}
-                                        name="tcpPortRangeString"
-                                        render={() => (
-                                            <FormItem>
-                                                <div className="flex items-center gap-2">
-                                                    <Select
-                                                        value={tcpPortMode}
-                                                        onValueChange={(
-                                                            v: PortMode
-                                                        ) => setTcpPortMode(v)}
-                                                    >
-                                                        <FormControl>
-                                                            <SelectTrigger className="w-[110px]">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="all">
-                                                                {t("allPorts")}
-                                                            </SelectItem>
-                                                            <SelectItem value="blocked">
-                                                                {t("blocked")}
-                                                            </SelectItem>
-                                                            <SelectItem value="custom">
-                                                                {t("custom")}
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    {tcpPortMode ===
-                                                    "custom" ? (
-                                                        <FormControl>
-                                                            <Input
-                                                                placeholder="80,443,8000-9000"
-                                                                value={
-                                                                    tcpCustomPorts
-                                                                }
-                                                                onChange={(e) =>
-                                                                    setTcpCustomPorts(
-                                                                        e.target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                            />
-                                                        </FormControl>
-                                                    ) : (
-                                                        <Input
-                                                            disabled
-                                                            placeholder={
-                                                                tcpPortMode ===
-                                                                "all"
-                                                                    ? t(
-                                                                          "allPortsAllowed"
-                                                                      )
-                                                                    : t(
-                                                                          "allPortsBlocked"
-                                                                      )
-                                                            }
-                                                        />
-                                                    )}
-                                                </div>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                            </div>
-                            <div
-                                className={cn(
-                                    "grid gap-4 items-start",
-                                    mode === "cidr"
-                                        ? "grid-cols-4"
-                                        : "grid-cols-12"
-                                )}
-                            >
-                                <div
-                                    className={
-                                        mode === "cidr"
-                                            ? "col-span-1"
-                                            : "col-span-3"
-                                    }
-                                >
-                                    <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                        {t("editInternalResourceDialogUdp")}
-                                    </FormLabel>
-                                </div>
-                                <div
-                                    className={
-                                        mode === "cidr"
-                                            ? "col-span-3"
-                                            : "col-span-9"
-                                    }
-                                >
-                                    <FormField
-                                        control={form.control}
-                                        name="udpPortRangeString"
-                                        render={() => (
-                                            <FormItem>
-                                                <div className="flex items-center gap-2">
-                                                    <Select
-                                                        value={udpPortMode}
-                                                        onValueChange={(
-                                                            v: PortMode
-                                                        ) => setUdpPortMode(v)}
-                                                    >
-                                                        <FormControl>
-                                                            <SelectTrigger className="w-[110px]">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="all">
-                                                                {t("allPorts")}
-                                                            </SelectItem>
-                                                            <SelectItem value="blocked">
-                                                                {t("blocked")}
-                                                            </SelectItem>
-                                                            <SelectItem value="custom">
-                                                                {t("custom")}
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    {udpPortMode ===
-                                                    "custom" ? (
-                                                        <FormControl>
-                                                            <Input
-                                                                placeholder="53,123,500-600"
-                                                                value={
-                                                                    udpCustomPorts
-                                                                }
-                                                                onChange={(e) =>
-                                                                    setUdpCustomPorts(
-                                                                        e.target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                            />
-                                                        </FormControl>
-                                                    ) : (
-                                                        <Input
-                                                            disabled
-                                                            placeholder={
-                                                                udpPortMode ===
-                                                                "all"
-                                                                    ? t(
-                                                                          "allPortsAllowed"
-                                                                      )
-                                                                    : t(
-                                                                          "allPortsBlocked"
-                                                                      )
-                                                            }
-                                                        />
-                                                    )}
-                                                </div>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                            </div>
-                            <div
-                                className={cn(
-                                    "grid gap-4 items-start",
-                                    mode === "cidr"
-                                        ? "grid-cols-4"
-                                        : "grid-cols-12"
-                                )}
-                            >
-                                <div
-                                    className={
-                                        mode === "cidr"
-                                            ? "col-span-1"
-                                            : "col-span-3"
-                                    }
-                                >
-                                    <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                        {t("editInternalResourceDialogIcmp")}
-                                    </FormLabel>
-                                </div>
-                                <div
-                                    className={
-                                        mode === "cidr"
-                                            ? "col-span-3"
-                                            : "col-span-9"
-                                    }
-                                >
-                                    <FormField
-                                        control={form.control}
-                                        name="disableIcmp"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <div className="flex items-center gap-2">
+                                {mode === "http" && (
+                                    <div className="min-w-0">
+                                        <FormField
+                                            control={form.control}
+                                            name="httpHttpsPort"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>
+                                                        {t(
+                                                            httpHttpsPortLabelKey
+                                                        )}
+                                                    </FormLabel>
                                                     <FormControl>
-                                                        <Switch
-                                                            checked={
-                                                                !field.value
+                                                        <Input
+                                                            className="w-full"
+                                                            type="number"
+                                                            min={1}
+                                                            max={65535}
+                                                            value={
+                                                                field.value ??
+                                                                ""
                                                             }
-                                                            onCheckedChange={(
-                                                                checked
-                                                            ) =>
+                                                            disabled={
+                                                                httpSectionDisabled
+                                                            }
+                                                            onChange={(e) => {
+                                                                const raw =
+                                                                    e.target
+                                                                        .value;
+                                                                if (
+                                                                    raw === ""
+                                                                ) {
+                                                                    field.onChange(
+                                                                        null
+                                                                    );
+                                                                    return;
+                                                                }
+                                                                const n =
+                                                                    Number(raw);
                                                                 field.onChange(
-                                                                    !checked
-                                                                )
-                                                            }
+                                                                    Number.isFinite(
+                                                                        n
+                                                                    )
+                                                                        ? n
+                                                                        : null
+                                                                );
+                                                            }}
                                                         />
                                                     </FormControl>
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {field.value
-                                                            ? t("blocked")
-                                                            : t("allowed")}
-                                                    </span>
-                                                </div>
-                                                <FormMessage />
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {isHttpMode && (
+                            <PaidFeaturesAlert
+                                tiers={tierMatrix.httpPrivateResources}
+                            />
+                        )}
+
+                        {isHttpMode ? (
+                            <div className="space-y-4">
+                                <div className="my-8">
+                                    <label className="font-medium block">
+                                        {t(httpConfigurationTitleKey)}
+                                    </label>
+                                    <div className="text-sm text-muted-foreground">
+                                        {t(httpConfigurationDescriptionKey)}
+                                    </div>
+                                </div>
+                                <div
+                                    className={
+                                        httpSectionDisabled
+                                            ? "pointer-events-none opacity-50"
+                                            : undefined
+                                    }
+                                >
+                                    <DomainPicker
+                                        key={
+                                            variant === "edit" && siteResourceId
+                                                ? `http-domain-${siteResourceId}`
+                                                : "http-domain-create"
+                                        }
+                                        orgId={orgId}
+                                        cols={2}
+                                        hideFreeDomain
+                                        defaultSubdomain={
+                                            httpConfigSubdomain ?? undefined
+                                        }
+                                        defaultDomainId={
+                                            httpConfigDomainId ?? undefined
+                                        }
+                                        defaultFullDomain={
+                                            httpConfigFullDomain ?? undefined
+                                        }
+                                        onDomainChange={(res) => {
+                                            if (res === null) {
+                                                form.setValue(
+                                                    "httpConfigSubdomain",
+                                                    null
+                                                );
+                                                form.setValue(
+                                                    "httpConfigDomainId",
+                                                    null
+                                                );
+                                                form.setValue(
+                                                    "httpConfigFullDomain",
+                                                    null
+                                                );
+                                                return;
+                                            }
+                                            form.setValue(
+                                                "httpConfigSubdomain",
+                                                res.subdomain ?? null
+                                            );
+                                            form.setValue(
+                                                "httpConfigDomainId",
+                                                res.domainId
+                                            );
+                                            form.setValue(
+                                                "httpConfigFullDomain",
+                                                res.fullDomain
+                                            );
+                                        }}
+                                    />
+                                </div>
+                                <div className="flex items-start justify-between gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="ssl"
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1">
+                                                <FormControl>
+                                                    <SwitchInput
+                                                        id="internal-resource-ssl"
+                                                        label={t(
+                                                            enableSslLabelKey
+                                                        )}
+                                                        description={t(
+                                                            enableSslDescriptionKey
+                                                        )}
+                                                        checked={!!field.value}
+                                                        onCheckedChange={
+                                                            field.onChange
+                                                        }
+                                                        disabled={
+                                                            httpSectionDisabled
+                                                        }
+                                                    />
+                                                </FormControl>
                                             </FormItem>
                                         )}
                                     />
+                                    {variant === "edit" &&
+                                        resource?.domainId &&
+                                        httpConfigFullDomain &&
+                                        httpConfigDomainId ===
+                                            resource.domainId &&
+                                        httpConfigFullDomain ===
+                                            resource.fullDomain &&
+                                        build != "oss" &&
+                                        form.watch("ssl") && (
+                                            <div className="flex items-center gap-2 pt-1">
+                                                <span className="text-sm font-medium">
+                                                    {t("certificateStatus")}:
+                                                </span>
+                                                <CertificateStatus
+                                                    orgId={resource.orgId}
+                                                    domainId={resource.domainId}
+                                                    fullDomain={
+                                                        httpConfigFullDomain
+                                                    }
+                                                    autoFetch={true}
+                                                    showLabel={false}
+                                                    polling={true}
+                                                />
+                                            </div>
+                                        )}
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="my-8">
+                                    <label className="font-medium block">
+                                        {t("portRestrictions")}
+                                    </label>
+                                    <div className="text-sm text-muted-foreground">
+                                        {t(
+                                            "editInternalResourceDialogPortRestrictionsDescription"
+                                        )}
+                                    </div>
+                                </div>
+                                <div
+                                    className={cn(
+                                        "grid gap-4 items-start",
+                                        mode === "cidr"
+                                            ? "grid-cols-4"
+                                            : "grid-cols-12"
+                                    )}
+                                >
+                                    <div
+                                        className={
+                                            mode === "cidr"
+                                                ? "col-span-1"
+                                                : "col-span-3"
+                                        }
+                                    >
+                                        <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                            {t("editInternalResourceDialogTcp")}
+                                        </FormLabel>
+                                    </div>
+                                    <div
+                                        className={
+                                            mode === "cidr"
+                                                ? "col-span-3"
+                                                : "col-span-9"
+                                        }
+                                    >
+                                        <FormField
+                                            control={form.control}
+                                            name="tcpPortRangeString"
+                                            render={() => (
+                                                <FormItem>
+                                                    <div className="flex items-center gap-2">
+                                                        <Select
+                                                            value={tcpPortMode}
+                                                            onValueChange={(
+                                                                v: PortMode
+                                                            ) =>
+                                                                setTcpPortMode(
+                                                                    v
+                                                                )
+                                                            }
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger className="w-[110px]">
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">
+                                                                    {t(
+                                                                        "allPorts"
+                                                                    )}
+                                                                </SelectItem>
+                                                                <SelectItem value="blocked">
+                                                                    {t(
+                                                                        "blocked"
+                                                                    )}
+                                                                </SelectItem>
+                                                                <SelectItem value="custom">
+                                                                    {t(
+                                                                        "custom"
+                                                                    )}
+                                                                </SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        {tcpPortMode ===
+                                                        "custom" ? (
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="80,443,8000-9000"
+                                                                    value={
+                                                                        tcpCustomPorts
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        setTcpCustomPorts(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </FormControl>
+                                                        ) : (
+                                                            <Input
+                                                                disabled
+                                                                placeholder={
+                                                                    tcpPortMode ===
+                                                                    "all"
+                                                                        ? t(
+                                                                              "allPortsAllowed"
+                                                                          )
+                                                                        : t(
+                                                                              "allPortsBlocked"
+                                                                          )
+                                                                }
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                                <div
+                                    className={cn(
+                                        "grid gap-4 items-start",
+                                        mode === "cidr"
+                                            ? "grid-cols-4"
+                                            : "grid-cols-12"
+                                    )}
+                                >
+                                    <div
+                                        className={
+                                            mode === "cidr"
+                                                ? "col-span-1"
+                                                : "col-span-3"
+                                        }
+                                    >
+                                        <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                            {t("editInternalResourceDialogUdp")}
+                                        </FormLabel>
+                                    </div>
+                                    <div
+                                        className={
+                                            mode === "cidr"
+                                                ? "col-span-3"
+                                                : "col-span-9"
+                                        }
+                                    >
+                                        <FormField
+                                            control={form.control}
+                                            name="udpPortRangeString"
+                                            render={() => (
+                                                <FormItem>
+                                                    <div className="flex items-center gap-2">
+                                                        <Select
+                                                            value={udpPortMode}
+                                                            onValueChange={(
+                                                                v: PortMode
+                                                            ) =>
+                                                                setUdpPortMode(
+                                                                    v
+                                                                )
+                                                            }
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger className="w-[110px]">
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">
+                                                                    {t(
+                                                                        "allPorts"
+                                                                    )}
+                                                                </SelectItem>
+                                                                <SelectItem value="blocked">
+                                                                    {t(
+                                                                        "blocked"
+                                                                    )}
+                                                                </SelectItem>
+                                                                <SelectItem value="custom">
+                                                                    {t(
+                                                                        "custom"
+                                                                    )}
+                                                                </SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        {udpPortMode ===
+                                                        "custom" ? (
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="53,123,500-600"
+                                                                    value={
+                                                                        udpCustomPorts
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        setUdpCustomPorts(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </FormControl>
+                                                        ) : (
+                                                            <Input
+                                                                disabled
+                                                                placeholder={
+                                                                    udpPortMode ===
+                                                                    "all"
+                                                                        ? t(
+                                                                              "allPortsAllowed"
+                                                                          )
+                                                                        : t(
+                                                                              "allPortsBlocked"
+                                                                          )
+                                                                }
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                                <div
+                                    className={cn(
+                                        "grid gap-4 items-start",
+                                        mode === "cidr"
+                                            ? "grid-cols-4"
+                                            : "grid-cols-12"
+                                    )}
+                                >
+                                    <div
+                                        className={
+                                            mode === "cidr"
+                                                ? "col-span-1"
+                                                : "col-span-3"
+                                        }
+                                    >
+                                        <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                            {t(
+                                                "editInternalResourceDialogIcmp"
+                                            )}
+                                        </FormLabel>
+                                    </div>
+                                    <div
+                                        className={
+                                            mode === "cidr"
+                                                ? "col-span-3"
+                                                : "col-span-9"
+                                        }
+                                    >
+                                        <FormField
+                                            control={form.control}
+                                            name="disableIcmp"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <div className="flex items-center gap-2">
+                                                        <FormControl>
+                                                            <Switch
+                                                                checked={
+                                                                    !field.value
+                                                                }
+                                                                onCheckedChange={(
+                                                                    checked
+                                                                ) =>
+                                                                    field.onChange(
+                                                                        !checked
+                                                                    )
+                                                                }
+                                                            />
+                                                        </FormControl>
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {field.value
+                                                                ? t("blocked")
+                                                                : t("allowed")}
+                                                        </span>
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="space-y-4 mt-4">
+                    <div className="space-y-4 mt-4 p-1">
                         <div className="mb-8">
                             <label className="font-medium block">
                                 {t("editInternalResourceDialogAccessControl")}
@@ -1040,40 +1495,22 @@ export function InternalResourceForm({
                                         <FormItem className="flex flex-col items-start">
                                             <FormLabel>{t("roles")}</FormLabel>
                                             <FormControl>
-                                                <TagInput
-                                                    {...field}
-                                                    activeTagIndex={
-                                                        activeRolesTagIndex
+                                                <RolesSelector
+                                                    selectedRoles={
+                                                        field.value ?? []
                                                     }
-                                                    setActiveTagIndex={
-                                                        setActiveRolesTagIndex
-                                                    }
-                                                    placeholder={t(
-                                                        "accessRoleSelect2"
-                                                    )}
-                                                    size="sm"
-                                                    tags={
-                                                        form.getValues()
-                                                            .roles ?? []
-                                                    }
-                                                    setTags={(newRoles) =>
+                                                    orgId={orgId}
+                                                    onSelectRoles={(
+                                                        newUsers
+                                                    ) => {
                                                         form.setValue(
                                                             "roles",
-                                                            newRoles as [
+                                                            newUsers as [
                                                                 Tag,
                                                                 ...Tag[]
                                                             ]
-                                                        )
-                                                    }
-                                                    enableAutocomplete={true}
-                                                    autocompleteOptions={
-                                                        allRoles
-                                                    }
-                                                    allowDuplicates={false}
-                                                    restrictTagsToAutocompleteOptions={
-                                                        true
-                                                    }
-                                                    sortTags={true}
+                                                        );
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -1086,43 +1523,21 @@ export function InternalResourceForm({
                                     render={({ field }) => (
                                         <FormItem className="flex flex-col items-start">
                                             <FormLabel>{t("users")}</FormLabel>
-                                            <FormControl>
-                                                <TagInput
-                                                    {...field}
-                                                    activeTagIndex={
-                                                        activeUsersTagIndex
-                                                    }
-                                                    setActiveTagIndex={
-                                                        setActiveUsersTagIndex
-                                                    }
-                                                    placeholder={t(
-                                                        "accessUserSelect"
-                                                    )}
-                                                    tags={
-                                                        form.getValues()
-                                                            .users ?? []
-                                                    }
-                                                    size="sm"
-                                                    setTags={(newUsers) =>
-                                                        form.setValue(
-                                                            "users",
-                                                            newUsers as [
-                                                                Tag,
-                                                                ...Tag[]
-                                                            ]
-                                                        )
-                                                    }
-                                                    enableAutocomplete={true}
-                                                    autocompleteOptions={
-                                                        allUsers
-                                                    }
-                                                    allowDuplicates={false}
-                                                    restrictTagsToAutocompleteOptions={
-                                                        true
-                                                    }
-                                                    sortTags={true}
-                                                />
-                                            </FormControl>
+                                            <UsersSelector
+                                                selectedUsers={
+                                                    field.value ?? []
+                                                }
+                                                orgId={orgId}
+                                                onSelectUsers={(newUsers) => {
+                                                    form.setValue(
+                                                        "users",
+                                                        newUsers as [
+                                                            Tag,
+                                                            ...Tag[]
+                                                        ]
+                                                    );
+                                                }}
+                                            />
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -1136,48 +1551,20 @@ export function InternalResourceForm({
                                                 <FormLabel>
                                                     {t("machineClients")}
                                                 </FormLabel>
-                                                <FormControl>
-                                                    <TagInput
-                                                        {...field}
-                                                        activeTagIndex={
-                                                            activeClientsTagIndex
-                                                        }
-                                                        setActiveTagIndex={
-                                                            setActiveClientsTagIndex
-                                                        }
-                                                        placeholder={
-                                                            t(
-                                                                "accessClientSelect"
-                                                            ) ||
-                                                            "Select machine clients"
-                                                        }
-                                                        size="sm"
-                                                        tags={
-                                                            form.getValues()
-                                                                .clients ?? []
-                                                        }
-                                                        setTags={(newClients) =>
-                                                            form.setValue(
-                                                                "clients",
-                                                                newClients as [
-                                                                    Tag,
-                                                                    ...Tag[]
-                                                                ]
-                                                            )
-                                                        }
-                                                        enableAutocomplete={
-                                                            true
-                                                        }
-                                                        autocompleteOptions={
-                                                            allClients
-                                                        }
-                                                        allowDuplicates={false}
-                                                        restrictTagsToAutocompleteOptions={
-                                                            true
-                                                        }
-                                                        sortTags={true}
-                                                    />
-                                                </FormControl>
+                                                <MachinesSelector
+                                                    selectedMachines={
+                                                        field.value ?? []
+                                                    }
+                                                    orgId={orgId}
+                                                    onSelectMachines={(
+                                                        machines
+                                                    ) => {
+                                                        form.setValue(
+                                                            "clients",
+                                                            machines
+                                                        );
+                                                    }}
+                                                />
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -1187,9 +1574,9 @@ export function InternalResourceForm({
                         )}
                     </div>
 
-                    {/* SSH Access tab */}
-                    {!disableEnterpriseFeatures && mode !== "cidr" && (
-                        <div className="space-y-4 mt-4">
+                    {/* SSH Access tab (host mode only) */}
+                    {!disableEnterpriseFeatures && mode === "host" && (
+                        <div className="space-y-4 mt-4 p-1">
                             <PaidFeaturesAlert tiers={tierMatrix.sshPam} />
                             <div className="mb-8">
                                 <label className="font-medium block">

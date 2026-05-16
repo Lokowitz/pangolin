@@ -1,7 +1,7 @@
 /*
  * This file is part of a proprietary work.
  *
- * Copyright (c) 2025 Fossorial, Inc.
+ * Copyright (c) 2025-2026 Fossorial, Inc.
  * All rights reserved.
  *
  * This file is licensed under the Fossorial Commercial License.
@@ -24,14 +24,8 @@ import {
     User,
     certificates,
     exitNodeOrgs,
-    RemoteExitNode,
-    olms,
-    newts,
-    clients,
-    sites,
     domains,
     orgDomains,
-    targets,
     loginPage,
     loginPageOrg,
     LoginPage,
@@ -52,9 +46,11 @@ import {
     userOrgs,
     roleResources,
     userResources,
-    resourceRules
+    resourceRules,
+    userOrgRoles,
+    roles
 } from "@server/db";
-import { eq, and, inArray, isNotNull, ne } from "drizzle-orm";
+import { eq, and, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
 import { response } from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
 import { NextFunction, Request, Response } from "express";
@@ -68,12 +64,9 @@ import {
     updateAndGenerateEndpointDestinations,
     updateSiteBandwidth
 } from "@server/routers/gerbil";
-import * as gerbil from "@server/routers/gerbil";
 import logger from "@server/logger";
-import { decryptData } from "@server/lib/encryption";
+import { decrypt } from "@server/lib/crypto";
 import config from "@server/lib/config";
-import privateConfig from "#private/lib/config";
-import * as fs from "fs";
 import { exchangeSession } from "@server/routers/badger";
 import { validateResourceSessionToken } from "@server/auth/sessions/resource";
 import { checkExitNodeOrg, resolveExitNodes } from "#private/lib/exitNodes";
@@ -104,6 +97,13 @@ const getUserOrgSessionVerifySchema = z.strictObject({
     sessionId: z.string().min(1, "Session ID is required")
 });
 
+const getRoleNameParamsSchema = z.strictObject({
+    roleId: z
+        .string()
+        .transform(Number)
+        .pipe(z.int().positive("Role ID must be a positive integer"))
+});
+
 const getRoleResourceAccessParamsSchema = z.strictObject({
     roleId: z
         .string()
@@ -113,6 +113,23 @@ const getRoleResourceAccessParamsSchema = z.strictObject({
         .string()
         .transform(Number)
         .pipe(z.int().positive("Resource ID must be a positive integer"))
+});
+
+const getResourceAccessParamsSchema = z.strictObject({
+    resourceId: z
+        .string()
+        .transform(Number)
+        .pipe(z.int().positive("Resource ID must be a positive integer"))
+});
+
+const getResourceAccessQuerySchema = z.strictObject({
+    roleIds: z
+        .union([z.array(z.string()), z.string()])
+        .transform((val) =>
+            (Array.isArray(val) ? val : [val])
+                .map(Number)
+                .filter((n) => !isNaN(n))
+        )
 });
 
 const getUserResourceAccessParamsSchema = z.strictObject({
@@ -272,25 +289,11 @@ hybridRouter.get(
     }
 );
 
-let encryptionKeyHex = "";
-let encryptionKey: Buffer;
-function loadEncryptData() {
-    if (encryptionKey) {
-        return; // already loaded
-    }
-
-    encryptionKeyHex =
-        privateConfig.getRawPrivateConfig().server.encryption_key;
-    encryptionKey = Buffer.from(encryptionKeyHex, "hex");
-}
-
 // Get valid certificates for given domains (supports wildcard certs)
 hybridRouter.get(
     "/certificates/domains",
     async (req: Request, res: Response, next: NextFunction) => {
         try {
-            loadEncryptData(); // Ensure encryption key is loaded
-
             const parsed = getCertificatesByDomainsQuerySchema.safeParse(
                 req.query
             );
@@ -421,13 +424,13 @@ hybridRouter.get(
 
             const result = filtered.map((cert) => {
                 // Decrypt and save certificate file
-                const decryptedCert = decryptData(
+                const decryptedCert = decrypt(
                     cert.certFile!, // is not null from query
-                    encryptionKey
+                    config.getRawConfig().server.secret!
                 );
 
                 // Decrypt and save key file
-                const decryptedKey = decryptData(cert.keyFile!, encryptionKey);
+                const decryptedKey = decrypt(cert.keyFile!, config.getRawConfig().server.secret!);
 
                 // Return only the certificate data without org information
                 return {
@@ -489,7 +492,15 @@ hybridRouter.get(
                 );
             }
 
-            const [result] = await db
+            // Build wildcard domain candidates for the requested domain.
+            // e.g. "me.example.test.com" -> ["*.example.test.com", "*.test.com"]
+            const domainParts = domain.split(".");
+            const wildcardCandidates: string[] = [];
+            for (let i = 1; i < domainParts.length; i++) {
+                wildcardCandidates.push(`*.${domainParts.slice(i).join(".")}`);
+            }
+
+            const potentialResults = await db
                 .select()
                 .from(resources)
                 .leftJoin(
@@ -512,10 +523,28 @@ hybridRouter.get(
                     )
                 )
                 .innerJoin(orgs, eq(orgs.orgId, resources.orgId))
-                .where(eq(resources.fullDomain, domain))
-                .limit(1);
+                .where(
+                    or(
+                        // Exact match
+                        eq(resources.fullDomain, domain),
+                        // Wildcard match
+                        wildcardCandidates.length > 0
+                            ? and(
+                                  eq(resources.wildcard, true),
+                                  inArray(resources.fullDomain, wildcardCandidates)
+                              )
+                            : sql`false`
+                    )
+                );
+
+            // Prefer exact match over wildcard match
+            const exactMatch = potentialResults.find(
+                (r) => r.resources?.fullDomain === domain
+            );
+            const result = exactMatch ?? potentialResults[0];
 
             if (
+                result &&
                 await checkExitNodeOrg(
                     remoteExitNode.exitNodeId,
                     result.resources.orgId
@@ -760,7 +789,7 @@ hybridRouter.get(
 
 // Get user organization role
 hybridRouter.get(
-    "/user/:userId/org/:orgId/role",
+    "/user/:userId/org/:orgId/roles",
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const parsedParams = getUserOrgRoleParamsSchema.safeParse(
@@ -796,23 +825,132 @@ hybridRouter.get(
                 );
             }
 
-            const userOrgRole = await db
-                .select()
-                .from(userOrgs)
+            const userOrgRoleRows = await db
+                .select({ roleId: userOrgRoles.roleId, roleName: roles.name })
+                .from(userOrgRoles)
+                .innerJoin(roles, eq(roles.roleId, userOrgRoles.roleId))
                 .where(
-                    and(eq(userOrgs.userId, userId), eq(userOrgs.orgId, orgId))
-                )
-                .limit(1);
+                    and(
+                        eq(userOrgRoles.userId, userId),
+                        eq(userOrgRoles.orgId, orgId)
+                    )
+                );
 
-            const result = userOrgRole.length > 0 ? userOrgRole[0] : null;
+            logger.debug(
+                `User ${userId} has roles in org ${orgId}:`,
+                userOrgRoleRows
+            );
 
-            return response<typeof userOrgs.$inferSelect | null>(res, {
-                data: result,
+            return response<{ roleId: number; roleName: string }[]>(res, {
+                data: userOrgRoleRows,
                 success: true,
                 error: false,
-                message: result
-                    ? "User org role retrieved successfully"
-                    : "User org role not found",
+                message:
+                    userOrgRoleRows.length > 0
+                        ? "User org roles retrieved successfully"
+                        : "User has no roles in this organization",
+                status: HttpCode.OK
+            });
+        } catch (error) {
+            logger.error(error);
+            return next(
+                createHttpError(
+                    HttpCode.INTERNAL_SERVER_ERROR,
+                    "Failed to get user org role"
+                )
+            );
+        }
+    }
+);
+
+// DEPRICATED Get user organization role
+// used for backward compatibility with old remote nodes
+hybridRouter.get(
+    "/user/:userId/org/:orgId/role", // <- note the missing s
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const parsedParams = getUserOrgRoleParamsSchema.safeParse(
+                req.params
+            );
+            if (!parsedParams.success) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        fromError(parsedParams.error).toString()
+                    )
+                );
+            }
+
+            const { userId, orgId } = parsedParams.data;
+            const remoteExitNode = req.remoteExitNode;
+
+            if (!remoteExitNode || !remoteExitNode.exitNodeId) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        "Remote exit node not found"
+                    )
+                );
+            }
+
+            if (await checkExitNodeOrg(remoteExitNode.exitNodeId, orgId)) {
+                return next(
+                    createHttpError(
+                        HttpCode.UNAUTHORIZED,
+                        "User is not authorized to access this organization"
+                    )
+                );
+            }
+
+            // get the roles on the user
+
+            const userOrgRoleRows = await db
+                .select({ roleId: userOrgRoles.roleId })
+                .from(userOrgRoles)
+                .where(
+                    and(
+                        eq(userOrgRoles.userId, userId),
+                        eq(userOrgRoles.orgId, orgId)
+                    )
+                );
+
+            const roleIds = userOrgRoleRows.map((r) => r.roleId);
+
+            let roleId: number | null = null;
+
+            if (userOrgRoleRows.length === 0) {
+                // User has no roles in this organization
+                roleId = null;
+            } else if (userOrgRoleRows.length === 1) {
+                // User has exactly one role, return it
+                roleId = userOrgRoleRows[0].roleId;
+            } else {
+                // User has multiple roles
+                // Check if any of these roles are also assigned to a resource
+                // If we find a match, prefer that role; otherwise return the first role
+                // Get all resources that have any of these roles assigned
+                const roleResourceMatches = await db
+                    .select({ roleId: roleResources.roleId })
+                    .from(roleResources)
+                    .where(inArray(roleResources.roleId, roleIds))
+                    .limit(1);
+                if (roleResourceMatches.length > 0) {
+                    // Return the first role that's also on a resource
+                    roleId = roleResourceMatches[0].roleId;
+                } else {
+                    // No resource match found, return the first role
+                    roleId = userOrgRoleRows[0].roleId;
+                }
+            }
+
+            return response<{ roleId: number | null }>(res, {
+                data: { roleId },
+                success: true,
+                error: false,
+                message:
+                    roleIds.length > 0
+                        ? "User org roles retrieved successfully"
+                        : "User has no roles in this organization",
                 status: HttpCode.OK
             });
         } catch (error) {
@@ -884,6 +1022,60 @@ hybridRouter.get(
                 createHttpError(
                     HttpCode.INTERNAL_SERVER_ERROR,
                     "Failed to get user org role"
+                )
+            );
+        }
+    }
+);
+
+// Get role name by ID
+hybridRouter.get(
+    "/role/:roleId/name",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const parsedParams = getRoleNameParamsSchema.safeParse(req.params);
+            if (!parsedParams.success) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        fromError(parsedParams.error).toString()
+                    )
+                );
+            }
+
+            const { roleId } = parsedParams.data;
+            const remoteExitNode = req.remoteExitNode;
+
+            if (!remoteExitNode?.exitNodeId) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        "Remote exit node not found"
+                    )
+                );
+            }
+
+            const [role] = await db
+                .select({ name: roles.name })
+                .from(roles)
+                .where(eq(roles.roleId, roleId))
+                .limit(1);
+
+            return response<string | null>(res, {
+                data: role?.name ?? null,
+                success: true,
+                error: false,
+                message: role
+                    ? "Role name retrieved successfully"
+                    : "Role not found",
+                status: HttpCode.OK
+            });
+        } catch (error) {
+            logger.error(error);
+            return next(
+                createHttpError(
+                    HttpCode.INTERNAL_SERVER_ERROR,
+                    "Failed to get role name"
                 )
             );
         }
@@ -963,6 +1155,101 @@ hybridRouter.get(
                     : "Role resource access not found",
                 status: HttpCode.OK
             });
+        } catch (error) {
+            logger.error(error);
+            return next(
+                createHttpError(
+                    HttpCode.INTERNAL_SERVER_ERROR,
+                    "Failed to get role resource access"
+                )
+            );
+        }
+    }
+);
+
+// Check if role has access to resource
+hybridRouter.get(
+    "/resource/:resourceId/access",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const parsedParams = getResourceAccessParamsSchema.safeParse(
+                req.params
+            );
+            if (!parsedParams.success) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        fromError(parsedParams.error).toString()
+                    )
+                );
+            }
+
+            const { resourceId } = parsedParams.data;
+            const parsedQuery = getResourceAccessQuerySchema.safeParse(
+                req.query
+            );
+            const roleIds = parsedQuery.success ? parsedQuery.data.roleIds : [];
+
+            const remoteExitNode = req.remoteExitNode;
+
+            if (!remoteExitNode?.exitNodeId) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        "Remote exit node not found"
+                    )
+                );
+            }
+
+            const [resource] = await db
+                .select()
+                .from(resources)
+                .where(eq(resources.resourceId, resourceId))
+                .limit(1);
+
+            if (
+                await checkExitNodeOrg(
+                    remoteExitNode.exitNodeId,
+                    resource.orgId
+                )
+            ) {
+                // If the exit node is not allowed for the org, return an error
+                return next(
+                    createHttpError(
+                        HttpCode.FORBIDDEN,
+                        "Exit node not allowed for this organization"
+                    )
+                );
+            }
+
+            const roleResourceAccess = await db
+                .select({
+                    resourceId: roleResources.resourceId,
+                    roleId: roleResources.roleId
+                })
+                .from(roleResources)
+                .where(
+                    and(
+                        eq(roleResources.resourceId, resourceId),
+                        inArray(roleResources.roleId, roleIds)
+                    )
+                );
+
+            const result =
+                roleResourceAccess.length > 0 ? roleResourceAccess : null;
+
+            return response<{ resourceId: number; roleId: number }[] | null>(
+                res,
+                {
+                    data: result,
+                    success: true,
+                    error: false,
+                    message: result
+                        ? "Role resource access retrieved successfully"
+                        : "Role resource access not found",
+                    status: HttpCode.OK
+                }
+            );
         } catch (error) {
             logger.error(error);
             return next(
@@ -1873,7 +2160,8 @@ hybridRouter.post(
                     // userAgent: data.userAgent, // TODO: add this
                     // headers: data.body.headers,
                     // query: data.body.query,
-                    originalRequestURL: sanitizeString(logEntry.originalRequestURL) ?? "",
+                    originalRequestURL:
+                        sanitizeString(logEntry.originalRequestURL) ?? "",
                     scheme: sanitizeString(logEntry.scheme) ?? "",
                     host: sanitizeString(logEntry.host) ?? "",
                     path: sanitizeString(logEntry.path) ?? "",

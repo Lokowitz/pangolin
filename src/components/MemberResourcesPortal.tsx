@@ -40,6 +40,7 @@ import {
     TooltipProvider,
     TooltipTrigger
 } from "@/components/ui/tooltip";
+import CopyToClipboard from "@app/components/CopyToClipboard";
 
 // Update Resource type to include site information
 type Resource = {
@@ -64,10 +65,12 @@ type SiteResource = {
     destination: string;
     mode: string;
     protocol: string | null;
+    ssl: boolean;
+    fullDomain: string | null;
     enabled: boolean;
     alias: string | null;
     aliasAddress: string | null;
-    type: 'site';
+    type: "site";
 };
 
 type MemberResourcesPortalProps = {
@@ -123,6 +126,7 @@ const ResourceFavicon = ({
 
 // Resource Info component
 const ResourceInfo = ({ resource }: { resource: Resource }) => {
+    const t = useTranslations();
     const hasAuthMethods =
         resource.sso ||
         resource.password ||
@@ -130,7 +134,9 @@ const ResourceInfo = ({ resource }: { resource: Resource }) => {
         resource.whitelist;
 
     const hasAnyInfo =
-        Boolean(resource.siteName) || Boolean(hasAuthMethods) || !resource.enabled;
+        Boolean(resource.siteName) ||
+        Boolean(hasAuthMethods) ||
+        !resource.enabled;
 
     if (!hasAnyInfo) return null;
 
@@ -139,7 +145,9 @@ const ResourceInfo = ({ resource }: { resource: Resource }) => {
             {/* Site Information */}
             {resource.siteName && (
                 <div>
-                    <div className="text-xs font-medium mb-1.5">Site</div>
+                    <div className="text-xs font-medium mb-1.5">
+                        {t("site")}
+                    </div>
                     <div className="flex items-center gap-2">
                         <Combine className="h-4 w-4 text-foreground shrink-0" />
                         <span className="text-sm">{resource.siteName}</span>
@@ -155,7 +163,7 @@ const ResourceInfo = ({ resource }: { resource: Resource }) => {
                     }
                 >
                     <div className="text-xs font-medium mb-1.5">
-                        Authentication Methods
+                        {t("memberPortalAuthMethods")}
                     </div>
                     <div className="flex flex-col gap-1.5">
                         {resource.sso && (
@@ -164,7 +172,7 @@ const ResourceInfo = ({ resource }: { resource: Resource }) => {
                                     <Key className="h-3 w-3 text-blue-700 dark:text-blue-300" />
                                 </div>
                                 <span className="text-sm">
-                                    Single Sign-On (SSO)
+                                    {t("memberPortalSso")}
                                 </span>
                             </div>
                         )}
@@ -174,7 +182,7 @@ const ResourceInfo = ({ resource }: { resource: Resource }) => {
                                     <KeyRound className="h-3 w-3 text-purple-700 dark:text-purple-300" />
                                 </div>
                                 <span className="text-sm">
-                                    Password Protected
+                                    {t("memberPortalPasswordProtected")}
                                 </span>
                             </div>
                         )}
@@ -183,7 +191,9 @@ const ResourceInfo = ({ resource }: { resource: Resource }) => {
                                 <div className="h-5 w-5 rounded-full flex items-center justify-center bg-emerald-50/50 dark:bg-emerald-950/50">
                                     <Fingerprint className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
                                 </div>
-                                <span className="text-sm">PIN Code</span>
+                                <span className="text-sm">
+                                    {t("memberPortalPinCode")}
+                                </span>
                             </div>
                         )}
                         {resource.whitelist && (
@@ -191,7 +201,9 @@ const ResourceInfo = ({ resource }: { resource: Resource }) => {
                                 <div className="h-5 w-5 rounded-full flex items-center justify-center bg-amber-50/50 dark:bg-amber-950/50">
                                     <AtSign className="h-3 w-3 text-amber-700 dark:text-amber-300" />
                                 </div>
-                                <span className="text-sm">Email Whitelist</span>
+                                <span className="text-sm">
+                                    {t("memberPortalEmailWhitelist")}
+                                </span>
                             </div>
                         )}
                     </div>
@@ -206,7 +218,7 @@ const ResourceInfo = ({ resource }: { resource: Resource }) => {
                     <div className="flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
                         <span className="text-sm text-destructive">
-                            Resource Disabled
+                            {t("memberPortalResourceDisabled")}
                         </span>
                     </div>
                 </div>
@@ -231,6 +243,7 @@ const PaginationControls = ({
     totalItems: number;
     itemsPerPage: number;
 }) => {
+    const t = useTranslations();
     const startItem = (currentPage - 1) * itemsPerPage + 1;
     const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
@@ -239,7 +252,11 @@ const PaginationControls = ({
     return (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
             <div className="text-sm text-muted-foreground">
-                Showing {startItem}-{endItem} of {totalItems} resources
+                {t("memberPortalShowingResources", {
+                    start: startItem,
+                    end: endItem,
+                    total: totalItems
+                })}
             </div>
 
             <div className="flex items-center gap-2">
@@ -251,7 +268,7 @@ const PaginationControls = ({
                     className="gap-1"
                 >
                     <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    {t("memberPortalPrevious")}
                 </Button>
 
                 <div className="flex items-center gap-1">
@@ -307,7 +324,7 @@ const PaginationControls = ({
                     disabled={currentPage === totalPages}
                     className="gap-1"
                 >
-                    Next
+                    {t("memberPortalNext")}
                     <ChevronRight className="h-4 w-4" />
                 </Button>
             </div>
@@ -353,7 +370,9 @@ export default function MemberResourcesPortal({
     const [resources, setResources] = useState<Resource[]>([]);
     const [siteResources, setSiteResources] = useState<SiteResource[]>([]);
     const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
-    const [filteredSiteResources, setFilteredSiteResources] = useState<SiteResource[]>([]);
+    const [filteredSiteResources, setFilteredSiteResources] = useState<
+        SiteResource[]
+    >([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -381,15 +400,15 @@ export default function MemberResourcesPortal({
                 setResources(response.data.data.resources);
                 setSiteResources(response.data.data.siteResources || []);
                 setFilteredResources(response.data.data.resources);
-                setFilteredSiteResources(response.data.data.siteResources || []);
+                setFilteredSiteResources(
+                    response.data.data.siteResources || []
+                );
             } else {
-                setError("Failed to load resources");
+                setError(t("memberPortalFailedToLoad"));
             }
         } catch (err) {
             console.error("Error fetching user resources:", err);
-            setError(
-                "Failed to load resources. Please check your connection and try again."
-            );
+            setError(t("memberPortalFailedToLoadDescription"));
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -459,9 +478,10 @@ export default function MemberResourcesPortal({
                 case "domain-asc":
                 case "domain-desc":
                     // Sort by destination for site resources
-                    const destCompare = sortBy === "domain-asc" 
-                        ? a.destination.localeCompare(b.destination)
-                        : b.destination.localeCompare(a.destination);
+                    const destCompare =
+                        sortBy === "domain-asc"
+                            ? a.destination.localeCompare(b.destination)
+                            : b.destination.localeCompare(a.destination);
                     return destCompare;
                 case "status-enabled":
                     return b.enabled ? 1 : -1;
@@ -487,12 +507,14 @@ export default function MemberResourcesPortal({
         startIndex + itemsPerPage
     );
     const remainingSlots = itemsPerPage - paginatedResources.length;
-    const paginatedSiteResources = remainingSlots > 0 
-        ? filteredSiteResources.slice(
-            Math.max(0, startIndex - filteredResources.length),
-            Math.max(0, startIndex - filteredResources.length) + remainingSlots
-          )
-        : [];
+    const paginatedSiteResources =
+        remainingSlots > 0
+            ? filteredSiteResources.slice(
+                  Math.max(0, startIndex - filteredResources.length),
+                  Math.max(0, startIndex - filteredResources.length) +
+                      remainingSlots
+              )
+            : [];
 
     const handleOpenResource = (resource: Resource) => {
         // Open the resource in a new tab
@@ -517,8 +539,8 @@ export default function MemberResourcesPortal({
         return (
             <div className="container mx-auto max-w-12xl">
                 <SettingsSectionTitle
-                    title="Resources"
-                    description="Resources you have access to in this organization"
+                    title={t("memberPortalTitle")}
+                    description={t("memberPortalDescription")}
                 />
 
                 {/* Search and Sort Controls - Skeleton */}
@@ -545,8 +567,8 @@ export default function MemberResourcesPortal({
         return (
             <div className="container mx-auto max-w-12xl">
                 <SettingsSectionTitle
-                    title="Resources"
-                    description="Resources you have access to in this organization"
+                    title={t("memberPortalTitle")}
+                    description={t("memberPortalDescription")}
                 />
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center py-20 text-center">
@@ -554,7 +576,7 @@ export default function MemberResourcesPortal({
                             <AlertCircle className="h-16 w-16 text-destructive/60" />
                         </div>
                         <h3 className="text-xl font-semibold text-foreground mb-3">
-                            Unable to Load Resources
+                            {t("memberPortalUnableToLoad")}
                         </h3>
                         <p className="text-muted-foreground max-w-lg text-base mb-6">
                             {error}
@@ -565,7 +587,7 @@ export default function MemberResourcesPortal({
                             className="gap-2"
                         >
                             <RefreshCw className="h-4 w-4" />
-                            Try Again
+                            {t("memberPortalTryAgain")}
                         </Button>
                     </CardContent>
                 </Card>
@@ -576,8 +598,8 @@ export default function MemberResourcesPortal({
     return (
         <div className="container mx-auto max-w-12xl">
             <SettingsSectionTitle
-                title="Resources"
-                description="Resources you have access to in this organization"
+                title={t("memberPortalTitle")}
+                description={t("memberPortalDescription")}
             />
 
             {/* Search and Sort Controls with Refresh */}
@@ -586,7 +608,7 @@ export default function MemberResourcesPortal({
                     {/* Search */}
                     <div className="relative w-full sm:w-80">
                         <Input
-                            placeholder="Search resources..."
+                            placeholder={t("resourcesSearch")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-8 bg-card"
@@ -598,26 +620,28 @@ export default function MemberResourcesPortal({
                     <div className="w-full sm:w-36">
                         <Select value={sortBy} onValueChange={setSortBy}>
                             <SelectTrigger className="bg-card">
-                                <SelectValue placeholder="Sort by..." />
+                                <SelectValue
+                                    placeholder={t("memberPortalSortBy")}
+                                />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="name-asc">
-                                    Name A-Z
+                                    {t("memberPortalSortNameAsc")}
                                 </SelectItem>
                                 <SelectItem value="name-desc">
-                                    Name Z-A
+                                    {t("memberPortalSortNameDesc")}
                                 </SelectItem>
                                 <SelectItem value="domain-asc">
-                                    Domain A-Z
+                                    {t("memberPortalSortDomainAsc")}
                                 </SelectItem>
                                 <SelectItem value="domain-desc">
-                                    Domain Z-A
+                                    {t("memberPortalSortDomainDesc")}
                                 </SelectItem>
                                 <SelectItem value="status-enabled">
-                                    Enabled First
+                                    {t("memberPortalSortEnabledFirst")}
                                 </SelectItem>
                                 <SelectItem value="status-disabled">
-                                    Disabled First
+                                    {t("memberPortalSortDisabledFirst")}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -635,12 +659,13 @@ export default function MemberResourcesPortal({
                     <RefreshCw
                         className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
                     />
-                    Refresh
+                    {t("memberPortalRefresh")}
                 </Button>
             </div>
 
             {/* Resources Content */}
-            {filteredResources.length === 0 && filteredSiteResources.length === 0 ? (
+            {filteredResources.length === 0 &&
+            filteredSiteResources.length === 0 ? (
                 /* Enhanced Empty State */
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center py-20 text-center">
@@ -653,13 +678,15 @@ export default function MemberResourcesPortal({
                         </div>
                         <h3 className="text-2xl font-semibold text-foreground mb-3">
                             {searchQuery
-                                ? "No Resources Found"
-                                : "No Resources Available"}
+                                ? t("memberPortalNoResourcesFound")
+                                : t("memberPortalNoResourcesAvailable")}
                         </h3>
                         <p className="text-muted-foreground max-w-lg text-base mb-6">
                             {searchQuery
-                                ? `No resources match "${searchQuery}". Try adjusting your search terms or clearing the search to see all resources.`
-                                : "You don't have access to any resources yet. Contact your administrator to get access to resources you need."}
+                                ? t("memberPortalNoResourcesMatchSearch", {
+                                      query: searchQuery
+                                  })
+                                : t("memberPortalNoResourcesAccess")}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3">
                             {searchQuery ? (
@@ -668,7 +695,7 @@ export default function MemberResourcesPortal({
                                     variant="outline"
                                     className="gap-2"
                                 >
-                                    Clear Search
+                                    {t("memberPortalClearSearch")}
                                 </Button>
                             ) : (
                                 <Button
@@ -680,7 +707,7 @@ export default function MemberResourcesPortal({
                                     <RefreshCw
                                         className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
                                     />
-                                    Refresh Resources
+                                    {t("memberPortalRefreshResources")}
                                 </Button>
                             )}
                         </div>
@@ -694,90 +721,103 @@ export default function MemberResourcesPortal({
                             <div className="mb-4">
                                 <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                     <Globe className="h-5 w-5" />
-                                    Public Resources
+                                    {t("memberPortalPublicResources")}
                                 </h3>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    Web applications and services accessible via browser
+                                    {t(
+                                        "memberPortalPublicResourcesDescription"
+                                    )}
                                 </p>
                             </div>
                             <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 auto-cols-fr mb-8">
                                 {paginatedResources.map((resource) => (
-                            <Card key={resource.resourceId}>
-                                <div className="p-6">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="flex items-center min-w-0 flex-1 gap-3 overflow-hidden">
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger className="min-w-0 max-w-full">
-                                                        <CardTitle className="text-lg font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                                                            {resource.name}
-                                                        </CardTitle>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p className="max-w-xs break-words">
-                                                            {resource.name}
-                                                        </p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
+                                    <Card key={resource.resourceId}>
+                                        <div className="p-6">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="flex items-center min-w-0 flex-1 gap-3 overflow-hidden">
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger className="min-w-0 max-w-full">
+                                                                <CardTitle className="text-lg font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                                                    {
+                                                                        resource.name
+                                                                    }
+                                                                </CardTitle>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p className="max-w-xs break-words">
+                                                                    {
+                                                                        resource.name
+                                                                    }
+                                                                </p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </div>
+
+                                                <div className="flex-shrink-0">
+                                                    <ResourceInfo
+                                                        resource={resource}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 mt-3">
+                                                <button
+                                                    onClick={() =>
+                                                        handleOpenResource(
+                                                            resource
+                                                        )
+                                                    }
+                                                    className="text-sm text-muted-foreground font-medium text-left truncate flex-1"
+                                                    disabled={!resource.enabled}
+                                                >
+                                                    {resource.domain.replace(
+                                                        /^https?:\/\//,
+                                                        ""
+                                                    )}
+                                                </button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-muted-foreground"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(
+                                                            resource.domain
+                                                        );
+                                                        toast({
+                                                            title: t(
+                                                                "memberPortalCopiedToClipboard"
+                                                            ),
+                                                            description: t(
+                                                                "memberPortalCopiedUrlDescription"
+                                                            ),
+                                                            duration: 2000
+                                                        });
+                                                    }}
+                                                >
+                                                    <Copy className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
 
-                                        <div className="flex-shrink-0">
-                                            <ResourceInfo resource={resource} />
+                                        <div className="p-6 pt-0 mt-auto">
+                                            <Button
+                                                onClick={() =>
+                                                    handleOpenResource(resource)
+                                                }
+                                                className="w-full h-9 transition-all group-hover:shadow-sm"
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={!resource.enabled}
+                                            >
+                                                <ExternalLink className="h-3.5 w-3.5 mr-2" />
+                                                {t("memberPortalOpenResource")}
+                                            </Button>
                                         </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 mt-3">
-                                        <button
-                                            onClick={() =>
-                                                handleOpenResource(resource)
-                                            }
-                                            className="text-sm text-muted-foreground font-medium text-left truncate flex-1"
-                                            disabled={!resource.enabled}
-                                        >
-                                            {resource.domain.replace(
-                                                /^https?:\/\//,
-                                                ""
-                                            )}
-                                        </button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-muted-foreground"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(
-                                                    resource.domain
-                                                );
-                                                toast({
-                                                    title: "Copied to clipboard",
-                                                    description:
-                                                        "Resource URL has been copied to your clipboard.",
-                                                    duration: 2000
-                                                });
-                                            }}
-                                        >
-                                            <Copy className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                <div className="p-6 pt-0 mt-auto">
-                                    <Button
-                                        onClick={() =>
-                                            handleOpenResource(resource)
-                                        }
-                                        className="w-full h-9 transition-all group-hover:shadow-sm"
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={!resource.enabled}
-                                    >
-                                        <ExternalLink className="h-3.5 w-3.5 mr-2" />
-                                        Open Resource
-                                    </Button>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
+                                    </Card>
+                                ))}
+                            </div>
                         </>
                     )}
 
@@ -787,10 +827,12 @@ export default function MemberResourcesPortal({
                             <div className="mb-4">
                                 <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                     <Combine className="h-5 w-5" />
-                                    Private Resources
+                                    {t("memberPortalPrivateResources")}
                                 </h3>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    Internal network resources accessible via client
+                                    {t(
+                                        "memberPortalPrivateResourcesDescription"
+                                    )}
                                 </p>
                             </div>
                             <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 auto-cols-fr mb-8">
@@ -802,13 +844,17 @@ export default function MemberResourcesPortal({
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger className="min-w-0 max-w-full">
-                                                                <CardTitle className="text-lg font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                                                                    {siteResource.name}
+                                                                <CardTitle className="text-lg font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                                                    {
+                                                                        siteResource.name
+                                                                    }
                                                                 </CardTitle>
                                                             </TooltipTrigger>
                                                             <TooltipContent>
                                                                 <p className="max-w-xs break-words">
-                                                                    {siteResource.name}
+                                                                    {
+                                                                        siteResource.name
+                                                                    }
                                                                 </p>
                                                             </TooltipContent>
                                                         </Tooltip>
@@ -818,39 +864,84 @@ export default function MemberResourcesPortal({
                                                 <div className="flex-shrink-0">
                                                     <InfoPopup>
                                                         <div className="space-y-2 text-sm">
-                                                            <div className="text-xs font-medium mb-1.5">Resource Details</div>
+                                                            <div className="text-xs font-medium mb-1.5">
+                                                                {t(
+                                                                    "memberPortalResourceDetails"
+                                                                )}
+                                                            </div>
                                                             <div>
-                                                                <span className="font-medium">Mode:</span>
+                                                                <span className="font-medium">
+                                                                    {t(
+                                                                        "memberPortalMode"
+                                                                    )}
+                                                                    :
+                                                                </span>
                                                                 <span className="ml-2 text-muted-foreground capitalize">
-                                                                    {siteResource.mode}
+                                                                    {
+                                                                        siteResource.mode
+                                                                    }
                                                                 </span>
                                                             </div>
                                                             {siteResource.protocol && (
                                                                 <div>
-                                                                    <span className="font-medium">Protocol:</span>
+                                                                    <span className="font-medium">
+                                                                        {t(
+                                                                            "protocol"
+                                                                        )}
+                                                                        :
+                                                                    </span>
                                                                     <span className="ml-2 text-muted-foreground uppercase">
-                                                                        {siteResource.protocol}
+                                                                        {
+                                                                            siteResource.protocol
+                                                                        }
                                                                     </span>
                                                                 </div>
                                                             )}
                                                             <div>
-                                                                <span className="font-medium">Destination:</span>
+                                                                <span className="font-medium">
+                                                                    {t(
+                                                                        "memberPortalDestination"
+                                                                    )}
+                                                                    :
+                                                                </span>
                                                                 <span className="ml-2 text-muted-foreground">
-                                                                    {siteResource.destination}
+                                                                    {
+                                                                        siteResource.destination
+                                                                    }
                                                                 </span>
                                                             </div>
                                                             {siteResource.alias && (
                                                                 <div>
-                                                                    <span className="font-medium">Alias:</span>
+                                                                    <span className="font-medium">
+                                                                        {t(
+                                                                            "memberPortalAlias"
+                                                                        )}
+                                                                        :
+                                                                    </span>
                                                                     <span className="ml-2 text-muted-foreground">
-                                                                        {siteResource.alias}
+                                                                        {
+                                                                            siteResource.alias
+                                                                        }
                                                                     </span>
                                                                 </div>
                                                             )}
                                                             <div>
-                                                                <span className="font-medium">Status:</span>
-                                                                <span className={`ml-2 ${siteResource.enabled ? 'text-green-600' : 'text-red-600'}`}>
-                                                                    {siteResource.enabled ? 'Enabled' : 'Disabled'}
+                                                                <span className="font-medium">
+                                                                    {t(
+                                                                        "status"
+                                                                    )}
+                                                                    :
+                                                                </span>
+                                                                <span
+                                                                    className={`ml-2 ${siteResource.enabled ? "text-green-600" : "text-red-600"}`}
+                                                                >
+                                                                    {siteResource.enabled
+                                                                        ? t(
+                                                                              "enabled"
+                                                                          )
+                                                                        : t(
+                                                                              "disabled"
+                                                                          )}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -859,12 +950,21 @@ export default function MemberResourcesPortal({
                                             </div>
 
                                             <div className="mt-3">
-                                                {siteResource.alias ? (
+                                                {siteResource.mode === "http" &&
+                                                siteResource.fullDomain ? (
+                                                    /* HTTP mode - show as clickable link */
+                                                    <CopyToClipboard
+                                                        text={`${siteResource.ssl ? "https" : (siteResource.protocol ?? "http")}://${siteResource.fullDomain}`}
+                                                        isLink={true}
+                                                    />
+                                                ) : siteResource.alias ? (
                                                     <>
                                                         {/* Alias as primary */}
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <div className="text-base font-semibold text-foreground text-left truncate flex-1">
-                                                                {siteResource.alias}
+                                                                {
+                                                                    siteResource.alias
+                                                                }
                                                             </div>
                                                             <Button
                                                                 variant="ghost"
@@ -875,9 +975,13 @@ export default function MemberResourcesPortal({
                                                                         siteResource.alias!
                                                                     );
                                                                     toast({
-                                                                        title: "Copied to clipboard",
+                                                                        title: t(
+                                                                            "memberPortalCopiedToClipboard"
+                                                                        ),
                                                                         description:
-                                                                            "Resource alias has been copied to your clipboard.",
+                                                                            t(
+                                                                                "memberPortalCopiedAliasDescription"
+                                                                            ),
                                                                         duration: 2000
                                                                     });
                                                                 }}
@@ -887,14 +991,18 @@ export default function MemberResourcesPortal({
                                                         </div>
                                                         {/* Destination as secondary */}
                                                         <div className="text-xs text-muted-foreground truncate">
-                                                            {siteResource.destination}
+                                                            {
+                                                                siteResource.destination
+                                                            }
                                                         </div>
                                                     </>
                                                 ) : (
                                                     /* Destination as primary when no alias */
                                                     <div className="flex items-center gap-2">
                                                         <div className="text-sm text-muted-foreground font-medium text-left truncate flex-1">
-                                                            {siteResource.destination}
+                                                            {
+                                                                siteResource.destination
+                                                            }
                                                         </div>
                                                         <Button
                                                             variant="ghost"
@@ -905,9 +1013,13 @@ export default function MemberResourcesPortal({
                                                                     siteResource.destination
                                                                 );
                                                                 toast({
-                                                                    title: "Copied to clipboard",
+                                                                    title: t(
+                                                                        "memberPortalCopiedToClipboard"
+                                                                    ),
                                                                     description:
-                                                                        "Resource destination has been copied to your clipboard.",
+                                                                        t(
+                                                                            "memberPortalCopiedDestinationDescription"
+                                                                        ),
                                                                     duration: 2000
                                                                 });
                                                             }}
@@ -919,10 +1031,34 @@ export default function MemberResourcesPortal({
                                             </div>
                                         </div>
 
-                                        <div className="p-6 pt-0 mt-auto">
+                                        <div className="p-6 pt-0 mt-auto space-y-2">
+                                            {siteResource.mode === "http" &&
+                                            siteResource.fullDomain ? (
+                                                <Button
+                                                    onClick={() =>
+                                                        window.open(
+                                                            `${siteResource.ssl ? "https" : (siteResource.protocol ?? "http")}://${siteResource.fullDomain}`,
+                                                            "_blank"
+                                                        )
+                                                    }
+                                                    className="w-full h-9"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={
+                                                        !siteResource.enabled
+                                                    }
+                                                >
+                                                    <ExternalLink className="h-3.5 w-3.5 mr-2" />
+                                                    {t(
+                                                        "memberPortalOpenResource"
+                                                    )}
+                                                </Button>
+                                            ) : null}
                                             <div className="flex items-center justify-center py-2 px-4 bg-muted/50 rounded text-sm text-muted-foreground">
                                                 <Combine className="h-3.5 w-3.5 mr-2" />
-                                                Requires Client Connection
+                                                {t(
+                                                    "memberPortalRequiresClientConnection"
+                                                )}
                                             </div>
                                         </div>
                                     </Card>

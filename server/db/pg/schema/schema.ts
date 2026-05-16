@@ -6,9 +6,11 @@ import {
     index,
     integer,
     pgTable,
+    primaryKey,
     real,
     serial,
     text,
+    unique,
     varchar
 } from "drizzle-orm/pg-core";
 
@@ -55,6 +57,11 @@ export const orgs = pgTable("orgs", {
     settingsLogRetentionDaysAction: integer("settingsLogRetentionDaysAction") // where 0 = dont keep logs and -1 = keep forever and 9001 = end of the following year
         .notNull()
         .default(0),
+    settingsLogRetentionDaysConnection: integer(
+        "settingsLogRetentionDaysConnection"
+    ) // where 0 = dont keep logs and -1 = keep forever and 9001 = end of the following year
+        .notNull()
+        .default(0),
     sshCaPrivateKey: text("sshCaPrivateKey"), // Encrypted SSH CA private key (PEM format)
     sshCaPublicKey: text("sshCaPublicKey"), // SSH CA public key (OpenSSH format)
     isBillingOrg: boolean("isBillingOrg"),
@@ -95,7 +102,10 @@ export const sites = pgTable("sites", {
     publicKey: varchar("publicKey"),
     lastHolePunch: bigint("lastHolePunch", { mode: "number" }),
     listenPort: integer("listenPort"),
-    dockerSocketEnabled: boolean("dockerSocketEnabled").notNull().default(true)
+    dockerSocketEnabled: boolean("dockerSocketEnabled").notNull().default(true),
+    status: varchar("status")
+        .$type<"pending" | "approved">()
+        .default("approved")
 });
 
 export const resources = pgTable("resources", {
@@ -147,7 +157,9 @@ export const resources = pgTable("resources", {
     maintenanceTitle: text("maintenanceTitle"),
     maintenanceMessage: text("maintenanceMessage"),
     maintenanceEstimatedTime: text("maintenanceEstimatedTime"),
-    postAuthPath: text("postAuthPath")
+    postAuthPath: text("postAuthPath"),
+    health: varchar("health").default("unknown"), // "healthy", "unhealthy", "unknown"
+    wildcard: boolean("wildcard").notNull().default(false)
 });
 
 export const targets = pgTable("targets", {
@@ -176,9 +188,18 @@ export const targets = pgTable("targets", {
 
 export const targetHealthCheck = pgTable("targetHealthCheck", {
     targetHealthCheckId: serial("targetHealthCheckId").primaryKey(),
-    targetId: integer("targetId")
-        .notNull()
-        .references(() => targets.targetId, { onDelete: "cascade" }),
+    targetId: integer("targetId").references(() => targets.targetId, {
+        onDelete: "cascade"
+    }),
+    orgId: varchar("orgId")
+        .references(() => orgs.orgId, {
+            onDelete: "cascade"
+        })
+        .notNull(),
+    siteId: integer("siteId").references(() => sites.siteId, {
+        onDelete: "cascade"
+    }).notNull(),
+    name: varchar("name"),
     hcEnabled: boolean("hcEnabled").notNull().default(false),
     hcPath: varchar("hcPath"),
     hcScheme: varchar("hcScheme"),
@@ -195,7 +216,9 @@ export const targetHealthCheck = pgTable("targetHealthCheck", {
     hcHealth: text("hcHealth")
         .$type<"unknown" | "healthy" | "unhealthy">()
         .default("unknown"), // "unknown", "healthy", "unhealthy"
-    hcTlsServerName: text("hcTlsServerName")
+    hcTlsServerName: text("hcTlsServerName"),
+    hcHealthyThreshold: integer("hcHealthyThreshold").default(1),
+    hcUnhealthyThreshold: integer("hcUnhealthyThreshold").default(1)
 });
 
 export const exitNodes = pgTable("exitNodes", {
@@ -216,16 +239,23 @@ export const exitNodes = pgTable("exitNodes", {
 export const siteResources = pgTable("siteResources", {
     // this is for the clients
     siteResourceId: serial("siteResourceId").primaryKey(),
-    siteId: integer("siteId")
-        .notNull()
-        .references(() => sites.siteId, { onDelete: "cascade" }),
     orgId: varchar("orgId")
         .notNull()
         .references(() => orgs.orgId, { onDelete: "cascade" }),
+    networkId: integer("networkId").references(() => networks.networkId, {
+        onDelete: "set null"
+    }),
+    defaultNetworkId: integer("defaultNetworkId").references(
+        () => networks.networkId,
+        {
+            onDelete: "restrict"
+        }
+    ),
     niceId: varchar("niceId").notNull(),
     name: varchar("name").notNull(),
-    mode: varchar("mode").$type<"host" | "cidr">().notNull(), // "host" | "cidr" | "port"
-    protocol: varchar("protocol"), // only for port mode
+    ssl: boolean("ssl").notNull().default(false),
+    mode: varchar("mode").$type<"host" | "cidr" | "http">().notNull(), // "host" | "cidr" | "http"
+    scheme: varchar("scheme").$type<"http" | "https">(), // only for when we are doing https or http mode
     proxyPort: integer("proxyPort"), // only for port mode
     destinationPort: integer("destinationPort"), // only for port mode
     destination: varchar("destination").notNull(), // ip, cidr, hostname; validate against the mode
@@ -238,7 +268,38 @@ export const siteResources = pgTable("siteResources", {
     authDaemonPort: integer("authDaemonPort").default(22123),
     authDaemonMode: varchar("authDaemonMode", { length: 32 })
         .$type<"site" | "remote">()
-        .default("site")
+        .default("site"),
+    domainId: varchar("domainId").references(() => domains.domainId, {
+        onDelete: "set null"
+    }),
+    subdomain: varchar("subdomain"),
+    fullDomain: varchar("fullDomain")
+});
+
+export const networks = pgTable("networks", {
+    networkId: serial("networkId").primaryKey(),
+    niceId: text("niceId"),
+    name: text("name"),
+    scope: varchar("scope")
+        .$type<"global" | "resource">()
+        .notNull()
+        .default("global"),
+    orgId: varchar("orgId")
+        .references(() => orgs.orgId, {
+            onDelete: "cascade"
+        })
+        .notNull()
+});
+
+export const siteNetworks = pgTable("siteNetworks", {
+    siteId: integer("siteId")
+        .notNull()
+        .references(() => sites.siteId, {
+            onDelete: "cascade"
+        }),
+    networkId: integer("networkId")
+        .notNull()
+        .references(() => networks.networkId, { onDelete: "cascade" })
 });
 
 export const clientSiteResources = pgTable("clientSiteResources", {
@@ -336,9 +397,6 @@ export const userOrgs = pgTable("userOrgs", {
             onDelete: "cascade"
         })
         .notNull(),
-    roleId: integer("roleId")
-        .notNull()
-        .references(() => roles.roleId),
     isOwner: boolean("isOwner").notNull().default(false),
     autoProvisioned: boolean("autoProvisioned").default(false),
     pamUsername: varchar("pamUsername") // cleaned username for ssh and such
@@ -386,6 +444,22 @@ export const roles = pgTable("roles", {
     sshCreateHomeDir: boolean("sshCreateHomeDir").default(true),
     sshUnixGroups: text("sshUnixGroups").default("[]")
 });
+
+export const userOrgRoles = pgTable(
+    "userOrgRoles",
+    {
+        userId: varchar("userId")
+            .notNull()
+            .references(() => users.userId, { onDelete: "cascade" }),
+        orgId: varchar("orgId")
+            .notNull()
+            .references(() => orgs.orgId, { onDelete: "cascade" }),
+        roleId: integer("roleId")
+            .notNull()
+            .references(() => roles.roleId, { onDelete: "cascade" })
+    },
+    (t) => [unique().on(t.userId, t.orgId, t.roleId)]
+);
 
 export const roleActions = pgTable("roleActions", {
     roleId: integer("roleId")
@@ -454,11 +528,21 @@ export const userInvites = pgTable("userInvites", {
         .references(() => orgs.orgId, { onDelete: "cascade" }),
     email: varchar("email").notNull(),
     expiresAt: bigint("expiresAt", { mode: "number" }).notNull(),
-    tokenHash: varchar("token").notNull(),
-    roleId: integer("roleId")
-        .notNull()
-        .references(() => roles.roleId, { onDelete: "cascade" })
+    tokenHash: varchar("token").notNull()
 });
+
+export const userInviteRoles = pgTable(
+    "userInviteRoles",
+    {
+        inviteId: varchar("inviteId")
+            .notNull()
+            .references(() => userInvites.inviteId, { onDelete: "cascade" }),
+        roleId: integer("roleId")
+            .notNull()
+            .references(() => roles.roleId, { onDelete: "cascade" })
+    },
+    (t) => [primaryKey({ columns: [t.inviteId, t.roleId] })]
+);
 
 export const resourcePincode = pgTable("resourcePincode", {
     pincodeId: serial("pincodeId").primaryKey(),
@@ -965,6 +1049,7 @@ export const requestAuditLog = pgTable(
         actor: text("actor"),
         actorId: text("actorId"),
         resourceId: integer("resourceId"),
+        siteResourceId: integer("siteResourceId"),
         ip: text("ip"),
         location: text("location"),
         userAgent: text("userAgent"),
@@ -1012,6 +1097,20 @@ export const roundTripMessageTracker = pgTable("roundTripMessageTracker", {
     complete: boolean("complete").notNull().default(false)
 });
 
+export const statusHistory = pgTable("statusHistory", {
+    id: serial("id").primaryKey(),
+    entityType: varchar("entityType").notNull(),
+    entityId: integer("entityId").notNull(),
+    orgId: varchar("orgId")
+        .notNull()
+        .references(() => orgs.orgId, { onDelete: "cascade" }),
+    status: varchar("status").notNull(),
+    timestamp: integer("timestamp").notNull(),
+}, (table) => [
+    index("idx_statusHistory_entity").on(table.entityType, table.entityId, table.timestamp),
+    index("idx_statusHistory_org_timestamp").on(table.orgId, table.timestamp),
+]);
+
 export type Org = InferSelectModel<typeof orgs>;
 export type User = InferSelectModel<typeof users>;
 export type Site = InferSelectModel<typeof sites>;
@@ -1035,7 +1134,9 @@ export type UserSite = InferSelectModel<typeof userSites>;
 export type RoleResource = InferSelectModel<typeof roleResources>;
 export type UserResource = InferSelectModel<typeof userResources>;
 export type UserInvite = InferSelectModel<typeof userInvites>;
+export type UserInviteRole = InferSelectModel<typeof userInviteRoles>;
 export type UserOrg = InferSelectModel<typeof userOrgs>;
+export type UserOrgRole = InferSelectModel<typeof userOrgRoles>;
 export type ResourceSession = InferSelectModel<typeof resourceSessions>;
 export type ResourcePincode = InferSelectModel<typeof resourcePincode>;
 export type ResourcePassword = InferSelectModel<typeof resourcePassword>;
@@ -1049,6 +1150,7 @@ export type ResourceWhitelist = InferSelectModel<typeof resourceWhitelist>;
 export type VersionMigration = InferSelectModel<typeof versionMigrations>;
 export type ResourceRule = InferSelectModel<typeof resourceRules>;
 export type Domain = InferSelectModel<typeof domains>;
+export type DnsRecord = InferSelectModel<typeof dnsRecords>;
 export type SupporterKey = InferSelectModel<typeof supporterKey>;
 export type Idp = InferSelectModel<typeof idp>;
 export type ApiKey = InferSelectModel<typeof apiKeys>;
@@ -1075,3 +1177,5 @@ export type RequestAuditLog = InferSelectModel<typeof requestAuditLog>;
 export type RoundTripMessageTracker = InferSelectModel<
     typeof roundTripMessageTracker
 >;
+export type Network = InferSelectModel<typeof networks>;
+export type StatusHistory = InferSelectModel<typeof statusHistory>;

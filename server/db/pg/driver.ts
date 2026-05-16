@@ -60,8 +60,7 @@ function createDb() {
             })
         );
     } else {
-        const maxReplicaConnections =
-            poolConfig?.max_replica_connections || 20;
+        const maxReplicaConnections = poolConfig?.max_replica_connections || 20;
         for (const conn of replicaConnections) {
             const replicaPool = createPool(
                 conn.connection_string,
@@ -88,7 +87,8 @@ function createDb() {
 
 export const db = createDb();
 export default db;
-export const primaryDb = db.$primary;
+export const primaryDb = db.$primary as typeof db; // is this typeof a problem - techincally they are different types
 export type Transaction = Parameters<
     Parameters<(typeof db)["transaction"]>[0]
 >[0];
+export const DB_TYPE: "pg" | "sqlite" = "pg";

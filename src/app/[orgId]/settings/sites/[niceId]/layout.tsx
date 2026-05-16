@@ -6,9 +6,13 @@ import { redirect } from "next/navigation";
 import { authCookieHeader } from "@app/lib/api/cookies";
 import { HorizontalTabs } from "@app/components/HorizontalTabs";
 import SettingsSectionTitle from "@app/components/SettingsSectionTitle";
-import SiteInfoCard from "../../../../../components/SiteInfoCard";
+import SiteInfoCard from "@app/components/SiteInfoCard";
 import { getTranslations } from "next-intl/server";
-import { build } from "@server/build";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Site"
+};
 
 interface SettingsLayoutProps {
     children: React.ReactNode;
@@ -37,6 +41,10 @@ export default async function SettingsLayout(props: SettingsLayoutProps) {
         {
             title: t("general"),
             href: `/${params.orgId}/settings/sites/${params.niceId}/general`
+        },
+        {
+            title: t("siteResourcesTab"),
+            href: `/${params.orgId}/settings/sites/${params.niceId}/resources`
         },
         ...(site.type !== "local"
             ? [

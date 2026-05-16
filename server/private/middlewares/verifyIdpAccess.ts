@@ -1,7 +1,7 @@
 /*
  * This file is part of a proprietary work.
  *
- * Copyright (c) 2025 Fossorial, Inc.
+ * Copyright (c) 2025-2026 Fossorial, Inc.
  * All rights reserved.
  *
  * This file is licensed under the Fossorial Commercial License.
@@ -13,9 +13,10 @@
 
 import { Request, Response, NextFunction } from "express";
 import { userOrgs, db, idp, idpOrg } from "@server/db";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import createHttpError from "http-errors";
 import HttpCode from "@server/types/HttpCode";
+import { getUserOrgRoleIds } from "@server/lib/userOrgRoles";
 
 export async function verifyIdpAccess(
     req: Request,
@@ -84,8 +85,10 @@ export async function verifyIdpAccess(
             );
         }
 
-        const userOrgRoleId = req.userOrg.roleId;
-        req.userOrgRoleId = userOrgRoleId;
+        req.userOrgRoleIds = await getUserOrgRoleIds(
+            req.userOrg.userId,
+            idpRes.idpOrg.orgId
+        );
 
         return next();
     } catch (error) {

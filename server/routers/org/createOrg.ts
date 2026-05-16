@@ -9,9 +9,12 @@ import {
     orgs,
     roleActions,
     roles,
+    userOrgRoles,
     userOrgs,
     users,
-    actions
+    actions,
+    customers,
+    subscriptions
 } from "@server/db";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
@@ -30,6 +33,7 @@ import { calculateUserClientsForOrgs } from "@server/lib/calculateUserClientsFor
 import { doCidrsOverlap } from "@server/lib/ip";
 import { generateCA } from "@server/lib/sshCA";
 import { encrypt } from "@server/lib/crypto";
+import { generateId } from "@server/auth/sessions/app";
 
 const validOrgIdRegex = /^[a-z0-9_]+(-[a-z0-9_]+)*$/;
 
@@ -312,8 +316,12 @@ export async function createOrg(
                 await trx.insert(userOrgs).values({
                     userId: req.user!.userId,
                     orgId: newOrg[0].orgId,
-                    roleId: roleId,
                     isOwner: true
+                });
+                await trx.insert(userOrgRoles).values({
+                    userId: req.user!.userId,
+                    orgId: newOrg[0].orgId,
+                    roleId
                 });
                 ownerUserId = req.user!.userId;
             } else {
@@ -332,8 +340,12 @@ export async function createOrg(
                 await trx.insert(userOrgs).values({
                     userId: serverAdmin.userId,
                     orgId: newOrg[0].orgId,
-                    roleId: roleId,
                     isOwner: true
+                });
+                await trx.insert(userOrgRoles).values({
+                    userId: serverAdmin.userId,
+                    orgId: newOrg[0].orgId,
+                    roleId
                 });
                 ownerUserId = serverAdmin.userId;
             }
