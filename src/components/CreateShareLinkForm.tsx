@@ -495,7 +495,7 @@ export default function CreateShareLinkForm({
                             onClick={form.handleSubmit(onSubmit)}
                             loading={loading}
                             disabled={link !== null || loading}
-                            hidden={link === null}
+                            hidden={link}
                         >
                             {t("createLink")}
                         </Button>
