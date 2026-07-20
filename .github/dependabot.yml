@@ -27,7 +27,9 @@ updates:
     groups:
       updates:
         update-types:
-          - "*"
+          - "patch" 
+          - "minor"
+          - "major"
 
   - package-ecosystem: "gomod"
     directory: "/install"
