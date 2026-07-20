@@ -1,42 +1,52 @@
 version: 2
-
 updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 1
     groups:
-      npm-dependencies:
-        patterns:
-          - "*"
-
+      dev-patch-updates:
+        dependency-type: "development"
+        update-types:
+          - "patch"
+      dev-minor-updates:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+      prod-patch-updates:
+        dependency-type: "production"
+        update-types:
+          - "patch"
+      prod-minor-updates:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 1
     groups:
-      docker-dependencies:
-        patterns:
-          - "*"
+      patch-updates:
+        update-types:
+          - "patch"
+      minor-updates:
+        update-types:
+          - "minor"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 1
-    groups:
-      github-actions-dependencies:
-        patterns:
-          - "*"
 
   - package-ecosystem: "gomod"
     directory: "/install"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 1
     groups:
-      go-install-dependencies:
-        patterns:
-          - "*"
+      patch-updates:
+        update-types:
+          - "patch"
+      minor-updates:
+        update-types:
+          - "minor"
