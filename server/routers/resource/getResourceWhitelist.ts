@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "@server/db";
-import { resourceWhitelist, users } from "@server/db"; // Assuming these are the correct tables
+import {
+    resourceWhitelist,
+    resourcePolicyWhiteList,
+    resources
+} from "@server/db";
 import { eq } from "drizzle-orm";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
@@ -11,7 +15,7 @@ import { fromError } from "zod-validation-error";
 import { OpenAPITags, registry } from "@server/openApi";
 
 const getResourceWhitelistSchema = z.strictObject({
-    resourceId: z.string().transform(Number).pipe(z.int().positive())
+    resourceId: z.coerce.number().int().positive()
 });
 
 async function queryWhitelist(resourceId: number) {
@@ -23,6 +27,15 @@ async function queryWhitelist(resourceId: number) {
         .where(eq(resourceWhitelist.resourceId, resourceId));
 }
 
+async function queryPolicyWhitelist(policyId: number) {
+    return await db
+        .select({
+            email: resourcePolicyWhiteList.email
+        })
+        .from(resourcePolicyWhiteList)
+        .where(eq(resourcePolicyWhiteList.resourcePolicyId, policyId));
+}
+
 export type GetResourceWhitelistResponse = {
     whitelist: NonNullable<Awaited<ReturnType<typeof queryWhitelist>>>;
 };
@@ -31,11 +44,52 @@ registry.registerPath({
     method: "get",
     path: "/resource/{resourceId}/whitelist",
     description: "Get the whitelist of emails for a specific resource.",
+    tags: [OpenAPITags.PublicResourceLegacy],
+    request: {
+        params: getResourceWhitelistSchema
+    },
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
+});
+
+registry.registerPath({
+    method: "get",
+    path: "/public-resource/{resourceId}/whitelist",
+    description: "Get the whitelist of emails for a specific resource.",
     tags: [OpenAPITags.PublicResource],
     request: {
         params: getResourceWhitelistSchema
     },
-    responses: {}
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
 });
 
 export async function getResourceWhitelist(
@@ -56,7 +110,29 @@ export async function getResourceWhitelist(
 
         const { resourceId } = parsedParams.data;
 
-        const whitelist = await queryWhitelist(resourceId);
+        const [resource] = await db
+            .select()
+            .from(resources)
+            .where(eq(resources.resourceId, resourceId))
+            .limit(1);
+
+        if (!resource) {
+            return next(
+                createHttpError(HttpCode.NOT_FOUND, "Resource not found")
+            );
+        }
+
+        // A shared policy takes precedence over the resource's inline
+        // (default) policy, which takes precedence over the resource's own
+        // direct whitelist fields. This mirrors the precedence used at
+        // request time in authWithWhitelist.ts / getResourceAuthInfo.ts.
+        const policyId =
+            resource.resourcePolicyId ?? resource.defaultResourcePolicyId;
+
+        const whitelist =
+            policyId !== null
+                ? await queryPolicyWhitelist(policyId)
+                : await queryWhitelist(resourceId);
 
         return response<GetResourceWhitelistResponse>(res, {
             data: {

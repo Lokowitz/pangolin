@@ -191,7 +191,7 @@ registry.registerPath({
     method: "put",
     path: "/org/{orgId}/alert-rule",
     description: "Create an alert rule for a specific organization.",
-    tags: [OpenAPITags.Org],
+    tags: [OpenAPITags.AlertRule],
     request: {
         params: paramsSchema,
         body: {
@@ -202,7 +202,22 @@ registry.registerPath({
             }
         }
     },
-    responses: {}
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
 });
 
 export async function createAlertRule(

@@ -8,7 +8,10 @@ import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import { eq, and } from "drizzle-orm";
 import { OpenAPITags, registry } from "@server/openApi";
-import { rebuildClientAssociationsFromSiteResource } from "@server/lib/rebuildClientAssociations";
+import {
+    rebuildClientAssociationsFromSiteResource,
+    isOrgRebuildRateLimited
+} from "@server/lib/rebuildClientAssociations";
 
 const addClientToSiteResourceBodySchema = z
     .object({
@@ -30,6 +33,40 @@ registry.registerPath({
     path: "/site-resource/{siteResourceId}/clients/add",
     description:
         "Add a single client to a site resource. Clients with a userId cannot be added.",
+    tags: [OpenAPITags.PrivateResourceLegacy],
+    request: {
+        params: addClientToSiteResourceParamsSchema,
+        body: {
+            content: {
+                "application/json": {
+                    schema: addClientToSiteResourceBodySchema
+                }
+            }
+        }
+    },
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
+});
+
+registry.registerPath({
+    method: "post",
+    path: "/private-resource/{siteResourceId}/clients/add",
+    description:
+        "Add a single client to a site resource. Clients with a userId cannot be added.",
     tags: [OpenAPITags.PrivateResource, OpenAPITags.Client],
     request: {
         params: addClientToSiteResourceParamsSchema,
@@ -41,7 +78,22 @@ registry.registerPath({
             }
         }
     },
-    responses: {}
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
 });
 
 export async function addClientToSiteResource(
@@ -113,6 +165,15 @@ export async function addClientToSiteResource(
             );
         }
 
+        if (await isOrgRebuildRateLimited(siteResource.orgId)) {
+            return next(
+                createHttpError(
+                    HttpCode.TOO_MANY_REQUESTS,
+                    "Too many concurrent rebuild operations for this organization. Please retry after a moment."
+                )
+            );
+        }
+
         // Check if client already exists in site resource
         const existingEntry = await db
             .select()
@@ -133,13 +194,15 @@ export async function addClientToSiteResource(
             );
         }
 
-        await db.transaction(async (trx) => {
-            await trx.insert(clientSiteResources).values({
-                clientId,
-                siteResourceId
-            });
+        await db.insert(clientSiteResources).values({
+            clientId,
+            siteResourceId
+        });
 
-            await rebuildClientAssociationsFromSiteResource(siteResource, trx);
+        rebuildClientAssociationsFromSiteResource(siteResource).catch((e) => {
+            logger.error(
+                `Failed to rebuild client associations for site resource ${siteResourceId}. Error: ${e}`
+            );
         });
 
         return response(res, {

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "@server/db";
-import { resourceRules, resources } from "@server/db";
+import { resourceRules, resourcePolicyRules, resources } from "@server/db";
 import { eq } from "drizzle-orm";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
@@ -9,28 +9,59 @@ import createHttpError from "http-errors";
 import logger from "@server/logger";
 import { fromError } from "zod-validation-error";
 import {
-    isValidCIDR,
-    isValidIP,
-    isValidUrlGlobPattern
+    RESOURCE_RULE_MATCH_TYPES,
+    getResourceRuleValueValidationError
 } from "@server/lib/validators";
 import { OpenAPITags, registry } from "@server/openApi";
-import { isValidRegionId } from "@server/db/regions";
 
 const createResourceRuleSchema = z.strictObject({
     action: z.enum(["ACCEPT", "DROP", "PASS"]),
-    match: z.enum(["CIDR", "IP", "PATH", "COUNTRY", "ASN", "REGION"]),
+    match: z.enum(RESOURCE_RULE_MATCH_TYPES),
     value: z.string().min(1),
     priority: z.int(),
     enabled: z.boolean().optional()
 });
 
 const createResourceRuleParamsSchema = z.strictObject({
-    resourceId: z.string().transform(Number).pipe(z.int().positive())
+    resourceId: z.coerce.number().int().positive()
 });
 
 registry.registerPath({
     method: "put",
     path: "/resource/{resourceId}/rule",
+    description: "Create a resource rule.",
+    tags: [OpenAPITags.PublicResourceLegacy],
+    request: {
+        params: createResourceRuleParamsSchema,
+        body: {
+            content: {
+                "application/json": {
+                    schema: createResourceRuleSchema
+                }
+            }
+        }
+    },
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
+});
+
+registry.registerPath({
+    method: "put",
+    path: "/public-resource/{resourceId}/rule",
     description: "Create a resource rule.",
     tags: [OpenAPITags.PublicResource, OpenAPITags.Rule],
     request: {
@@ -43,7 +74,22 @@ registry.registerPath({
             }
         }
     },
-    responses: {}
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
 });
 
 export async function createResourceRule(
@@ -94,7 +140,7 @@ export async function createResourceRule(
             );
         }
 
-        if (!resource.http) {
+        if (!["http", "ssh", "rdp", "vnc"].includes(resource.mode)) {
             return next(
                 createHttpError(
                     HttpCode.BAD_REQUEST,
@@ -103,39 +149,42 @@ export async function createResourceRule(
             );
         }
 
-        if (match === "CIDR") {
-            if (!isValidCIDR(value)) {
-                return next(
-                    createHttpError(
-                        HttpCode.BAD_REQUEST,
-                        "Invalid CIDR provided"
-                    )
-                );
-            }
-        } else if (match === "IP") {
-            if (!isValidIP(value)) {
-                return next(
-                    createHttpError(HttpCode.BAD_REQUEST, "Invalid IP provided")
-                );
-            }
-        } else if (match === "PATH") {
-            if (!isValidUrlGlobPattern(value)) {
-                return next(
-                    createHttpError(
-                        HttpCode.BAD_REQUEST,
-                        "Invalid URL glob pattern provided"
-                    )
-                );
-            }
-        } else if (match === "REGION") {
-            if (!isValidRegionId(value)) {
-                return next(
-                    createHttpError(
-                        HttpCode.BAD_REQUEST,
-                        "Invalid region ID provided"
-                    )
-                );
-            }
+        const valueValidationError = getResourceRuleValueValidationError(
+            match,
+            value
+        );
+        if (valueValidationError) {
+            return next(
+                createHttpError(HttpCode.BAD_REQUEST, valueValidationError)
+            );
+        }
+
+        // Create the new resource rule
+        const isInlinePolicy =
+            resource.resourcePolicyId === null &&
+            resource.defaultResourcePolicyId !== null;
+
+        if (isInlinePolicy) {
+            const policyId = resource.defaultResourcePolicyId!;
+            const [newRule] = await db
+                .insert(resourcePolicyRules)
+                .values({
+                    resourcePolicyId: policyId,
+                    action,
+                    match,
+                    value,
+                    priority,
+                    enabled
+                })
+                .returning();
+
+            return response(res, {
+                data: newRule,
+                success: true,
+                error: false,
+                message: "Resource rule created successfully",
+                status: HttpCode.CREATED
+            });
         }
 
         // Create the new resource rule

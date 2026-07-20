@@ -7,6 +7,7 @@ import { SettingsContainer } from "@app/components/Settings";
 import { useEnvContext } from "@app/hooks/useEnvContext";
 import { createApiClient } from "@app/lib/api";
 import { formatSiteResourceDestinationDisplay } from "@app/lib/formatSiteResourceAccess";
+import { getPrivateResourceSettingsHref } from "@app/lib/launcherResourceAdminHref";
 import type { ListAllSiteResourcesByOrgResponse } from "@server/routers/siteResource";
 import type { ListResourcesResponse } from "@server/routers/resource";
 import type ResponseT from "@server/types/Response";
@@ -44,13 +45,13 @@ function isSafeUrlForLink(href: string): boolean {
 const OVERVIEW_META_CLASS = "w-full min-w-0 text-muted-foreground text-sm";
 
 function publicProtocolLabel(r: PublicResourceRow): string {
-    if (r.http) {
+    if (r.mode == "http") {
         return r.ssl ? "HTTPS" : "HTTP";
     }
-    const p = (r.protocol || "").toLowerCase();
+    const p = (r.mode || "").toLowerCase();
     if (p === "tcp") return "TCP";
     if (p === "udp") return "UDP";
-    return (r.protocol || "—").toUpperCase();
+    return (r.mode || "—").toUpperCase();
 }
 
 function PublicResourceMeta({ resource: r }: { resource: PublicResourceRow }) {
@@ -68,12 +69,13 @@ function PrivateResourceMeta({ row }: { row: SiteResourceRow }) {
     const modeLabel: Record<SiteResourceRow["mode"], string> = {
         host: t("editInternalResourceDialogModeHost"),
         cidr: t("editInternalResourceDialogModeCidr"),
-        http: t("editInternalResourceDialogModeHttp")
+        http: t("editInternalResourceDialogModeHttp"),
+        ssh: t("editInternalResourceDialogModeSsh")
     };
     const dest = formatSiteResourceDestinationDisplay({
         mode: row.mode,
         destination: row.destination,
-        httpHttpsPort: row.destinationPort ?? null,
+        destinationPort: row.destinationPort ?? null,
         scheme: row.scheme
     });
     return (
@@ -90,7 +92,7 @@ function PrivateResourceMeta({ row }: { row: SiteResourceRow }) {
 
 function PublicAccessMethod({ resource: r }: { resource: PublicResourceRow }) {
     const t = useTranslations();
-    if (!r.http) {
+    if (!["http", "ssh", "rdp", "vnc"].includes(r.mode || "")) {
         return (
             <CopyToClipboard
                 text={r.proxyPort?.toString() ?? ""}
@@ -149,7 +151,7 @@ function PrivateAccessMethod({ row }: { row: SiteResourceRow }) {
     const dest = formatSiteResourceDestinationDisplay({
         mode: row.mode,
         destination: row.destination,
-        httpHttpsPort: row.destinationPort,
+        destinationPort: row.destinationPort,
         scheme: row.scheme
     });
     return (
@@ -172,8 +174,8 @@ type OverviewRow = {
 type OverviewColumnProps = {
     title: string;
     description: string;
-    viewAllHref: string;
-    viewAllLabel: string;
+    viewAllHref?: string;
+    viewAllLabel?: string;
     emptyLabel: string;
     isForbidden: boolean;
     isFetching: boolean;
@@ -210,12 +212,14 @@ function OverviewColumn({
                         {description}
                     </p>
                 </div>
-                <Link
-                    href={viewAllHref}
-                    className="shrink-0 text-muted-foreground text-sm hover:underline"
-                >
-                    {viewAllLabel}
-                </Link>
+                {viewAllHref && viewAllLabel ? (
+                    <Link
+                        href={viewAllHref}
+                        className="shrink-0 text-muted-foreground text-sm hover:underline"
+                    >
+                        {viewAllLabel}
+                    </Link>
+                ) : null}
             </div>
         </div>
     );
@@ -317,6 +321,8 @@ type SiteResourcesOverviewProps = {
     initialPrivateForbidden: boolean;
     /** When not under `/[orgId]/...` routes, pass org id explicitly (e.g. credenza on sites list). */
     orgIdOverride?: string;
+    /** When false, hides links to the org resources tables filtered by this site. */
+    showViewAllLinks?: boolean;
 };
 
 export default function SiteResourcesOverview({
@@ -325,7 +331,8 @@ export default function SiteResourcesOverview({
     initialPrivateData,
     initialPublicForbidden,
     initialPrivateForbidden,
-    orgIdOverride
+    orgIdOverride,
+    showViewAllLinks = true
 }: SiteResourcesOverviewProps) {
     const t = useTranslations();
     const params = useParams<{ orgId: string }>();
@@ -420,30 +427,24 @@ export default function SiteResourcesOverview({
         publicList.length === 0 &&
         privateList.length === 0;
 
-    const publicViewAllHref = `/${orgId}/settings/resources/proxy?siteId=${siteId}`;
-    const privateViewAllHref = `/${orgId}/settings/resources/client?siteId=${siteId}`;
+    const publicViewAllHref = `/${orgId}/settings/resources/public?siteId=${siteId}`;
+    const privateViewAllHref = `/${orgId}/settings/resources/private?siteId=${siteId}`;
 
     const publicRows = publicList.map((r) => ({
         key: r.resourceId,
         meta: <PublicResourceMeta resource={r} />,
         name: r.name,
         access: <PublicAccessMethod resource={r} />,
-        editHref: `/${orgId}/settings/resources/proxy/${r.niceId}`
+        editHref: `/${orgId}/settings/resources/public/${r.niceId}`
     }));
 
-    const privateRows = privateList.map((row) => {
-        const qs = new URLSearchParams({
-            siteId: String(siteId),
-            query: row.niceId
-        });
-        return {
-            key: row.siteResourceId,
-            meta: <PrivateResourceMeta row={row} />,
-            name: row.name,
-            access: <PrivateAccessMethod row={row} />,
-            editHref: `/${orgId}/settings/resources/client?${qs.toString()}`
-        };
-    });
+    const privateRows = privateList.map((row) => ({
+        key: row.siteResourceId,
+        meta: <PrivateResourceMeta row={row} />,
+        name: row.name,
+        access: <PrivateAccessMethod row={row} />,
+        editHref: getPrivateResourceSettingsHref(orgId, row.niceId)
+    }));
 
     if (showEmptyPlaceholder) {
         return (
@@ -471,8 +472,10 @@ export default function SiteResourcesOverview({
             key="public"
             title={t("siteResourcesSectionPublic")}
             description={t("siteResourcesSectionPublicDescription")}
-            viewAllHref={publicViewAllHref}
-            viewAllLabel={t("siteResourcesViewAllPublic")}
+            viewAllHref={showViewAllLinks ? publicViewAllHref : undefined}
+            viewAllLabel={
+                showViewAllLinks ? t("siteResourcesViewAllPublic") : undefined
+            }
             emptyLabel={t("siteResourcesEmptyPublic")}
             isForbidden={publicForbidden}
             isFetching={publicQuery.isFetching}
@@ -488,8 +491,10 @@ export default function SiteResourcesOverview({
             key="private"
             title={t("siteResourcesSectionPrivate")}
             description={t("siteResourcesSectionPrivateDescription")}
-            viewAllHref={privateViewAllHref}
-            viewAllLabel={t("siteResourcesViewAllPrivate")}
+            viewAllHref={showViewAllLinks ? privateViewAllHref : undefined}
+            viewAllLabel={
+                showViewAllLinks ? t("siteResourcesViewAllPrivate") : undefined
+            }
             emptyLabel={t("siteResourcesEmptyPrivate")}
             isForbidden={privateForbidden}
             isFetching={privateQuery.isFetching}

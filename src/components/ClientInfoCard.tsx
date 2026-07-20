@@ -27,20 +27,18 @@ export default function SiteInfoCard({}: ClientInfoCardProps) {
     return (
         <Alert>
             <AlertDescription>
-                <InfoSections cols={3}>
+                <InfoSections cols={userDisplayName ? 3 : 2}>
                     <InfoSection>
                         <InfoSectionTitle>{t("name")}</InfoSectionTitle>
                         <InfoSectionContent>{client.name}</InfoSectionContent>
                     </InfoSection>
-                    <InfoSection>
-                        <InfoSectionTitle>
-                            {userDisplayName ? t("user") : t("identifier")}
-                        </InfoSectionTitle>
-                        <InfoSectionContent>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span>{userDisplayName || client.niceId}</span>
-                                {userDisplayName &&
-                                    (client.userType ?? "internal") !==
+                    {userDisplayName ? (
+                        <InfoSection>
+                            <InfoSectionTitle>{t("user")}</InfoSectionTitle>
+                            <InfoSectionContent>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span>{userDisplayName}</span>
+                                    {(client.userType ?? "internal") !==
                                         "internal" && (
                                         <IdpTypeBadge
                                             type={client.userType ?? "oidc"}
@@ -54,21 +52,22 @@ export default function SiteInfoCard({}: ClientInfoCardProps) {
                                             }
                                         />
                                     )}
-                            </div>
-                        </InfoSectionContent>
-                    </InfoSection>
+                                </div>
+                            </InfoSectionContent>
+                        </InfoSection>
+                    ) : null}
                     <InfoSection>
                         <InfoSectionTitle>{t("status")}</InfoSectionTitle>
                         <InfoSectionContent>
                             {client.online ? (
-                                <div className="text-green-500 flex items-center space-x-2">
+                                <div className="flex items-center space-x-2">
                                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                    <span>{t("online")}</span>
+                                    <span>{t("connected")}</span>
                                 </div>
                             ) : (
-                                <div className="text-neutral-500 flex items-center space-x-2">
+                                <div className="flex items-center space-x-2">
                                     <div className="w-2 h-2 bg-neutral-500 rounded-full"></div>
-                                    <span>{t("offline")}</span>
+                                    <span>{t("disconnected")}</span>
                                 </div>
                             )}
                         </InfoSectionContent>

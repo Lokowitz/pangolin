@@ -35,7 +35,14 @@ import {
     ResourceHeaderAuthExtendedCompatibility,
     orgs,
     requestAuditLog,
-    Org
+    Org,
+    resourcePolicies,
+    resourcePolicyPincode,
+    ResourcePolicyPincode,
+    resourcePolicyPassword,
+    ResourcePolicyPassword,
+    resourcePolicyHeaderAuth,
+    ResourcePolicyHeaderAuth
 } from "@server/db";
 import {
     resources,
@@ -45,12 +52,17 @@ import {
     users,
     userOrgs,
     roleResources,
+    rolePolicies,
     userResources,
+    userPolicies,
     resourceRules,
+    resourcePolicyRules,
     userOrgRoles,
-    roles
+    roles,
+    resourceAccessToken
 } from "@server/db";
-import { eq, and, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
+import { eq, and, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
+import { alias } from "@server/db";
 import { response } from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
 import { NextFunction, Request, Response } from "express";
@@ -68,10 +80,18 @@ import logger from "@server/logger";
 import { decrypt } from "@server/lib/crypto";
 import config from "@server/lib/config";
 import { exchangeSession } from "@server/routers/badger";
-import { validateResourceSessionToken } from "@server/auth/sessions/resource";
+import {
+    ResourceSessionValidationResult,
+    createResourceSession,
+    serializeResourceSessionCookie,
+    validateResourceSessionToken
+} from "@server/auth/sessions/resource";
 import { checkExitNodeOrg, resolveExitNodes } from "#private/lib/exitNodes";
 import { maxmindLookup } from "@server/db/maxmind";
 import { verifyResourceAccessToken } from "@server/auth/verifyResourceAccessToken";
+import { generateSessionToken } from "@server/auth/sessions/app";
+import { logAccessAudit } from "#private/lib/logAccessAudit";
+import { getUserOrgRoles } from "@server/lib/userOrgRoles";
 import semver from "semver";
 import { maxmindAsnLookup } from "@server/db/maxmindAsn";
 import { checkOrgAccessPolicy } from "@server/lib/checkOrgAccessPolicy";
@@ -164,6 +184,73 @@ const validateResourceAccessTokenBodySchema = z.strictObject({
     accessToken: z.string()
 });
 
+const createAccessTokenSessionParamsSchema = z.strictObject({
+    resourceId: z.coerce.number().int().positive()
+});
+
+const createAccessTokenSessionBodySchema = z.strictObject({
+    accessTokenId: z.string().min(1)
+});
+
+const getAccessTokenParamsSchema = z.strictObject({
+    accessTokenId: z.string().min(1)
+});
+
+const logAccessAuditBodySchema = z.strictObject({
+    action: z.boolean(),
+    type: z.string(),
+    orgId: z.string(),
+    resourceId: z.number().optional(),
+    siteResourceId: z.number().optional(),
+    user: z
+        .object({
+            username: z.string(),
+            userId: z.string()
+        })
+        .optional(),
+    apiKey: z
+        .object({
+            name: z.string().nullable(),
+            apiKeyId: z.string()
+        })
+        .optional(),
+    metadata: z.any().optional(),
+    userAgent: z.string().optional(),
+    requestIp: z.string().optional()
+});
+
+type AccessTokenUserData = {
+    userId: string;
+    username: string;
+    email: string | null;
+    name: string | null;
+    role: string | null;
+};
+
+async function resolveAccessTokenUserData(
+    userId: string,
+    orgId: string
+): Promise<AccessTokenUserData | undefined> {
+    const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.userId, userId))
+        .limit(1);
+
+    if (!user) {
+        return undefined;
+    }
+
+    const userOrgRoles = await getUserOrgRoles(user.userId, orgId);
+    return {
+        userId: user.userId,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        role: userOrgRoles.map((r) => r.roleName).join(", ") || null
+    };
+}
+
 // Certificates by domains query validation
 const getCertificatesByDomainsQuerySchema = z.strictObject({
     // Accept domains as string or array (domains or domains[])
@@ -201,10 +288,13 @@ export type ValidateResourceSessionTokenBody = z.infer<
 // Type definitions for API responses
 export type ResourceWithAuth = {
     resource: Resource | null;
-    pincode: ResourcePincode | null;
-    password: ResourcePassword | null;
-    headerAuth: ResourceHeaderAuth | null;
+    pincode: ResourcePincode | ResourcePolicyPincode | null;
+    password: ResourcePassword | ResourcePolicyPassword | null;
+    headerAuth: ResourceHeaderAuth | ResourcePolicyHeaderAuth | null;
     headerAuthExtendedCompatibility: ResourceHeaderAuthExtendedCompatibility | null;
+    applyRules: boolean | null;
+    sso: boolean | null;
+    emailWhitelistEnabled: boolean | null;
     org: Org;
 };
 
@@ -260,6 +350,8 @@ hybridRouter.get(
             );
         }
 
+        const pangolinUIUrl = config.getRawConfig().app.dashboard_url; // points to the dashboard to serve from there
+
         try {
             const traefikConfig = await getTraefikConfig(
                 remoteExitNode.exitNodeId,
@@ -267,7 +359,8 @@ hybridRouter.get(
                 true, // But don't allow domain namespace resources
                 false, // Dont include login pages,
                 true, // allow raw resources
-                false // dont generate maintenance page
+                pangolinUIUrl, // dont generate maintenance page
+                pangolinUIUrl // generate browser gateway targets
             );
 
             return response(res, {
@@ -430,7 +523,10 @@ hybridRouter.get(
                 );
 
                 // Decrypt and save key file
-                const decryptedKey = decrypt(cert.keyFile!, config.getRawConfig().server.secret!);
+                const decryptedKey = decrypt(
+                    cert.keyFile!,
+                    config.getRawConfig().server.secret!
+                );
 
                 // Return only the certificate data without org information
                 return {
@@ -500,6 +596,33 @@ hybridRouter.get(
                 wildcardCandidates.push(`*.${domainParts.slice(i).join(".")}`);
             }
 
+            const sharedPolicy = alias(resourcePolicies, "sharedPolicy");
+            const defaultPolicy = alias(resourcePolicies, "defaultPolicy");
+            const sharedPolicyPincode = alias(
+                resourcePolicyPincode,
+                "sharedPolicyPincode"
+            );
+            const defaultPolicyPincode = alias(
+                resourcePolicyPincode,
+                "defaultPolicyPincode"
+            );
+            const sharedPolicyPassword = alias(
+                resourcePolicyPassword,
+                "sharedPolicyPassword"
+            );
+            const defaultPolicyPassword = alias(
+                resourcePolicyPassword,
+                "defaultPolicyPassword"
+            );
+            const sharedPolicyHeaderAuth = alias(
+                resourcePolicyHeaderAuth,
+                "sharedPolicyHeaderAuth"
+            );
+            const defaultPolicyHeaderAuth = alias(
+                resourcePolicyHeaderAuth,
+                "defaultPolicyHeaderAuth"
+            );
+
             const potentialResults = await db
                 .select()
                 .from(resources)
@@ -522,6 +645,62 @@ hybridRouter.get(
                         resources.resourceId
                     )
                 )
+                .leftJoin(
+                    sharedPolicy,
+                    eq(
+                        sharedPolicy.resourcePolicyId,
+                        resources.resourcePolicyId
+                    )
+                )
+                .leftJoin(
+                    sharedPolicyPincode,
+                    eq(
+                        sharedPolicyPincode.resourcePolicyId,
+                        sharedPolicy.resourcePolicyId
+                    )
+                )
+                .leftJoin(
+                    sharedPolicyPassword,
+                    eq(
+                        sharedPolicyPassword.resourcePolicyId,
+                        sharedPolicy.resourcePolicyId
+                    )
+                )
+                .leftJoin(
+                    sharedPolicyHeaderAuth,
+                    eq(
+                        sharedPolicyHeaderAuth.resourcePolicyId,
+                        sharedPolicy.resourcePolicyId
+                    )
+                )
+                .leftJoin(
+                    defaultPolicy,
+                    eq(
+                        defaultPolicy.resourcePolicyId,
+                        resources.defaultResourcePolicyId
+                    )
+                )
+                .leftJoin(
+                    defaultPolicyPincode,
+                    eq(
+                        defaultPolicyPincode.resourcePolicyId,
+                        defaultPolicy.resourcePolicyId
+                    )
+                )
+                .leftJoin(
+                    defaultPolicyPassword,
+                    eq(
+                        defaultPolicyPassword.resourcePolicyId,
+                        defaultPolicy.resourcePolicyId
+                    )
+                )
+                .leftJoin(
+                    defaultPolicyHeaderAuth,
+                    eq(
+                        defaultPolicyHeaderAuth.resourcePolicyId,
+                        defaultPolicy.resourcePolicyId
+                    )
+                )
                 .innerJoin(orgs, eq(orgs.orgId, resources.orgId))
                 .where(
                     or(
@@ -531,7 +710,10 @@ hybridRouter.get(
                         wildcardCandidates.length > 0
                             ? and(
                                   eq(resources.wildcard, true),
-                                  inArray(resources.fullDomain, wildcardCandidates)
+                                  inArray(
+                                      resources.fullDomain,
+                                      wildcardCandidates
+                                  )
                               )
                             : sql`false`
                     )
@@ -545,10 +727,10 @@ hybridRouter.get(
 
             if (
                 result &&
-                await checkExitNodeOrg(
+                (await checkExitNodeOrg(
                     remoteExitNode.exitNodeId,
                     result.resources.orgId
-                )
+                ))
             ) {
                 // If the exit node is not allowed for the org, return an error
                 return next(
@@ -569,13 +751,49 @@ hybridRouter.get(
                 });
             }
 
+            const hasSharedPolicy = result.sharedPolicy !== null;
+
+            const effectivePolicyPincode = hasSharedPolicy
+                ? result.sharedPolicyPincode
+                : (result.defaultPolicyPincode ?? null);
+            const effectivePolicyPassword = hasSharedPolicy
+                ? result.sharedPolicyPassword
+                : (result.defaultPolicyPassword ?? null);
+            const effectivePolicyHeaderAuth = hasSharedPolicy
+                ? result.sharedPolicyHeaderAuth
+                : (result.defaultPolicyHeaderAuth ?? null);
+            const selectedPolicy = hasSharedPolicy
+                ? result.sharedPolicy
+                : result.defaultPolicy;
+            const effectiveApplyRules =
+                selectedPolicy?.applyRules ?? result.resources.applyRules;
+            const effectiveSSO = selectedPolicy?.sso ?? result.resources.sso;
+            const effectiveEmailWhitelistEnabled =
+                selectedPolicy?.emailWhitelistEnabled ??
+                result.resources.emailWhitelistEnabled;
+
             const resourceWithAuth: ResourceWithAuth = {
-                resource: result.resources,
-                pincode: result.resourcePincode,
-                password: result.resourcePassword,
-                headerAuth: result.resourceHeaderAuth,
-                headerAuthExtendedCompatibility:
-                    result.resourceHeaderAuthExtendedCompatibility,
+                resource: {
+                    ...result.resources,
+                    applyRules: effectiveApplyRules,
+                    sso: effectiveSSO,
+                    emailWhitelistEnabled: effectiveEmailWhitelistEnabled
+                },
+                pincode: effectivePolicyPincode ?? result.resourcePincode,
+                password: effectivePolicyPassword ?? result.resourcePassword,
+                headerAuth:
+                    effectivePolicyHeaderAuth ?? result.resourceHeaderAuth,
+                headerAuthExtendedCompatibility: effectivePolicyHeaderAuth
+                    ? ({
+                          headerAuthExtendedCompatibilityId: 0,
+                          resourceId: result.resources.resourceId,
+                          extendedCompatibilityIsActivated:
+                              effectivePolicyHeaderAuth.extendedCompatibility
+                      } as ResourceHeaderAuthExtendedCompatibility)
+                    : result.resourceHeaderAuthExtendedCompatibility,
+                applyRules: effectiveApplyRules,
+                sso: effectiveSSO,
+                emailWhitelistEnabled: effectiveEmailWhitelistEnabled,
                 org: result.orgs
             };
 
@@ -1132,22 +1350,52 @@ hybridRouter.get(
                 );
             }
 
-            const roleResourceAccess = await db
-                .select()
-                .from(roleResources)
-                .where(
-                    and(
-                        eq(roleResources.resourceId, resourceId),
-                        eq(roleResources.roleId, roleId)
+            const [direct, viaPolicies] = await Promise.all([
+                db
+                    .select()
+                    .from(roleResources)
+                    .where(
+                        and(
+                            eq(roleResources.resourceId, resourceId),
+                            eq(roleResources.roleId, roleId)
+                        )
                     )
-                )
-                .limit(1);
+                    .limit(1),
+                db
+                    .select({
+                        roleId: rolePolicies.roleId,
+                        resourcePolicyId: rolePolicies.resourcePolicyId
+                    })
+                    .from(rolePolicies)
+                    .innerJoin(
+                        resources,
+                        or(
+                            eq(
+                                resources.resourcePolicyId,
+                                rolePolicies.resourcePolicyId
+                            ),
+                            and(
+                                isNull(resources.resourcePolicyId),
+                                eq(
+                                    resources.defaultResourcePolicyId,
+                                    rolePolicies.resourcePolicyId
+                                )
+                            )
+                        )
+                    )
+                    .where(
+                        and(
+                            eq(resources.resourceId, resourceId),
+                            eq(rolePolicies.roleId, roleId)
+                        )
+                    )
+                    .limit(1)
+            ]);
 
-            const result =
-                roleResourceAccess.length > 0 ? roleResourceAccess[0] : null;
+            const result = direct[0] ?? viaPolicies[0] ?? null;
 
             return response<typeof roleResources.$inferSelect | null>(res, {
-                data: result,
+                data: result as any,
                 success: true,
                 error: false,
                 message: result
@@ -1222,21 +1470,53 @@ hybridRouter.get(
                 );
             }
 
-            const roleResourceAccess = await db
-                .select({
-                    resourceId: roleResources.resourceId,
-                    roleId: roleResources.roleId
-                })
-                .from(roleResources)
-                .where(
-                    and(
-                        eq(roleResources.resourceId, resourceId),
-                        inArray(roleResources.roleId, roleIds)
-                    )
-                );
+            const [direct, viaPolicies] = await Promise.all([
+                db
+                    .select({
+                        resourceId: roleResources.resourceId,
+                        roleId: roleResources.roleId
+                    })
+                    .from(roleResources)
+                    .where(
+                        and(
+                            eq(roleResources.resourceId, resourceId),
+                            inArray(roleResources.roleId, roleIds)
+                        )
+                    ),
+                roleIds.length > 0
+                    ? db
+                          .select({
+                              resourceId: sql<number>`${resourceId}`,
+                              roleId: rolePolicies.roleId
+                          })
+                          .from(rolePolicies)
+                          .innerJoin(
+                              resources,
+                              or(
+                                  eq(
+                                      resources.resourcePolicyId,
+                                      rolePolicies.resourcePolicyId
+                                  ),
+                                  and(
+                                      isNull(resources.resourcePolicyId),
+                                      eq(
+                                          resources.defaultResourcePolicyId,
+                                          rolePolicies.resourcePolicyId
+                                      )
+                                  )
+                              )
+                          )
+                          .where(
+                              and(
+                                  eq(resources.resourceId, resourceId),
+                                  inArray(rolePolicies.roleId, roleIds)
+                              )
+                          )
+                    : Promise.resolve([])
+            ]);
 
-            const result =
-                roleResourceAccess.length > 0 ? roleResourceAccess : null;
+            const combined = [...direct, ...viaPolicies];
+            const result = combined.length > 0 ? combined : null;
 
             return response<{ resourceId: number; roleId: number }[] | null>(
                 res,
@@ -1312,19 +1592,52 @@ hybridRouter.get(
                 );
             }
 
-            const userResourceAccess = await db
-                .select()
-                .from(userResources)
-                .where(
-                    and(
-                        eq(userResources.userId, userId),
-                        eq(userResources.resourceId, resourceId)
-                    )
-                )
-                .limit(1);
+            const [directUserAccess, viaPoliciesUserAccess] = await Promise.all(
+                [
+                    db
+                        .select()
+                        .from(userResources)
+                        .where(
+                            and(
+                                eq(userResources.userId, userId),
+                                eq(userResources.resourceId, resourceId)
+                            )
+                        )
+                        .limit(1),
+                    db
+                        .select({
+                            userId: userPolicies.userId,
+                            resourcePolicyId: userPolicies.resourcePolicyId
+                        })
+                        .from(userPolicies)
+                        .innerJoin(
+                            resources,
+                            or(
+                                eq(
+                                    resources.resourcePolicyId,
+                                    userPolicies.resourcePolicyId
+                                ),
+                                and(
+                                    isNull(resources.resourcePolicyId),
+                                    eq(
+                                        resources.defaultResourcePolicyId,
+                                        userPolicies.resourcePolicyId
+                                    )
+                                )
+                            )
+                        )
+                        .where(
+                            and(
+                                eq(resources.resourceId, resourceId),
+                                eq(userPolicies.userId, userId)
+                            )
+                        )
+                        .limit(1)
+                ]
+            );
 
             const result =
-                userResourceAccess.length > 0 ? userResourceAccess[0] : null;
+                directUserAccess[0] ?? viaPoliciesUserAccess[0] ?? null;
 
             return response<typeof userResources.$inferSelect | null>(res, {
                 data: result,
@@ -1397,10 +1710,54 @@ hybridRouter.get(
                 );
             }
 
-            const rules = await db
-                .select()
-                .from(resourceRules)
-                .where(eq(resourceRules.resourceId, resourceId));
+            const [directRules, policyRules] = await Promise.all([
+                db
+                    .select()
+                    .from(resourceRules)
+                    .where(eq(resourceRules.resourceId, resourceId)),
+                db
+                    .select({
+                        ruleId: resourcePolicyRules.ruleId,
+                        resourceId: sql<number>`${resourceId}`,
+                        enabled: resourcePolicyRules.enabled,
+                        priority: resourcePolicyRules.priority,
+                        action: resourcePolicyRules.action,
+                        match: resourcePolicyRules.match,
+                        value: resourcePolicyRules.value
+                    })
+                    .from(resourcePolicyRules)
+                    .innerJoin(
+                        resources,
+                        or(
+                            eq(
+                                resources.resourcePolicyId,
+                                resourcePolicyRules.resourcePolicyId
+                            ),
+                            and(
+                                isNull(resources.resourcePolicyId),
+                                eq(
+                                    resources.defaultResourcePolicyId,
+                                    resourcePolicyRules.resourcePolicyId
+                                )
+                            )
+                        )
+                    )
+                    .where(eq(resources.resourceId, resourceId))
+            ]);
+
+            const maxDirectPriority = directRules.reduce(
+                (max, r) => Math.max(max, r.priority),
+                0
+            );
+            const offsetPolicyRules = policyRules.map((r) => ({
+                ...r,
+                priority: maxDirectPriority + r.priority
+            }));
+
+            const rules = [
+                ...directRules,
+                ...offsetPolicyRules
+            ] as (typeof resourceRules.$inferSelect)[];
 
             // backward compatibility: COUNTRY -> GEOIP
             // TODO: remove this after a few versions once all exit nodes are updated
@@ -1411,6 +1768,7 @@ hybridRouter.get(
             ) {
                 for (const rule of rules) {
                     if (rule.match == "COUNTRY") {
+                        // @ts-expect-error this is for backward compatibility
                         rule.match = "GEOIP";
                     }
                 }
@@ -1475,11 +1833,34 @@ hybridRouter.post(
                 resourceId
             );
 
+            // this is for backward compatibility with nodes that did not have the policy id checking
+            const modifiedResult: ResourceSessionValidationResult = {
+                ...result,
+                resourceSession: result.resourceSession
+                    ? {
+                          ...result.resourceSession,
+                          // Prefer policy IDs, but keep legacy IDs populated for older nodes.
+                          pincodeId:
+                              result.resourceSession.policyPincodeId ??
+                              result.resourceSession.pincodeId ??
+                              null,
+                          passwordId:
+                              result.resourceSession.policyPasswordId ??
+                              result.resourceSession.passwordId ??
+                              null,
+                          whitelistId:
+                              result.resourceSession.policyWhitelistId ??
+                              result.resourceSession.whitelistId ??
+                              null
+                      }
+                    : null
+            };
+
             return response(res, {
-                data: result,
+                data: modifiedResult,
                 success: true,
                 error: false,
-                message: result.resourceSession
+                message: modifiedResult.resourceSession
                     ? "Resource session token is valid"
                     : "Resource session token is invalid or expired",
                 status: HttpCode.OK
@@ -1521,8 +1902,23 @@ hybridRouter.post(
                 resourceId
             });
 
+            let userData: AccessTokenUserData | undefined;
+            if (
+                result.valid &&
+                result.tokenItem?.userId &&
+                result.tokenItem.orgId
+            ) {
+                userData = await resolveAccessTokenUserData(
+                    result.tokenItem.userId,
+                    result.tokenItem.orgId
+                );
+            }
+
             return response(res, {
-                data: result,
+                data: {
+                    ...result,
+                    userData
+                },
                 success: true,
                 error: false,
                 message: result.valid
@@ -1536,6 +1932,233 @@ hybridRouter.post(
                 createHttpError(
                     HttpCode.INTERNAL_SERVER_ERROR,
                     "Failed to validate resource session token"
+                )
+            );
+        }
+    }
+);
+
+// Create a resource session from a valid access token (for remote nodes)
+hybridRouter.post(
+    "/resource/:resourceId/session/create-access-token",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const parsedParams = createAccessTokenSessionParamsSchema.safeParse(
+                req.params
+            );
+            if (!parsedParams.success) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        fromError(parsedParams.error).toString()
+                    )
+                );
+            }
+
+            const parsedBody = createAccessTokenSessionBodySchema.safeParse(
+                req.body
+            );
+            if (!parsedBody.success) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        fromError(parsedBody.error).toString()
+                    )
+                );
+            }
+
+            const { resourceId } = parsedParams.data;
+            const { accessTokenId } = parsedBody.data;
+
+            const [tokenItem] = await db
+                .select()
+                .from(resourceAccessToken)
+                .where(eq(resourceAccessToken.accessTokenId, accessTokenId))
+                .limit(1);
+
+            if (!tokenItem || tokenItem.resourceId !== resourceId) {
+                return next(
+                    createHttpError(
+                        HttpCode.NOT_FOUND,
+                        "Access token not found"
+                    )
+                );
+            }
+
+            if (!tokenItem.persistSession) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        "Access token does not allow session persistence"
+                    )
+                );
+            }
+
+            const [resource] = await db
+                .select()
+                .from(resources)
+                .where(eq(resources.resourceId, resourceId))
+                .limit(1);
+
+            if (!resource || !resource.fullDomain) {
+                return next(
+                    createHttpError(HttpCode.NOT_FOUND, "Resource not found")
+                );
+            }
+
+            const token = generateSessionToken();
+            const sess = await createResourceSession({
+                resourceId: resource.resourceId,
+                token,
+                accessTokenId: tokenItem.accessTokenId,
+                sessionLength: tokenItem.sessionLength,
+                expiresAt: tokenItem.expiresAt,
+                doNotExtend: tokenItem.expiresAt ? true : false
+            });
+
+            const cookieName = config.getRawConfig().server.session_cookie_name;
+            const cookie = serializeResourceSessionCookie(
+                cookieName,
+                resource.fullDomain,
+                token,
+                !resource.ssl,
+                new Date(sess.expiresAt)
+            );
+
+            return response(res, {
+                data: { cookie },
+                success: true,
+                error: false,
+                message: "Access token session created successfully",
+                status: HttpCode.OK
+            });
+        } catch (error) {
+            logger.error(error);
+            return next(
+                createHttpError(
+                    HttpCode.INTERNAL_SERVER_ERROR,
+                    "Failed to create access token session"
+                )
+            );
+        }
+    }
+);
+
+// Resolve access token metadata for remote nodes (cookie session path)
+hybridRouter.get(
+    "/resource/access-token/:accessTokenId",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const parsedParams = getAccessTokenParamsSchema.safeParse(
+                req.params
+            );
+            if (!parsedParams.success) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        fromError(parsedParams.error).toString()
+                    )
+                );
+            }
+
+            const { accessTokenId } = parsedParams.data;
+
+            const [tokenItem] = await db
+                .select()
+                .from(resourceAccessToken)
+                .where(eq(resourceAccessToken.accessTokenId, accessTokenId))
+                .limit(1);
+
+            if (!tokenItem) {
+                return next(
+                    createHttpError(
+                        HttpCode.NOT_FOUND,
+                        "Access token not found"
+                    )
+                );
+            }
+
+            let userData: AccessTokenUserData | undefined;
+            if (tokenItem.userId) {
+                userData = await resolveAccessTokenUserData(
+                    tokenItem.userId,
+                    tokenItem.orgId
+                );
+            }
+
+            return response(res, {
+                data: { tokenItem, userData },
+                success: true,
+                error: false,
+                message: "Access token retrieved successfully",
+                status: HttpCode.OK
+            });
+        } catch (error) {
+            logger.error(error);
+            return next(
+                createHttpError(
+                    HttpCode.INTERNAL_SERVER_ERROR,
+                    "Failed to get access token"
+                )
+            );
+        }
+    }
+);
+
+// Access audit log from remote nodes
+hybridRouter.post(
+    "/logs/access",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const parsedBody = logAccessAuditBodySchema.safeParse(req.body);
+            if (!parsedBody.success) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        fromError(parsedBody.error).toString()
+                    )
+                );
+            }
+
+            const remoteExitNode = req.remoteExitNode;
+            if (!remoteExitNode || !remoteExitNode.exitNodeId) {
+                return next(
+                    createHttpError(
+                        HttpCode.BAD_REQUEST,
+                        "Remote exit node not found"
+                    )
+                );
+            }
+
+            if (
+                await checkExitNodeOrg(
+                    remoteExitNode.exitNodeId,
+                    parsedBody.data.orgId
+                )
+            ) {
+                return next(
+                    createHttpError(
+                        HttpCode.FORBIDDEN,
+                        "Exit node not allowed for this organization"
+                    )
+                );
+            }
+
+            await logAccessAudit(parsedBody.data);
+
+            return response(res, {
+                data: null,
+                success: true,
+                error: false,
+                message: "Access audit log saved successfully",
+                status: HttpCode.OK
+            });
+        } catch (error) {
+            logger.error(error);
+            return next(
+                createHttpError(
+                    HttpCode.INTERNAL_SERVER_ERROR,
+                    "Failed to save access audit log"
                 )
             );
         }

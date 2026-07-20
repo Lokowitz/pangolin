@@ -1,4 +1,9 @@
-import { validateResourceSessionToken } from "@server/auth/sessions/resource";
+import {
+    createResourceSession,
+    serializeResourceSessionCookie,
+    validateResourceSessionToken
+} from "@server/auth/sessions/resource";
+import { generateSessionToken } from "@server/auth/sessions/app";
 import { verifyResourceAccessToken } from "@server/auth/verifyResourceAccessToken";
 import {
     getResourceByDomain,
@@ -13,14 +18,23 @@ import {
     LoginPage,
     Org,
     Resource,
+    ResourceAccessToken,
     ResourceHeaderAuth,
     ResourceHeaderAuthExtendedCompatibility,
     ResourcePassword,
     ResourcePincode,
-    ResourceRule
+    ResourcePolicyPincode,
+    ResourcePolicyPassword,
+    ResourcePolicyHeaderAuth,
+    ResourceRule,
+    ResourceSession,
+    db,
+    resourceAccessToken,
+    users
 } from "@server/db";
 import config from "@server/lib/config";
 import { isIpInCidr, stripPortFromHost } from "@server/lib/ip";
+import { isPathAllowed } from "@server/lib/pathMatch";
 import { response } from "@server/lib/response";
 import logger from "@server/logger";
 import HttpCode from "@server/types/HttpCode";
@@ -36,11 +50,13 @@ import {
     enforceResourceSessionLength
 } from "#dynamic/lib/checkOrgAccessPolicy";
 import { logRequestAudit } from "./logRequestAudit";
+import { logAccessAudit } from "#dynamic/lib/logAccessAudit";
 import { REGIONS } from "@server/db/regions";
 import { localCache } from "#dynamic/lib/cache";
 import { APP_VERSION } from "@server/lib/consts";
 import { isSubscribed } from "#dynamic/lib/isSubscribed";
 import { tierMatrix } from "@server/lib/billing/tierMatrix";
+import { eq } from "drizzle-orm";
 
 const verifyResourceSessionSchema = z.object({
     sessions: z.record(z.string(), z.string()).optional(),
@@ -61,6 +77,8 @@ export type VerifyResourceSessionSchema = z.infer<
 >;
 
 type BasicUserData = {
+    dontStripSession?: boolean;
+    userId: string;
     username: string;
     email: string | null;
     name: string | null;
@@ -73,6 +91,7 @@ export type VerifyUserResponse = {
     redirectUrl?: string;
     userData?: BasicUserData;
     pangolinVersion?: string;
+    dontStripSession?: boolean;
 };
 
 export async function verifyResourceSession(
@@ -131,10 +150,16 @@ export async function verifyResourceSession(
         let resourceData:
             | {
                   resource: Resource | null;
-                  pincode: ResourcePincode | null;
-                  password: ResourcePassword | null;
-                  headerAuth: ResourceHeaderAuth | null;
+                  pincode: ResourcePincode | ResourcePolicyPincode | null;
+                  password: ResourcePassword | ResourcePolicyPassword | null;
+                  headerAuth:
+                      | ResourceHeaderAuth
+                      | ResourcePolicyHeaderAuth
+                      | null;
                   headerAuthExtendedCompatibility: ResourceHeaderAuthExtendedCompatibility | null;
+                  applyRules: boolean | null;
+                  sso: boolean | null;
+                  emailWhitelistEnabled: boolean | null;
                   org: Org;
               }
             | undefined = localCache.get(resourceCacheKey);
@@ -166,9 +191,12 @@ export async function verifyResourceSession(
 
         const {
             resource,
+            applyRules,
+            sso,
             pincode,
             password,
             headerAuth,
+            emailWhitelistEnabled,
             headerAuthExtendedCompatibility
         } = resourceData;
 
@@ -190,7 +218,8 @@ export async function verifyResourceSession(
             return notAllowed(res);
         }
 
-        const { sso, blockAccess } = resource;
+        const { blockAccess, mode } = resource;
+        const dontStripSession = ["ssh", "rdp", "vnc"].includes(mode);
 
         if (blockAccess) {
             logger.debug("Resource blocked", host);
@@ -210,7 +239,7 @@ export async function verifyResourceSession(
         }
 
         // check the rules
-        if (resource.applyRules) {
+        if (applyRules) {
             const action = await checkRules(
                 resource.resourceId,
                 clientIp,
@@ -233,7 +262,7 @@ export async function verifyResourceSession(
                     parsedBody.data
                 );
 
-                return allowed(res);
+                return allowed(res, undefined, dontStripSession);
             } else if (action == "DROP") {
                 logger.debug("Resource denied by rule");
 
@@ -265,7 +294,7 @@ export async function verifyResourceSession(
             !sso &&
             !pincode &&
             !password &&
-            !resource.emailWhitelistEnabled &&
+            !emailWhitelistEnabled &&
             !headerAuth
         ) {
             logger.debug("Resource allowed because no auth");
@@ -281,7 +310,7 @@ export async function verifyResourceSession(
                 parsedBody.data
             );
 
-            return allowed(res);
+            return allowed(res, undefined, dontStripSession);
         }
 
         const redirectPath = `/auth/resource/${encodeURIComponent(
@@ -332,22 +361,15 @@ export async function verifyResourceSession(
             }
 
             if (valid && tokenItem) {
-                logRequestAudit(
-                    {
-                        action: true,
-                        reason: 102, // valid access token
-                        resourceId: resource.resourceId,
-                        orgId: resource.orgId,
-                        location: ipCC,
-                        apiKey: {
-                            name: tokenItem.title,
-                            apiKeyId: tokenItem.accessTokenId
-                        }
-                    },
-                    parsedBody.data
+                return await allowAccessToken(
+                    res,
+                    resource,
+                    tokenItem,
+                    sessions,
+                    dontStripSession,
+                    parsedBody.data,
+                    ipCC
                 );
-
-                return allowed(res);
             }
         }
 
@@ -383,27 +405,20 @@ export async function verifyResourceSession(
             }
 
             if (valid && tokenItem) {
-                logRequestAudit(
-                    {
-                        action: true,
-                        reason: 102, // valid access token
-                        resourceId: resource.resourceId,
-                        orgId: resource.orgId,
-                        location: ipCC,
-                        apiKey: {
-                            name: tokenItem.title,
-                            apiKeyId: tokenItem.accessTokenId
-                        }
-                    },
-                    parsedBody.data
+                return await allowAccessToken(
+                    res,
+                    resource,
+                    tokenItem,
+                    sessions,
+                    dontStripSession,
+                    parsedBody.data,
+                    ipCC
                 );
-
-                return allowed(res);
             }
         }
 
         // check for HTTP Basic Auth header
-        const clientHeaderAuthKey = `headerAuth:${clientHeaderAuth}`;
+        const clientHeaderAuthKey = `headerAuth:${resource.resourceId}:${clientHeaderAuth}`;
         if (headerAuth && clientHeaderAuth) {
             if (localCache.get(clientHeaderAuthKey)) {
                 logger.debug(
@@ -421,7 +436,7 @@ export async function verifyResourceSession(
                     parsedBody.data
                 );
 
-                return allowed(res);
+                return allowed(res, undefined, dontStripSession);
             } else if (
                 await verifyPassword(
                     clientHeaderAuth,
@@ -442,7 +457,7 @@ export async function verifyResourceSession(
                     parsedBody.data
                 );
 
-                return allowed(res);
+                return allowed(res, undefined, dontStripSession);
             }
 
             if (
@@ -450,7 +465,7 @@ export async function verifyResourceSession(
                 !sso &&
                 !pincode &&
                 !password &&
-                !resource.emailWhitelistEnabled &&
+                !emailWhitelistEnabled &&
                 !headerAuthExtendedCompatibility?.extendedCompatibilityIsActivated
             ) {
                 logRequestAudit(
@@ -472,7 +487,7 @@ export async function verifyResourceSession(
                 !sso &&
                 !pincode &&
                 !password &&
-                !resource.emailWhitelistEnabled &&
+                !emailWhitelistEnabled &&
                 !headerAuthExtendedCompatibility?.extendedCompatibilityIsActivated
             ) {
                 logRequestAudit(
@@ -520,7 +535,8 @@ export async function verifyResourceSession(
 
         if (resourceSessionToken) {
             const sessionCacheKey = `session:${resourceSessionToken}`;
-            let resourceSession: any = localCache.get(sessionCacheKey);
+            let resourceSession: ResourceSession | null | undefined =
+                localCache.get(sessionCacheKey);
 
             if (!resourceSession) {
                 const result = await validateResourceSessionToken(
@@ -573,7 +589,11 @@ export async function verifyResourceSession(
                     return notAllowed(res, redirectPath, resource.orgId);
                 }
 
-                if (pincode && resourceSession.pincodeId) {
+                if (
+                    pincode &&
+                    (resourceSession.pincodeId ||
+                        resourceSession.policyPincodeId)
+                ) {
                     logger.debug(
                         "Resource allowed because pincode session is valid"
                     );
@@ -589,10 +609,14 @@ export async function verifyResourceSession(
                         parsedBody.data
                     );
 
-                    return allowed(res);
+                    return allowed(res, undefined, dontStripSession);
                 }
 
-                if (password && resourceSession.passwordId) {
+                if (
+                    password &&
+                    (resourceSession.passwordId ||
+                        resourceSession.policyPasswordId)
+                ) {
                     logger.debug(
                         "Resource allowed because password session is valid"
                     );
@@ -608,12 +632,13 @@ export async function verifyResourceSession(
                         parsedBody.data
                     );
 
-                    return allowed(res);
+                    return allowed(res, undefined, dontStripSession);
                 }
 
                 if (
-                    resource.emailWhitelistEnabled &&
-                    resourceSession.whitelistId
+                    emailWhitelistEnabled &&
+                    (resourceSession.whitelistId ||
+                        resourceSession.policyWhitelistId)
                 ) {
                     logger.debug(
                         "Resource allowed because whitelist session is valid"
@@ -630,7 +655,7 @@ export async function verifyResourceSession(
                         parsedBody.data
                     );
 
-                    return allowed(res);
+                    return allowed(res, undefined, dontStripSession);
                 }
 
                 if (resourceSession.accessTokenId) {
@@ -638,22 +663,37 @@ export async function verifyResourceSession(
                         "Resource allowed because access token session is valid"
                     );
 
-                    logRequestAudit(
+                    const [tokenItem] = await db
+                        .select()
+                        .from(resourceAccessToken)
+                        .where(
+                            eq(
+                                resourceAccessToken.accessTokenId,
+                                resourceSession.accessTokenId
+                            )
+                        )
+                        .limit(1);
+
+                    const userData = tokenItem
+                        ? await getAccessTokenUserData(
+                              tokenItem,
+                              resource.orgId
+                          )
+                        : undefined;
+
+                    logAccessTokenRequestAudit(
                         {
-                            action: true,
-                            reason: 102, // valid access token
                             resourceId: resource.resourceId,
                             orgId: resource.orgId,
                             location: ipCC,
-                            apiKey: {
-                                name: resourceSession.accessTokenTitle,
-                                apiKeyId: resourceSession.accessTokenId
-                            }
+                            accessTokenId: resourceSession.accessTokenId,
+                            tokenTitle: tokenItem?.title ?? null,
+                            userData
                         },
                         parsedBody.data
                     );
 
-                    return allowed(res);
+                    return allowed(res, userData, dontStripSession);
                 }
 
                 if (resourceSession.userSessionId && sso) {
@@ -671,7 +711,8 @@ export async function verifyResourceSession(
                             resourceData.org
                         );
 
-                        localCache.set(userAccessCacheKey, allowedUserData, 5);
+                        // this is query intensive so let it cache a little longer
+                        localCache.set(userAccessCacheKey, allowedUserData, 12);
                     }
 
                     if (
@@ -691,23 +732,30 @@ export async function verifyResourceSession(
                                 location: ipCC,
                                 user: {
                                     username: allowedUserData.username,
-                                    userId: resourceSession.userId
+                                    userId: allowedUserData.userId
                                 }
                             },
                             parsedBody.data
                         );
 
-                        return allowed(res, allowedUserData);
+                        return allowed(
+                            res,
+                            { ...allowedUserData, dontStripSession },
+                            dontStripSession
+                        );
                     }
                 }
             }
         }
 
-        // If headerAuthExtendedCompatibility is activated but no clientHeaderAuth provided, force client to challenge
+        // If headerAuthExtendedCompatibility is activated but no clientHeaderAuth provided, force client to challenge.
+        // Skip the challenge when SSO is also enabled so browsers get the SSO redirect instead of a native Basic
+        // Auth dialog; clients that proactively send Authorization: Basic are still accepted above.
         if (
             headerAuthExtendedCompatibility &&
             headerAuthExtendedCompatibility.extendedCompatibilityIsActivated &&
-            !clientHeaderAuth
+            !clientHeaderAuth &&
+            !sso
         ) {
             return headerAuthChallenged(res, redirectPath, resource.orgId);
         }
@@ -830,22 +878,251 @@ async function notAllowed(
         message: "Access denied",
         status: HttpCode.OK
     };
-    logger.debug(JSON.stringify(data));
+    // logger.debug(JSON.stringify(data));
     return response<VerifyUserResponse>(res, data);
 }
 
-function allowed(res: Response, userData?: BasicUserData) {
+function allowed(
+    res: Response,
+    userData?: BasicUserData,
+    dontStripSession?: boolean
+) {
+    const baseData =
+        userData !== undefined && userData !== null
+            ? { valid: true, ...userData, pangolinVersion: APP_VERSION }
+            : { valid: true, pangolinVersion: APP_VERSION };
     const data = {
-        data:
-            userData !== undefined && userData !== null
-                ? { valid: true, ...userData, pangolinVersion: APP_VERSION }
-                : { valid: true, pangolinVersion: APP_VERSION },
+        data: dontStripSession
+            ? { ...baseData, dontStripSession: true }
+            : baseData,
         success: true,
         error: false,
         message: "Access allowed",
         status: HttpCode.OK
     };
+    logger.debug("Access allowed, response data:", data);
     return response<VerifyUserResponse>(res, data);
+}
+
+async function allowAccessToken(
+    res: Response,
+    resource: Resource,
+    tokenItem: ResourceAccessToken,
+    sessions: Record<string, string> | undefined,
+    dontStripSession: boolean | undefined,
+    auditBody: VerifyResourceSessionSchema,
+    location?: string
+) {
+    const userData = await getAccessTokenUserData(tokenItem, resource.orgId);
+
+    logAccessTokenRequestAudit(
+        {
+            resourceId: resource.resourceId,
+            orgId: resource.orgId,
+            location,
+            accessTokenId: tokenItem.accessTokenId,
+            tokenTitle: tokenItem.title,
+            userData
+        },
+        auditBody
+    );
+
+    if (!tokenItem.persistSession) {
+        logAccessTokenAccessAudit(tokenItem, resource, userData, auditBody);
+        return allowed(res, userData, dontStripSession);
+    }
+
+    const resourceSessionToken = extractResourceSessionToken(
+        sessions ?? {},
+        resource.ssl
+    );
+
+    if (resourceSessionToken) {
+        const sessionCacheKey = `session:${resourceSessionToken}`;
+        let resourceSession: ResourceSession | null | undefined =
+            localCache.get(sessionCacheKey);
+
+        if (!resourceSession) {
+            const result = await validateResourceSessionToken(
+                resourceSessionToken,
+                resource.resourceId
+            );
+            resourceSession = result?.resourceSession;
+            localCache.set(sessionCacheKey, resourceSession, 5);
+        }
+
+        if (
+            resourceSession &&
+            !resourceSession.isRequestToken &&
+            resourceSession.accessTokenId === tokenItem.accessTokenId
+        ) {
+            logger.debug(
+                "Resource allowed because existing access token session is valid"
+            );
+            return allowed(res, userData, dontStripSession);
+        }
+    }
+
+    logAccessTokenAccessAudit(tokenItem, resource, userData, auditBody);
+    return await createAccessTokenSession(res, resource, tokenItem, userData);
+}
+
+async function createAccessTokenSession(
+    res: Response,
+    resource: Resource,
+    tokenItem: ResourceAccessToken,
+    userData?: BasicUserData
+) {
+    const token = generateSessionToken();
+    const sess = await createResourceSession({
+        resourceId: resource.resourceId,
+        token,
+        accessTokenId: tokenItem.accessTokenId,
+        sessionLength: tokenItem.sessionLength,
+        expiresAt: tokenItem.expiresAt,
+        doNotExtend: tokenItem.expiresAt ? true : false
+    });
+    const cookieName = config.getRawConfig().server.session_cookie_name;
+    const cookie = serializeResourceSessionCookie(
+        cookieName,
+        resource.fullDomain!,
+        token,
+        !resource.ssl,
+        new Date(sess.expiresAt)
+    );
+    res.appendHeader("Set-Cookie", cookie);
+    logger.debug("Access token is valid, creating new session");
+    return allowed(res, userData);
+}
+
+async function getAccessTokenUserData(
+    tokenItem: ResourceAccessToken,
+    orgId: string
+): Promise<BasicUserData | undefined> {
+    if (!tokenItem.userId) {
+        return undefined;
+    }
+
+    const cacheKey = `accessTokenUser:${tokenItem.userId}:${orgId}`;
+    const cached = localCache.get(cacheKey) as BasicUserData | null | undefined;
+    if (cached !== undefined) {
+        return cached ?? undefined;
+    }
+
+    const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.userId, tokenItem.userId))
+        .limit(1);
+
+    if (!user) {
+        localCache.set(cacheKey, null, 5);
+        return undefined;
+    }
+
+    const userOrgRoles = await getUserOrgRoles(user.userId, orgId);
+    const userData: BasicUserData = {
+        userId: user.userId,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        role: userOrgRoles.map((r) => r.roleName).join(", ") || null
+    };
+
+    localCache.set(cacheKey, userData, 12);
+    return userData;
+}
+
+function logAccessTokenRequestAudit(
+    data: {
+        resourceId: number;
+        orgId: string;
+        location?: string;
+        accessTokenId: string;
+        tokenTitle: string | null;
+        userData?: BasicUserData;
+    },
+    body: VerifyResourceSessionSchema
+) {
+    if (data.userData) {
+        logRequestAudit(
+            {
+                action: true,
+                reason: 102, // valid access token
+                resourceId: data.resourceId,
+                orgId: data.orgId,
+                location: data.location,
+                user: {
+                    username: data.userData.username,
+                    userId: data.userData.userId
+                },
+                metadata: {
+                    accessTokenId: data.accessTokenId,
+                    accessTokenTitle: data.tokenTitle
+                }
+            },
+            body
+        );
+        return;
+    }
+
+    logRequestAudit(
+        {
+            action: true,
+            reason: 102, // valid access token
+            resourceId: data.resourceId,
+            orgId: data.orgId,
+            location: data.location,
+            apiKey: {
+                name: data.tokenTitle,
+                apiKeyId: data.accessTokenId
+            }
+        },
+        body
+    );
+}
+
+function logAccessTokenAccessAudit(
+    tokenItem: ResourceAccessToken,
+    resource: Resource,
+    userData: BasicUserData | undefined,
+    body: VerifyResourceSessionSchema
+) {
+    const userAgent =
+        body.headers?.["user-agent"] || body.headers?.["User-Agent"];
+
+    if (userData) {
+        logAccessAudit({
+            orgId: resource.orgId,
+            resourceId: resource.resourceId,
+            action: true,
+            type: "accessToken",
+            user: {
+                username: userData.username,
+                userId: userData.userId
+            },
+            metadata: {
+                accessTokenId: tokenItem.accessTokenId,
+                accessTokenTitle: tokenItem.title
+            },
+            userAgent,
+            requestIp: body.requestIp
+        });
+        return;
+    }
+
+    logAccessAudit({
+        orgId: resource.orgId,
+        resourceId: resource.resourceId,
+        action: true,
+        type: "accessToken",
+        apiKey: {
+            name: tokenItem.title,
+            apiKeyId: tokenItem.accessTokenId
+        },
+        userAgent,
+        requestIp: body.requestIp
+    });
 }
 
 async function headerAuthChallenged(
@@ -892,7 +1169,7 @@ async function headerAuthChallenged(
         message: "Access denied",
         status: HttpCode.OK
     };
-    logger.debug(JSON.stringify(data));
+    // logger.debug(JSON.stringify(data));
     return response<VerifyUserResponse>(res, data);
 }
 
@@ -944,6 +1221,7 @@ async function isUserAllowedToAccessResource(
     );
     if (roleResourceAccess && roleResourceAccess.length > 0) {
         return {
+            userId: user.userId,
             username: user.username,
             email: user.email,
             name: user.name,
@@ -958,6 +1236,7 @@ async function isUserAllowedToAccessResource(
 
     if (userResourceAccess) {
         return {
+            userId: user.userId,
             username: user.username,
             email: user.email,
             name: user.name,
@@ -1003,11 +1282,7 @@ async function checkRules(
             isIpInCidr(clientIp, rule.value)
         ) {
             return rule.action as any;
-        } else if (
-            clientIp &&
-            rule.match == "IP" &&
-            clientIp == rule.value
-        ) {
+        } else if (clientIp && rule.match == "IP" && clientIp == rule.value) {
             return rule.action as any;
         } else if (
             path &&
@@ -1017,7 +1292,7 @@ async function checkRules(
             return rule.action as any;
         } else if (
             clientIp &&
-            rule.match == "COUNTRY"
+            (rule.match === "COUNTRY" || rule.match === "COUNTRY_IS_NOT")
         ) {
             // COUNTRY=ALL should not affect local/private/CGNAT addresses.
             if (
@@ -1027,13 +1302,13 @@ async function checkRules(
                 continue;
             }
 
-            if (await isIpInGeoIP(ipCC, rule.value)) {
+            const inCountry = await isIpInGeoIP(ipCC, rule.value);
+            const matched = rule.match === "COUNTRY" ? inCountry : !inCountry;
+
+            if (matched) {
                 return rule.action as any;
             }
-        } else if (
-            clientIp &&
-            rule.match == "ASN"
-        ) {
+        } else if (clientIp && rule.match == "ASN") {
             // ASN=ALL/AS0 should not affect local/private/CGNAT addresses.
             if (
                 (rule.value.toUpperCase() === "ALL" ||
@@ -1058,143 +1333,7 @@ async function checkRules(
     return;
 }
 
-export function isPathAllowed(pattern: string, path: string): boolean {
-    logger.debug(`\nMatching path "${path}" against pattern "${pattern}"`);
-
-    // Normalize and split paths into segments
-    const normalize = (p: string) => p.split("/").filter(Boolean);
-    const patternParts = normalize(pattern);
-    const pathParts = normalize(path);
-
-    logger.debug(`Normalized pattern parts: [${patternParts.join(", ")}]`);
-    logger.debug(`Normalized path parts: [${pathParts.join(", ")}]`);
-
-    // Maximum recursion depth to prevent stack overflow and memory issues
-    const MAX_RECURSION_DEPTH = 100;
-
-    // Recursive function to try different wildcard matches
-    function matchSegments(
-        patternIndex: number,
-        pathIndex: number,
-        depth: number = 0
-    ): boolean {
-        // Check recursion depth limit
-        if (depth > MAX_RECURSION_DEPTH) {
-            logger.warn(
-                `Path matching exceeded maximum recursion depth (${MAX_RECURSION_DEPTH}) for pattern "${pattern}" and path "${path}"`
-            );
-            return false;
-        }
-
-        const indent = "  ".repeat(depth); // Indent based on recursion depth
-        const currentPatternPart = patternParts[patternIndex];
-        const currentPathPart = pathParts[pathIndex];
-
-        logger.debug(
-            `${indent}Checking patternIndex=${patternIndex} (${currentPatternPart || "END"}) vs pathIndex=${pathIndex} (${currentPathPart || "END"}) [depth=${depth}]`
-        );
-
-        // If we've consumed all pattern parts, we should have consumed all path parts
-        if (patternIndex >= patternParts.length) {
-            const result = pathIndex >= pathParts.length;
-            logger.debug(
-                `${indent}Reached end of pattern, remaining path: ${pathParts.slice(pathIndex).join("/")} -> ${result}`
-            );
-            return result;
-        }
-
-        // If we've consumed all path parts but still have pattern parts
-        if (pathIndex >= pathParts.length) {
-            // The only way this can match is if all remaining pattern parts are wildcards
-            const remainingPattern = patternParts.slice(patternIndex);
-            const result = remainingPattern.every((p) => p === "*");
-            logger.debug(
-                `${indent}Reached end of path, remaining pattern: ${remainingPattern.join("/")} -> ${result}`
-            );
-            return result;
-        }
-
-        // For full segment wildcards, try consuming different numbers of path segments
-        if (currentPatternPart === "*") {
-            logger.debug(
-                `${indent}Found wildcard at pattern index ${patternIndex}`
-            );
-
-            // Try consuming 0 segments (skip the wildcard)
-            logger.debug(
-                `${indent}Trying to skip wildcard (consume 0 segments)`
-            );
-            if (matchSegments(patternIndex + 1, pathIndex, depth + 1)) {
-                logger.debug(
-                    `${indent}Successfully matched by skipping wildcard`
-                );
-                return true;
-            }
-
-            // Try consuming current segment and recursively try rest
-            logger.debug(
-                `${indent}Trying to consume segment "${currentPathPart}" for wildcard`
-            );
-            if (matchSegments(patternIndex, pathIndex + 1, depth + 1)) {
-                logger.debug(
-                    `${indent}Successfully matched by consuming segment for wildcard`
-                );
-                return true;
-            }
-
-            logger.debug(`${indent}Failed to match wildcard`);
-            return false;
-        }
-
-        // Check for in-segment wildcard (e.g., "prefix*" or "prefix*suffix")
-        if (currentPatternPart.includes("*")) {
-            logger.debug(
-                `${indent}Found in-segment wildcard in "${currentPatternPart}"`
-            );
-
-            // Convert the pattern segment to a regex pattern
-            const regexPattern = currentPatternPart
-                .replace(/\*/g, ".*") // Replace * with .* for regex wildcard
-                .replace(/\?/g, "."); // Replace ? with . for single character wildcard if needed
-
-            const regex = new RegExp(`^${regexPattern}$`);
-
-            if (regex.test(currentPathPart)) {
-                logger.debug(
-                    `${indent}Segment with wildcard matches: "${currentPatternPart}" matches "${currentPathPart}"`
-                );
-                return matchSegments(
-                    patternIndex + 1,
-                    pathIndex + 1,
-                    depth + 1
-                );
-            }
-
-            logger.debug(
-                `${indent}Segment with wildcard mismatch: "${currentPatternPart}" doesn't match "${currentPathPart}"`
-            );
-            return false;
-        }
-
-        // For regular segments, they must match exactly
-        if (currentPatternPart !== currentPathPart) {
-            logger.debug(
-                `${indent}Segment mismatch: "${currentPatternPart}" != "${currentPathPart}"`
-            );
-            return false;
-        }
-
-        logger.debug(
-            `${indent}Segments match: "${currentPatternPart}" = "${currentPathPart}"`
-        );
-        // Move to next segments in both pattern and path
-        return matchSegments(patternIndex + 1, pathIndex + 1, depth + 1);
-    }
-
-    const result = matchSegments(0, 0, 0);
-    logger.debug(`Final result: ${result}`);
-    return result;
-}
+export { isPathAllowed };
 
 async function isIpInGeoIP(
     ipCountryCode: string | undefined,
@@ -1272,11 +1411,15 @@ export async function isIpInRegion(
         if (region.id === checkRegionCode) {
             for (const subregion of region.includes) {
                 if (subregion.countries.includes(upperCode)) {
-                    logger.debug(`Country ${upperCode} is in region ${region.id} (${region.name})`);
+                    logger.debug(
+                        `Country ${upperCode} is in region ${region.id} (${region.name})`
+                    );
                     return true;
                 }
             }
-            logger.debug(`Country ${upperCode} is not in region ${region.id} (${region.name})`);
+            logger.debug(
+                `Country ${upperCode} is not in region ${region.id} (${region.name})`
+            );
             return false;
         }
 
@@ -1284,10 +1427,14 @@ export async function isIpInRegion(
         for (const subregion of region.includes) {
             if (subregion.id === checkRegionCode) {
                 if (subregion.countries.includes(upperCode)) {
-                    logger.debug(`Country ${upperCode} is in region ${subregion.id} (${subregion.name})`);
+                    logger.debug(
+                        `Country ${upperCode} is in region ${subregion.id} (${subregion.name})`
+                    );
                     return true;
                 }
-                logger.debug(`Country ${upperCode} is not in region ${subregion.id} (${subregion.name})`);
+                logger.debug(
+                    `Country ${upperCode} is not in region ${subregion.id} (${subregion.name})`
+                );
                 return false;
             }
         }

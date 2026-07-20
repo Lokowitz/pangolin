@@ -2,6 +2,7 @@ import {
     db,
     Org,
     orgs,
+    resourceAccessToken,
     resources,
     siteResources,
     sites,
@@ -14,7 +15,7 @@ import {
 } from "@server/db";
 import { eq, and, inArray, ne, exists } from "drizzle-orm";
 import { usageService } from "@server/lib/billing/usageService";
-import { FeatureId } from "@server/lib/billing";
+import { LimitId } from "@server/lib/billing";
 
 export async function assignUserToOrg(
     org: Org,
@@ -61,7 +62,7 @@ export async function assignUserToOrg(
             );
 
         if (orgsInBillingDomainThatTheUserIsStillIn.length === 0) {
-            await usageService.add(org.orgId, FeatureId.USERS, 1, trx);
+            await usageService.add(org.orgId, LimitId.USERS, 1, trx);
         }
     }
 }
@@ -82,6 +83,15 @@ export async function removeUserFromOrg(
     await trx
         .delete(userOrgs)
         .where(and(eq(userOrgs.userId, userId), eq(userOrgs.orgId, org.orgId)));
+
+    await trx
+        .delete(resourceAccessToken)
+        .where(
+            and(
+                eq(resourceAccessToken.userId, userId),
+                eq(resourceAccessToken.orgId, org.orgId)
+            )
+        );
 
     await trx.delete(userResources).where(
         and(
@@ -157,7 +167,7 @@ export async function removeUserFromOrg(
             );
 
         if (orgsInBillingDomainThatTheUserIsStillIn.length === 0) {
-            await usageService.add(org.orgId, FeatureId.USERS, -1, trx);
+            await usageService.add(org.orgId, LimitId.USERS, -1, trx);
         }
     }
 }

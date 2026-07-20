@@ -1,6 +1,6 @@
 import { generateSessionToken } from "@server/auth/sessions/app";
 import { db } from "@server/db";
-import { Resource, resources } from "@server/db";
+import { Resource, resources, users } from "@server/db";
 import HttpCode from "@server/types/HttpCode";
 import response from "@server/lib/response";
 import { eq } from "drizzle-orm";
@@ -156,18 +156,54 @@ export async function authWithAccessToken(
             doNotExtend: true
         });
 
+        let accessAuditUser: { username: string; userId: string } | undefined;
+        if (tokenItem.userId) {
+            const [associatedUser] = await db
+                .select({
+                    userId: users.userId,
+                    username: users.username
+                })
+                .from(users)
+                .where(eq(users.userId, tokenItem.userId))
+                .limit(1);
+            if (associatedUser) {
+                accessAuditUser = {
+                    userId: associatedUser.userId,
+                    username: associatedUser.username
+                };
+            }
+        }
+
         logAccessAudit({
             orgId: resource.orgId,
             resourceId: resource.resourceId,
             action: true,
             type: "accessToken",
+            apiKey: accessAuditUser
+                ? undefined
+                : {
+                      name: tokenItem.title,
+                      apiKeyId: tokenItem.accessTokenId
+                  },
+            user: accessAuditUser,
+            metadata: accessAuditUser
+                ? {
+                      accessTokenId: tokenItem.accessTokenId,
+                      accessTokenTitle: tokenItem.title
+                  }
+                : undefined,
             userAgent: req.headers["user-agent"],
             requestIp: req.ip
         });
 
         let redirectUrl = `${resource.ssl ? "https" : "http"}://${resource.fullDomain}`;
         const postAuthPath = normalizePostAuthPath(resource.postAuthPath);
-        if (postAuthPath) {
+        if (tokenItem.path) {
+            // add the path from the access token to the redirect URL, ensuring there is exactly one slash between the domain and the path
+            redirectUrl =
+                redirectUrl.replace(/\/?$/, "/") +
+                tokenItem.path.replace(/^\/?/, "");
+        } else if (postAuthPath) {
             redirectUrl = redirectUrl + postAuthPath;
         }
 

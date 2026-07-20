@@ -32,7 +32,10 @@ import { OpenAPITags, registry } from "@server/openApi";
 import { and, eq } from "drizzle-orm";
 import { decrypt } from "@server/lib/crypto";
 import config from "@server/lib/config";
-import { GetAlertRuleResponse, WebhookAlertConfig } from "@server/routers/alertRule/types";
+import {
+    GetAlertRuleResponse,
+    WebhookAlertConfig
+} from "@server/routers/alertRule/types";
 
 const paramsSchema = z
     .object({
@@ -45,11 +48,26 @@ registry.registerPath({
     method: "get",
     path: "/org/{orgId}/alert-rule/{alertRuleId}",
     description: "Get a specific alert rule for an organization.",
-    tags: [OpenAPITags.Org],
+    tags: [OpenAPITags.AlertRule],
     request: {
         params: paramsSchema
     },
-    responses: {}
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
 });
 
 export async function getAlertRule(

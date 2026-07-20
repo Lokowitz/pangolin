@@ -13,6 +13,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { createApiResponseSchema } from "@server/lib/openapi/createApiResponseSchema";
 import { db } from "@server/db";
 import { eventStreamingDestinations } from "@server/db";
 import response from "@server/lib/response";
@@ -45,12 +46,16 @@ const bodySchema = z.strictObject({
 export type UpdateEventStreamingDestinationResponse = {
     destinationId: number;
 };
+const UpdateEventStreamingDestinationResponseDataSchema = z.object({
+    destinationId: z.number()
+});
+
 
 registry.registerPath({
     method: "post",
     path: "/org/{orgId}/event-streaming-destination/{destinationId}",
     description: "Update an event streaming destination for a specific organization.",
-    tags: [OpenAPITags.Org],
+    tags: [OpenAPITags.EventStreamingDestination],
     request: {
         params: paramsSchema,
         body: {
@@ -61,7 +66,16 @@ registry.registerPath({
             }
         }
     },
-    responses: {}
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: createApiResponseSchema(UpdateEventStreamingDestinationResponseDataSchema)
+                }
+            }
+        }
+    }
 });
 
 export async function updateEventStreamingDestination(

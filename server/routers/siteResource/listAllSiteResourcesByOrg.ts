@@ -1,4 +1,14 @@
-import { db, DB_TYPE, SiteResource, siteNetworks, siteResources, sites } from "@server/db";
+import {
+    db,
+    DB_TYPE,
+    Label,
+    SiteResource,
+    siteNetworks,
+    siteResourceLabels,
+    siteResources,
+    sites,
+    labels
+} from "@server/db";
 import response from "@server/lib/response";
 import logger from "@server/logger";
 import { OpenAPITags, registry } from "@server/openApi";
@@ -9,12 +19,14 @@ import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
+import { isLicensedOrSubscribed } from "#dynamic/lib/isLicencedOrSubscribed";
+import { tierMatrix } from "@server/lib/billing/tierMatrix";
 
 const listAllSiteResourcesByOrgParamsSchema = z.strictObject({
     orgId: z.string()
 });
 
-const listAllSiteResourcesByOrgQuerySchema = z.object({
+const listAllSiteResourcesByOrgQuerySchema = z.strictObject({
     pageSize: z.coerce
         .number<string>() // for prettier formatting
         .int()
@@ -69,15 +81,39 @@ const listAllSiteResourcesByOrgQuerySchema = z.object({
             default: "asc",
             description: "Sort order"
         }),
-    siteId: z.coerce
-        .number<string>()
-        .int()
-        .positive()
+    siteId: z.coerce.number<string>().int().positive().optional().openapi({
+        type: "integer",
+        description:
+            "When set, only site resources associated with this site (via network) are returned"
+    }),
+    status: z
+        .enum(["pending", "approved"])
         .optional()
+        .catch(undefined)
         .openapi({
-            type: "integer",
-            description:
-                "When set, only site resources associated with this site (via network) are returned"
+            type: "string",
+            enum: ["pending", "approved"],
+            description: "Filter by site resource status"
+        }),
+    labels: z
+        .preprocess((val) => {
+            if (val === undefined || val === null || val === "") {
+                return undefined;
+            }
+            if (Array.isArray(val)) {
+                return val;
+            }
+            // the array is returned as this
+            if (typeof val === "string") {
+                return val.split(",");
+            }
+            return undefined;
+        }, z.array(z.string()))
+        .optional()
+        .catch([])
+        .openapi({
+            type: "array",
+            description: "Filter by resource labels"
         })
 });
 
@@ -88,6 +124,7 @@ export type ListAllSiteResourcesByOrgResponse = PaginatedResponse<{
         siteNames: string[];
         siteNiceIds: string[];
         siteAddresses: (string | null)[];
+        labels?: Array<Pick<Label, "labelId" | "name" | "color">>;
     })[];
 }>;
 
@@ -168,6 +205,7 @@ function querySiteResourcesBase() {
             disableIcmp: siteResources.disableIcmp,
             authDaemonMode: siteResources.authDaemonMode,
             authDaemonPort: siteResources.authDaemonPort,
+            pamMode: siteResources.pamMode,
             subdomain: siteResources.subdomain,
             domainId: siteResources.domainId,
             fullDomain: siteResources.fullDomain,
@@ -192,12 +230,54 @@ registry.registerPath({
     method: "get",
     path: "/org/{orgId}/site-resources",
     description: "List all site resources for an organization.",
+    tags: [OpenAPITags.PrivateResourceLegacy],
+    request: {
+        params: listAllSiteResourcesByOrgParamsSchema,
+        query: listAllSiteResourcesByOrgQuerySchema
+    },
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
+});
+
+registry.registerPath({
+    method: "get",
+    path: "/org/{orgId}/private-resources",
+    description: "List all site resources for an organization.",
     tags: [OpenAPITags.PrivateResource],
     request: {
         params: listAllSiteResourcesByOrgParamsSchema,
         query: listAllSiteResourcesByOrgQuerySchema
     },
-    responses: {}
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
 });
 
 export async function listAllSiteResourcesByOrg(
@@ -231,8 +311,17 @@ export async function listAllSiteResourcesByOrg(
         }
 
         const { orgId } = parsedParams.data;
-        const { page, pageSize, query, mode, sort_by, order, siteId } =
-            parsedQuery.data;
+        const {
+            page,
+            pageSize,
+            query,
+            mode,
+            sort_by,
+            order,
+            siteId,
+            status,
+            labels: labelFilter
+        } = parsedQuery.data;
 
         const conditions = [and(eq(siteResources.orgId, orgId))];
 
@@ -258,39 +347,54 @@ export async function listAllSiteResourcesByOrg(
                 inArray(siteResources.siteResourceId, resourcesForSite)
             );
         }
-        if (query) {
+
+        if (mode) {
+            conditions.push(eq(siteResources.mode, mode));
+        }
+
+        if (typeof status !== "undefined") {
+            conditions.push(eq(siteResources.status, status));
+        }
+
+        if (labelFilter && labelFilter.length > 0) {
             conditions.push(
-                or(
-                    like(
-                        sql`LOWER(${siteResources.name})`,
-                        "%" + query.toLowerCase() + "%"
-                    ),
-                    like(
-                        sql`LOWER(${siteResources.niceId})`,
-                        "%" + query.toLowerCase() + "%"
-                    ),
-                    like(
-                        sql`LOWER(${siteResources.destination})`,
-                        "%" + query.toLowerCase() + "%"
-                    ),
-                    like(
-                        sql`LOWER(${siteResources.alias})`,
-                        "%" + query.toLowerCase() + "%"
-                    ),
-                    like(
-                        sql`LOWER(${siteResources.aliasAddress})`,
-                        "%" + query.toLowerCase() + "%"
-                    ),
-                    like(
-                        sql`LOWER(${sites.name})`,
-                        "%" + query.toLowerCase() + "%"
-                    )
+                inArray(
+                    siteResources.siteResourceId,
+                    db
+                        .select({ id: siteResourceLabels.siteResourceId })
+                        .from(siteResourceLabels)
+                        .innerJoin(
+                            labels,
+                            eq(labels.labelId, siteResourceLabels.labelId)
+                        )
+                        .where(inArray(labels.name, labelFilter))
                 )
             );
         }
 
-        if (mode) {
-            conditions.push(eq(siteResources.mode, mode));
+        if (query) {
+            const q = "%" + query.toLowerCase() + "%";
+            const queryList = [
+                like(sql`LOWER(${siteResources.name})`, q),
+                like(sql`LOWER(${siteResources.niceId})`, q),
+                like(sql`LOWER(${siteResources.destination})`, q),
+                like(sql`LOWER(${siteResources.alias})`, q),
+                like(sql`LOWER(${siteResources.aliasAddress})`, q),
+                like(sql`LOWER(${sites.name})`, q),
+                inArray(
+                    siteResources.siteResourceId,
+                    db
+                        .select({ id: siteResourceLabels.siteResourceId })
+                        .from(siteResourceLabels)
+                        .innerJoin(
+                            labels,
+                            eq(labels.labelId, siteResourceLabels.labelId)
+                        )
+                        .where(like(sql`LOWER(${labels.name})`, q))
+                )
+            ];
+
+            conditions.push(or(...queryList));
         }
 
         const baseQuery = querySiteResourcesBase().where(and(...conditions));
@@ -315,11 +419,51 @@ export async function listAllSiteResourcesByOrg(
             countQuery
         ]);
 
-        const siteResourcesList = siteResourcesRaw.map(transformSiteResourceRow);
+        const siteResourcesList = siteResourcesRaw.map(
+            transformSiteResourceRow
+        );
+
+        const siteResourceIdList = siteResourcesList.map(
+            (r) => r.siteResourceId
+        );
+
+        let labelsForSiteResources: Array<{
+            labelId: number;
+            name: string;
+            color: string;
+            siteResourceId: number;
+        }> = [];
+
+        if (siteResourceIdList.length > 0) {
+            labelsForSiteResources = await db
+                .select({
+                    labelId: labels.labelId,
+                    name: labels.name,
+                    color: labels.color,
+                    siteResourceId: siteResourceLabels.siteResourceId
+                })
+                .from(labels)
+                .innerJoin(
+                    siteResourceLabels,
+                    eq(siteResourceLabels.labelId, labels.labelId)
+                )
+                .where(
+                    inArray(
+                        siteResourceLabels.siteResourceId,
+                        siteResourceIdList
+                    )
+                )
+                .orderBy(asc(siteResourceLabels.siteResourceLabelId));
+        }
 
         return response<ListAllSiteResourcesByOrgResponse>(res, {
             data: {
-                siteResources: siteResourcesList,
+                siteResources: siteResourcesList.map((r) => ({
+                    ...r,
+                    labels: labelsForSiteResources.filter(
+                        (l) => l.siteResourceId === r.siteResourceId
+                    )
+                })),
                 pagination: {
                     total: totalCount,
                     pageSize,

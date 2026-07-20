@@ -12,7 +12,7 @@ import { logIncomingMiddleware } from "./middlewares/logIncoming";
 import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 import { OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
-import { registry } from "./openApi";
+import { registry, openApiTags } from "./openApi";
 import fs from "fs";
 import path from "path";
 import { APP_PATH } from "./lib/consts";
@@ -152,11 +152,19 @@ function getOpenApiDocumentation() {
 
             if (!hasExistingResponses) {
                 def.route.responses = {
-                    "*": {
-                        description: "",
+                    "200": {
+                        description: "Successful response",
                         content: {
                             "application/json": {
-                                schema: z.object({})
+                                schema: z.object({
+                                    data: z
+                                        .record(z.string(), z.any())
+                                        .nullable(),
+                                    success: z.boolean(),
+                                    error: z.boolean(),
+                                    message: z.string(),
+                                    status: z.number()
+                                })
                             }
                         }
                     }
@@ -173,7 +181,8 @@ function getOpenApiDocumentation() {
             version: "v1",
             title: "Pangolin Integration API"
         },
-        servers: [{ url: "/v1" }]
+        servers: [{ url: "/v1" }],
+        tags: openApiTags
     });
 
     if (!process.env.DISABLE_GEN_OPENAPI) {

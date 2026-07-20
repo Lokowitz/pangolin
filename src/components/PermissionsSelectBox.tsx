@@ -55,6 +55,7 @@ function getActionsCategories(root: boolean) {
             [t("actionGetSite")]: "getSite",
             [t("actionListSites")]: "listSites",
             [t("actionUpdateSite")]: "updateSite",
+            [t("actionUpdateSiteApprovals")]: "updateSiteApprovals",
             [t("actionListSiteRoles")]: "listSiteRoles"
         },
 
@@ -77,7 +78,9 @@ function getActionsCategories(root: boolean) {
             [t("actionDeleteSiteResource")]: "deleteSiteResource",
             [t("actionGetSiteResource")]: "getSiteResource",
             [t("actionListSiteResources")]: "listSiteResources",
-            [t("actionUpdateSiteResource")]: "updateSiteResource"
+            [t("actionUpdateSiteResource")]: "updateSiteResource",
+            [t("actionCreateResourceSessionToken")]:
+                "createResourceSessionToken"
         },
 
         Target: {
@@ -111,6 +114,20 @@ function getActionsCategories(root: boolean) {
             [t("actionUpdateResourceRule")]: "updateResourceRule"
         },
 
+        "Resource Policy": {
+            [t("actionGetResourcePolicy")]: "getResourcePolicy",
+            [t("actionUpdateResourcePolicy")]: "updateResourcePolicy",
+            [t("actionSetResourcePolicyUsers")]: "setResourcePolicyUsers",
+            [t("actionSetResourcePolicyRoles")]: "setResourcePolicyRoles",
+            [t("actionSetResourcePolicyPassword")]: "setResourcePolicyPassword",
+            [t("actionSetResourcePolicyPincode")]: "setResourcePolicyPincode",
+            [t("actionSetResourcePolicyHeaderAuth")]:
+                "setResourcePolicyHeaderAuth",
+            [t("actionSetResourcePolicyWhitelist")]:
+                "setResourcePolicyWhitelist",
+            [t("actionSetResourcePolicyRules")]: "setResourcePolicyRules"
+        },
+
         Client: {
             [t("actionCreateClient")]: "createClient",
             [t("actionDeleteClient")]: "deleteClient",
@@ -126,6 +143,13 @@ function getActionsCategories(root: boolean) {
         Logs: {
             [t("actionExportLogs")]: "exportLogs",
             [t("actionViewLogs")]: "viewLogs"
+        },
+
+        "Site Provisioning Key": {
+            [t("actionCreateSiteProvisioningKey")]: "createSiteProvisioningKey",
+            [t("actionListSiteProvisioningKeys")]: "listSiteProvisioningKeys",
+            [t("actionUpdateSiteProvisioningKey")]: "updateSiteProvisioningKey",
+            [t("actionDeleteSiteProvisioningKey")]: "deleteSiteProvisioningKey"
         }
     };
 

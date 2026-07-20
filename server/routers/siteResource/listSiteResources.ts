@@ -11,11 +11,11 @@ import logger from "@server/logger";
 import { OpenAPITags, registry } from "@server/openApi";
 
 const listSiteResourcesParamsSchema = z.strictObject({
-    siteId: z.string().transform(Number).pipe(z.int().positive()),
+    siteId: z.coerce.number().int().positive(),
     orgId: z.string()
 });
 
-const listSiteResourcesQuerySchema = z.object({
+const listSiteResourcesQuerySchema = z.strictObject({
     limit: z
         .string()
         .optional()
@@ -47,6 +47,15 @@ const listSiteResourcesQuerySchema = z.object({
             enum: ["asc", "desc"],
             default: "asc",
             description: "Sort order"
+        }),
+    status: z
+        .enum(["pending", "approved"])
+        .optional()
+        .catch(undefined)
+        .openapi({
+            type: "string",
+            enum: ["pending", "approved"],
+            description: "Filter by site resource status"
         })
 });
 
@@ -58,12 +67,54 @@ registry.registerPath({
     method: "get",
     path: "/org/{orgId}/site/{siteId}/resources",
     description: "List site resources for a site.",
+    tags: [OpenAPITags.PrivateResourceLegacy],
+    request: {
+        params: listSiteResourcesParamsSchema,
+        query: listSiteResourcesQuerySchema
+    },
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
+});
+
+registry.registerPath({
+    method: "get",
+    path: "/org/{orgId}/site/{siteId}/private-resources",
+    description: "List site resources for a site.",
     tags: [OpenAPITags.PrivateResource],
     request: {
         params: listSiteResourcesParamsSchema,
         query: listSiteResourcesQuerySchema
     },
-    responses: {}
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
 });
 
 export async function listSiteResources(
@@ -95,7 +146,7 @@ export async function listSiteResources(
         }
 
         const { siteId, orgId } = parsedParams.data;
-        const { limit, offset, sort_by, order } = parsedQuery.data;
+        const { limit, offset, sort_by, order, status } = parsedQuery.data;
 
         // Verify the site exists and belongs to the org
         const site = await db
@@ -109,6 +160,15 @@ export async function listSiteResources(
         }
 
         // Get site resources by joining networks to siteResources via siteNetworks
+        const conditions = [
+            eq(siteNetworks.siteId, siteId),
+            eq(siteResources.orgId, orgId)
+        ];
+
+        if (typeof status !== "undefined") {
+            conditions.push(eq(siteResources.status, status));
+        }
+
         const siteResourcesList = await db
             .select()
             .from(siteNetworks)
@@ -117,12 +177,7 @@ export async function listSiteResources(
                 siteResources,
                 eq(siteResources.networkId, networks.networkId)
             )
-            .where(
-                and(
-                    eq(siteNetworks.siteId, siteId),
-                    eq(siteResources.orgId, orgId)
-                )
-            )
+            .where(and(...conditions))
             .orderBy(
                 sort_by
                     ? order === "asc"

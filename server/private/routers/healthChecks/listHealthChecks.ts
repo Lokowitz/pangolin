@@ -63,12 +63,27 @@ registry.registerPath({
     method: "get",
     path: "/org/{orgId}/health-checks",
     description: "List health checks for an organization.",
-    tags: [OpenAPITags.Org],
+    tags: [OpenAPITags.HealthCheck],
     request: {
         params: paramsSchema,
         query: querySchema
     },
-    responses: {}
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
 });
 
 export async function listHealthChecks(

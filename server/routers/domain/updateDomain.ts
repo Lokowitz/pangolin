@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { createApiResponseSchema } from "@server/lib/openapi/createApiResponseSchema";
 import { db, domains, orgDomains } from "@server/db";
 import response from "@server/lib/response";
 import HttpCode from "@server/types/HttpCode";
@@ -24,9 +25,15 @@ export type UpdateDomainResponse = {
     certResolver: string | null;
     preferWildcardCert: boolean | null;
 };
+const UpdateDomainResponseDataSchema = z.object({
+    domainId: z.string(),
+    certResolver: z.string().nullable(),
+    preferWildcardCert: z.boolean().nullable()
+});
+
 
 registry.registerPath({
-    method: "patch",
+    method: "post",
     path: "/org/{orgId}/domain/{domainId}",
     description: "Update a domain by domainId.",
     tags: [OpenAPITags.Domain],
@@ -36,7 +43,41 @@ registry.registerPath({
             orgId: z.string()
         })
     },
-    responses: {}
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: createApiResponseSchema(UpdateDomainResponseDataSchema)
+                }
+            }
+        }
+    }
+});
+
+registry.registerPath({
+    method: "patch",
+    path: "/org/{orgId}/domain/{domainId}",
+    description:
+        "Update a domain by domainId. Deprecated: use POST instead.",
+    deprecated: true,
+    tags: [OpenAPITags.Domain],
+    request: {
+        params: z.object({
+            domainId: z.string(),
+            orgId: z.string()
+        })
+    },
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: createApiResponseSchema(UpdateDomainResponseDataSchema)
+                }
+            }
+        }
+    }
 });
 
 export async function updateOrgDomain(

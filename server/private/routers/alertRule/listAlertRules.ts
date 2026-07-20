@@ -90,12 +90,27 @@ registry.registerPath({
     method: "get",
     path: "/org/{orgId}/alert-rules",
     description: "List all alert rules for a specific organization.",
-    tags: [OpenAPITags.Org],
+    tags: [OpenAPITags.AlertRule],
     request: {
         query: querySchema,
         params: paramsSchema
     },
-    responses: {}
+    responses: {
+        200: {
+            description: "Successful response",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        data: z.record(z.string(), z.any()).nullable(),
+                        success: z.boolean(),
+                        error: z.boolean(),
+                        message: z.string(),
+                        status: z.number()
+                    })
+                }
+            }
+        }
+    }
 });
 
 export async function listAlertRules(

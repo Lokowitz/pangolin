@@ -109,7 +109,6 @@ export default function HealthChecksTable({
     const [siteFilterOpen, setSiteFilterOpen] = useState(false);
     const [resourceFilterOpen, setResourceFilterOpen] = useState(false);
 
-    const pageSize = pagination.pageSize;
     const query = searchParams.get("query") ?? undefined;
 
     const siteIdQ = searchParams.get("siteId");
@@ -164,12 +163,12 @@ export default function HealthChecksTable({
         });
     }
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            router.refresh();
-        }, 30_000);
-        return () => clearInterval(interval);
-    }, [router]);
+    // useEffect(() => {
+    //     const interval = setInterval(() => {
+    //         router.refresh();
+    //     }, 30_000);
+    //     return () => clearInterval(interval);
+    // }, [router]);
 
     const handlePaginationChange = (newState: PaginationState) => {
         searchParams.set("page", (newState.pageIndex + 1).toString());
@@ -407,7 +406,7 @@ export default function HealthChecksTable({
                 }
                 return (
                     <Link
-                        href={`/${orgId}/settings/resources/proxy/${r.resourceNiceId}`}
+                        href={`/${orgId}/settings/resources/public/${r.resourceNiceId}`}
                     >
                         <Button variant="outline" size="sm">
                             {r.resourceName}
@@ -519,21 +518,21 @@ export default function HealthChecksTable({
                 const health = row.original.hcHealth;
                 if (health === "healthy") {
                     return (
-                        <span className="text-green-500 flex items-center space-x-2">
+                        <span className="flex items-center space-x-2">
                             <div className="w-2 h-2 bg-green-500 rounded-full" />
                             <span>{t("standaloneHcHealthStateHealthy")}</span>
                         </span>
                     );
                 } else if (health === "unhealthy") {
                     return (
-                        <span className="text-red-500 flex items-center space-x-2">
+                        <span className="flex items-center space-x-2">
                             <div className="w-2 h-2 bg-red-500 rounded-full" />
                             <span>{t("standaloneHcHealthStateUnhealthy")}</span>
                         </span>
                     );
                 } else {
                     return (
-                        <span className="text-neutral-500 flex items-center space-x-2">
+                        <span className="flex items-center space-x-2">
                             <div className="w-2 h-2 bg-neutral-500 rounded-full" />
                             <span>{t("standaloneHcHealthStateUnknown")}</span>
                         </span>
@@ -586,7 +585,9 @@ export default function HealthChecksTable({
                     <Switch
                         checked={r.hcEnabled}
                         disabled={
-                            !isPaid || togglingId === r.targetHealthCheckId || !!r.resourceId
+                            !isPaid ||
+                            togglingId === r.targetHealthCheckId ||
+                            !!r.resourceId
                         }
                         onCheckedChange={(v) => handleToggleEnabled(r, v)}
                     />
@@ -626,7 +627,7 @@ export default function HealthChecksTable({
                         </DropdownMenu>
                         {r.resourceId && r.resourceName && r.resourceNiceId ? (
                             <Link
-                                href={`/${orgId}/settings/resources/proxy/${r.resourceNiceId}`}
+                                href={`/${orgId}/settings/resources/public/${r.resourceNiceId}`}
                             >
                                 <Button variant="outline" disabled={!isPaid}>
                                     {t("edit")}

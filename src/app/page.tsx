@@ -5,7 +5,6 @@ import UserProvider from "@app/providers/UserProvider";
 import { ListUserOrgsResponse } from "@server/routers/org";
 import { AxiosResponse } from "axios";
 import { redirect } from "next/navigation";
-import { cache } from "react";
 import OrganizationLanding from "@app/components/OrganizationLanding";
 import { pullEnv } from "@app/lib/pullEnv";
 import { cleanRedirect } from "@app/lib/cleanRedirect";
@@ -13,7 +12,6 @@ import { Layout } from "@app/components/Layout";
 import RedirectToOrg from "@app/components/RedirectToOrg";
 import { InitialSetupCompleteResponse } from "@server/routers/auth";
 import { cookies } from "next/headers";
-import { build } from "@server/build";
 
 export const dynamic = "force-dynamic";
 
@@ -21,14 +19,15 @@ export default async function Page(props: {
     searchParams: Promise<{
         redirect: string | undefined;
         t: string | undefined;
+        orgs?: string | undefined;
     }>;
 }) {
     const params = await props.searchParams; // this is needed to prevent static optimization
+    const showOrgPicker = params.orgs === "1";
 
     const env = pullEnv();
 
-    const getUser = cache(verifySession);
-    const user = await getUser({ skipCheckVerifyEmail: true });
+    const user = await verifySession({ skipCheckVerifyEmail: true });
 
     let complete = false;
     try {
@@ -86,7 +85,7 @@ export default async function Page(props: {
         targetOrgId = lastOrgCookie;
     } else {
         let ownedOrg = orgs.find((org) => org.isOwner);
-        let primaryOrg = orgs.find((org) => org.isPrimaryOrg);
+        const primaryOrg = orgs.find((org) => org.isPrimaryOrg);
         if (!ownedOrg) {
             if (primaryOrg) {
                 ownedOrg = primaryOrg;
@@ -106,8 +105,16 @@ export default async function Page(props: {
         }
     }
 
-    if (targetOrgId) {
-        return <RedirectToOrg targetOrgId={targetOrgId} />;
+    if (targetOrgId && !showOrgPicker) {
+        const targetOrg = orgs.find((org) => org.orgId === targetOrgId);
+        return (
+            <RedirectToOrg
+                targetOrgId={targetOrgId}
+                isAdminOrOwner={Boolean(
+                    targetOrg?.isAdmin || targetOrg?.isOwner
+                )}
+            />
+        );
     }
 
     return (
