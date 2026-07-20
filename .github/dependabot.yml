@@ -5,11 +5,9 @@ updates:
     schedule:
       interval: "daily"
     groups:
-      patch-updates:
+      updates:
         update-types:
           - "patch"
-      minor-updates:
-        update-types:
           - "minor"
           
   - package-ecosystem: "docker"
@@ -17,26 +15,26 @@ updates:
     schedule:
       interval: "daily"
     groups:
-      patch-updates:
+      updates:
         update-types:
           - "patch"
-      minor-updates:
-        update-types:
           - "minor"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      updates:
+        update-types:
+          - "*"
 
   - package-ecosystem: "gomod"
     directory: "/install"
     schedule:
       interval: "daily"
     groups:
-      patch-updates:
+      updates:
         update-types:
           - "patch"
-      minor-updates:
-        update-types:
           - "minor"
