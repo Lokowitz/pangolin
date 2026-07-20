@@ -62,7 +62,7 @@ jobs:
           cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg
           cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
           
-      - uses: actions/github-script@v8
+      - uses: actions/github-script@v9
         with:
           script: |
             const repoUrl = process.env.TAG_URL;
@@ -129,7 +129,7 @@ jobs:
           cache-from: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg
           cache-to: type=registry,ref=${{ vars.DOCKER_HUB_REPO }}:buildcache-pg,mode=max
           
-      - uses: actions/github-script@v8
+      - uses: actions/github-script@v9
         with:
           script: |
             const repoUrl = process.env.TAG_URL;
