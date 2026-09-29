@@ -37,7 +37,6 @@ import {
     type PrivateResourceMode
 } from "@app/lib/privateResourceForm";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { tierMatrix } from "@server/lib/billing/tierMatrix";
 import type { SiteResource } from "@server/db";
 import { GetSiteResponse } from "@server/routers/site/getSite";
 import type ResponseT from "@server/types/Response";
@@ -350,6 +349,7 @@ export default function CreatePrivateResourcePage() {
                                                             placeholder={t(
                                                                 "noneSelected"
                                                             )}
+                                                            listClassName="max-h-[346px]"
                                                         />
                                                     </FormControl>
                                                     <FormMessage />
