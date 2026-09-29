@@ -357,6 +357,12 @@ export default function PrivateResourcesTable({
                                 label: t(
                                     "editInternalResourceDialogModeInference"
                                 )
+                            },
+                            {
+                                value: "gateway",
+                                label: t(
+                                    "editInternalResourceDialogModeGateway"
+                                )
                             }
                         ]}
                         selectedValue={searchParams.get("mode") ?? undefined}
