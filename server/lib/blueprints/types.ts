@@ -612,7 +612,18 @@ export function isTargetsOnlyResource(resource: any): boolean {
 export const PrivateResourceSchema = z
     .object({
         name: z.string().min(1).max(255),
-        mode: z.enum(["host", "cidr", "http", "ssh", "inference", "gateway"]),
+        // "exit-node" is accepted as an alias for "gateway" (matches the UI naming)
+        mode: z
+            .enum([
+                "host",
+                "cidr",
+                "http",
+                "ssh",
+                "inference",
+                "gateway",
+                "exit-node"
+            ])
+            .transform((mode) => (mode === "exit-node" ? "gateway" : mode)),
         site: z.string().optional(), // DEPRECATED IN FAVOR OF sites
         sites: z.array(z.string()).optional().default([]),
         // protocol: z.enum(["tcp", "udp"]).optional(),
