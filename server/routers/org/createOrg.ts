@@ -25,7 +25,7 @@ import { fromError } from "zod-validation-error";
 import { defaultRoleAllowedActions } from "../role";
 import { OpenAPITags, registry } from "@server/openApi";
 import { isValidCIDR } from "@server/lib/validators";
-import { createCustomer } from "#dynamic/lib/billing";
+import { createCustomer, linkEmailOrg } from "#dynamic/lib/billing";
 import { usageService } from "@server/lib/billing/usageService";
 import { LimitId, limitsService, freeLimitSet } from "@server/lib/billing";
 import { build } from "@server/build";
@@ -33,7 +33,6 @@ import { calculateUserClientsForOrgs } from "@server/lib/calculateUserClientsFor
 import { doCidrsOverlap } from "@server/lib/ip";
 import { generateCA } from "@server/lib/sshCA";
 import { encrypt } from "@server/lib/crypto";
-import { generateId } from "@server/auth/sessions/app";
 
 const validOrgIdRegex = /^[a-z0-9_]+(-[a-z0-9_]+)*$/;
 
@@ -426,6 +425,7 @@ export async function createOrg(
                     customerId
                 ); // Only 1 because we are creating the org
             }
+            await linkEmailOrg(orgId, req.user?.email);
         }
 
         if (numOrgs) {

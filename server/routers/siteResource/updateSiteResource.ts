@@ -10,8 +10,6 @@ import {
     sites,
     userSiteResources
 } from "@server/db";
-import { isLicensedOrSubscribed } from "#dynamic/lib/isLicencedOrSubscribed";
-import { TierFeature, tierMatrix } from "@server/lib/billing/tierMatrix";
 import { validateAndConstructDomain } from "@server/lib/domainUtils";
 import response from "@server/lib/response";
 import { eq, and, ne, inArray } from "drizzle-orm";
@@ -29,6 +27,9 @@ import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
+import { clearSiteResourceAiConfig } from "@server/lib/aiInferenceResource";
+import { build } from "@server/build";
+import { createCertificate } from "../certificates/createCertificate";
 
 const updateSiteResourceParamsSchema = z.strictObject({
     siteResourceId: z.coerce.number().int().positive()
@@ -50,7 +51,9 @@ const updateSiteResourceSchema = z
             )
             .optional(),
         // mode: z.enum(["host", "cidr", "port"]).optional(),
-        mode: z.enum(["host", "cidr", "http", "ssh"]).optional(),
+        mode: z
+            .enum(["host", "cidr", "http", "ssh", "inference", "gateway"])
+            .optional(),
         ssl: z.boolean().optional(),
         scheme: z.enum(["http", "https"]).nullish(),
         destinationPort: z.int().positive().nullish(),
@@ -157,8 +160,12 @@ const updateSiteResourceSchema = z
             if (data.mode === undefined && data.destination === undefined) {
                 return true;
             }
-            // destination is only optional for ssh mode with native authDaemonMode
-            if (data.mode === "ssh" && data.authDaemonMode === "native") {
+            // destination is only optional for ssh mode with native authDaemonMode, inference, or gateway
+            if (
+                (data.mode === "ssh" && data.authDaemonMode === "native") ||
+                data.mode == "inference" ||
+                data.mode == "gateway"
+            ) {
                 return true;
             }
             return (
@@ -168,11 +175,14 @@ const updateSiteResourceSchema = z
         },
         {
             message:
-                "Destination is required unless mode is ssh with authDaemonMode native"
+                "Destination is required unless mode is ssh with authDaemonMode native, inference, or gateway"
         }
     )
     .refine(
         (data) => {
+            if (data.mode == "inference") {
+                return true;
+            }
             // if neither is provided, the existing site associations are left unchanged
             if (data.siteIds === undefined && data.siteId === undefined) {
                 return true;
@@ -353,26 +363,6 @@ export async function updateSiteResource(
             );
         }
 
-        if (mode == "http") {
-            const hasHttpFeature = await isLicensedOrSubscribed(
-                existingSiteResource.orgId,
-                tierMatrix[TierFeature.AdvancedPrivateResources]
-            );
-            if (!hasHttpFeature) {
-                return next(
-                    createHttpError(
-                        HttpCode.FORBIDDEN,
-                        "HTTP private resources are not included in your current plan. Please upgrade."
-                    )
-                );
-            }
-        }
-
-        const isLicensedSshPam = await isLicensedOrSubscribed(
-            existingSiteResource.orgId,
-            tierMatrix.advancedPrivateResources
-        );
-
         const [org] = await db
             .select()
             .from(orgs)
@@ -422,14 +412,18 @@ export async function updateSiteResource(
             }
         }
 
+        // gateway resources always route the whole subnet with everything open
+        const effectiveDestination =
+            mode === "gateway" ? "0.0.0.0/0" : destination;
+
         // Only check if destination is an IP address
         const isIp = z
             .union([z.ipv4(), z.ipv6()])
-            .safeParse(destination).success;
+            .safeParse(effectiveDestination).success;
         if (
             isIp &&
-            (isIpInCidr(destination!, org.subnet) ||
-                isIpInCidr(destination!, org.utilitySubnet))
+            (isIpInCidr(effectiveDestination!, org.subnet) ||
+                isIpInCidr(effectiveDestination!, org.utilitySubnet))
         ) {
             return next(
                 createHttpError(
@@ -474,7 +468,14 @@ export async function updateSiteResource(
             const [existingDomain] = await db
                 .select()
                 .from(siteResources)
-                .where(eq(siteResources.fullDomain, fullDomain));
+                .where(
+                    and(
+                        eq(siteResources.fullDomain, fullDomain),
+                        mode == "inference"
+                            ? ne(siteResources.mode, "inference")
+                            : eq(siteResources.mode, "inference")
+                    )
+                ); // exclude looking at the ones on exit nodes if this is an inference resource
 
             if (
                 existingDomain &&
@@ -525,10 +526,9 @@ export async function updateSiteResource(
         await db.transaction(async (trx) => {
             // Update the site resource
             const sshPamSet =
-                isLicensedSshPam &&
-                (authDaemonPort !== undefined ||
-                    authDaemonMode !== undefined ||
-                    pamMode !== undefined)
+                authDaemonPort !== undefined ||
+                authDaemonMode !== undefined ||
+                pamMode !== undefined
                     ? {
                           ...(authDaemonPort !== undefined && {
                               authDaemonPort
@@ -541,13 +541,42 @@ export async function updateSiteResource(
                           })
                       }
                     : {};
+
             let tcpPortRangeStringAdjusted = tcpPortRangeString;
-            if (mode === "http") {
+            if (mode === "http" || mode === "inference") {
                 tcpPortRangeStringAdjusted = "443,80";
             } else if (mode === "ssh") {
                 tcpPortRangeStringAdjusted = destinationPort
                     ? destinationPort.toString()
                     : "22";
+            } else if (mode === "gateway") {
+                tcpPortRangeStringAdjusted = "*";
+            }
+
+            // undefined means "leave unchanged" (partial update); only
+            // adjusted when the mode is explicitly being changed
+            let udpPortRangeStringAdjusted = udpPortRangeString;
+            if (mode === "gateway") {
+                udpPortRangeStringAdjusted = "*";
+            } else if (
+                mode === "http" ||
+                mode === "ssh" ||
+                mode === "inference"
+            ) {
+                udpPortRangeStringAdjusted = "";
+            }
+
+            let disableIcmpAdjusted = disableIcmp;
+            if (mode === "gateway") {
+                disableIcmpAdjusted = false;
+            } else if (
+                mode === "http" ||
+                mode === "ssh" ||
+                mode === "inference"
+            ) {
+                disableIcmpAdjusted = true;
+            } else if (mode !== undefined) {
+                disableIcmpAdjusted = disableIcmp ?? false;
             }
 
             [updatedSiteResource] = await trx
@@ -558,7 +587,8 @@ export async function updateSiteResource(
                     mode: mode,
                     scheme,
                     ssl,
-                    destination: destination,
+                    destination:
+                        mode === "gateway" ? effectiveDestination : destination,
                     destinationPort: destinationPort,
                     enabled: enabled,
                     alias:
@@ -566,34 +596,45 @@ export async function updateSiteResource(
                             ? alias
                                 ? alias.trim()
                                 : null
-                            : mode !== undefined &&
-                                mode !== "host" &&
-                                mode !== "ssh"
-                              ? null
-                              : undefined,
+                            : undefined,
                     tcpPortRangeString: tcpPortRangeStringAdjusted,
-                    udpPortRangeString:
-                        mode == "http" || mode == "ssh"
-                            ? ""
-                            : udpPortRangeString,
-                    disableIcmp:
-                        mode !== undefined
-                            ? disableIcmp ||
-                              (mode == "http" || mode == "ssh"
-                                  ? true
-                                  : false)
-                            : disableIcmp,
+                    udpPortRangeString: udpPortRangeStringAdjusted,
+                    disableIcmp: disableIcmpAdjusted,
                     domainId,
                     subdomain: finalSubdomain,
                     fullDomain,
+                    networkId: mode === "inference" ? null : undefined,
+                    requiresExitNodeConnection:
+                        mode !== undefined ? mode === "inference" : undefined,
                     ...sshPamSet
                 })
                 .where(and(eq(siteResources.siteResourceId, siteResourceId)))
                 .returning();
 
+            const effectiveMode = mode ?? existingSiteResource.mode;
+            if (
+                existingSiteResource.mode === "inference" &&
+                effectiveMode !== "inference"
+            ) {
+                await clearSiteResourceAiConfig(siteResourceId, trx);
+            }
+
             //////////////////// update the associations ////////////////////
 
-            if (siteIds !== undefined) {
+            if (mode === "inference") {
+                // inference resources are not attached to any site network
+                if (existingSiteResource.networkId) {
+                    await trx
+                        .delete(siteNetworks)
+                        .where(
+                            eq(
+                                siteNetworks.networkId,
+                                existingSiteResource.networkId
+                            )
+                        );
+                }
+                updatedSiteIds = [];
+            } else if (siteIds !== undefined) {
                 // delete the site - site resources associations
                 await trx
                     .delete(siteNetworks)
@@ -697,6 +738,15 @@ export async function updateSiteResource(
         }
 
         const finalUpdatedSiteResource = updatedSiteResource;
+
+        if (
+            ssl &&
+            (mode === "http" || mode == "inference") &&
+            domainId &&
+            fullDomain
+        ) {
+            await createCertificate(domainId, fullDomain, db);
+        }
 
         rebuildClientAssociationsFromSiteResource(finalUpdatedSiteResource)
             .then(() =>

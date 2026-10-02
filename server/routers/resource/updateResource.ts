@@ -38,7 +38,7 @@ import {
 } from "@server/lib/schemas";
 import { registry } from "@server/openApi";
 import { OpenAPITags } from "@server/openApi";
-import { createCertificate } from "#dynamic/routers/certificates/createCertificate";
+import { createCertificate } from "@server/routers/certificates/createCertificate";
 import {
     validateAndConstructDomain,
     checkWildcardDomainConflict
@@ -102,6 +102,14 @@ const updateHttpResourceBodySchema = z
         headers: z
             .array(z.strictObject({ name: z.string(), value: z.string() }))
             .nullable()
+            .optional(), // deprecated alias for requestHeaders
+        requestHeaders: z
+            .array(z.strictObject({ name: z.string(), value: z.string() }))
+            .nullable()
+            .optional(),
+        responseHeaders: z
+            .array(z.strictObject({ name: z.string(), value: z.string() }))
+            .nullable()
             .optional(),
         // Maintenance mode fields
         maintenanceModeEnabled: z.boolean().optional(),
@@ -163,12 +171,13 @@ const updateHttpResourceBodySchema = z
     )
     .refine(
         (data) => {
-            if (data.headers) {
-                // HTTP header names must be valid token characters (RFC 7230)
-                const validHeaderName = /^[a-zA-Z0-9!#$%&'*+\-.^_`|~]+$/;
-                return data.headers.every((h) => validHeaderName.test(h.name));
-            }
-            return true;
+            const validHeaderName = /^[a-zA-Z0-9!#$%&'*+\-.^_`|~]+$/;
+            const allHeaders = [
+                ...(data.headers ?? []),
+                ...(data.requestHeaders ?? []),
+                ...(data.responseHeaders ?? [])
+            ];
+            return allHeaders.every((h) => validHeaderName.test(h.name));
         },
         {
             error: "Header names may only contain valid HTTP token characters (letters, digits, and !#$%&'*+-.^_`|~)."
@@ -176,14 +185,13 @@ const updateHttpResourceBodySchema = z
     )
     .refine(
         (data) => {
-            if (data.headers) {
-                // HTTP header values must be visible ASCII or horizontal whitespace, no control chars (RFC 7230)
-                const validHeaderValue = /^[\t\x20-\x7E]*$/;
-                return data.headers.every((h) =>
-                    validHeaderValue.test(h.value)
-                );
-            }
-            return true;
+            const validHeaderValue = /^[\t\x20-\x7E]*$/;
+            const allHeaders = [
+                ...(data.headers ?? []),
+                ...(data.requestHeaders ?? []),
+                ...(data.responseHeaders ?? [])
+            ];
+            return allHeaders.every((h) => validHeaderValue.test(h.value));
         },
         {
             error: "Header values may only contain printable ASCII characters and horizontal whitespace."
@@ -191,16 +199,17 @@ const updateHttpResourceBodySchema = z
     )
     .refine(
         (data) => {
-            if (data.headers) {
-                // Reject Traefik template syntax {{word}} in names or values
-                const templatePattern = /\{\{[^}]+\}\}/;
-                return data.headers.every(
-                    (h) =>
-                        !templatePattern.test(h.name) &&
-                        !templatePattern.test(h.value)
-                );
-            }
-            return true;
+            const templatePattern = /\{\{[^}]+\}\}/;
+            const allHeaders = [
+                ...(data.headers ?? []),
+                ...(data.requestHeaders ?? []),
+                ...(data.responseHeaders ?? [])
+            ];
+            return allHeaders.every(
+                (h) =>
+                    !templatePattern.test(h.name) &&
+                    !templatePattern.test(h.value)
+            );
         },
         {
             error: "Header names and values must not contain template expressions such as {{value}}."
@@ -345,8 +354,10 @@ export async function updateResource(
             );
         }
 
-        if (["http", "ssh", "rdp", "vnc"].includes(resource.mode)) {
-            // HANDLE UPDATING HTTP RESOURCES
+        if (
+            ["http", "ssh", "rdp", "vnc", "inference"].includes(resource.mode)
+        ) {
+            // HANDLE UPDATING HTTP / BROWSER / INFERENCE RESOURCES
             return await updateHttpResource(
                 {
                     req,
@@ -498,7 +509,8 @@ async function updateHttpResource(
     }
 
     // catch when the resource policy changes or gets cleared
-    if (resource.resourcePolicyId != updateData.resourcePolicyId) {
+    if (updateData.resourcePolicyId !== undefined && 
+        resource.resourcePolicyId !== updateData.resourcePolicyId) {
         await clearResourceSpecificSettings(
             resource.resourceId,
             resource.orgId,
@@ -527,6 +539,20 @@ async function updateHttpResource(
                 )
             );
         }
+    }
+
+    // Wildcard subdomains are not allowed for inference-mode resources
+    if (
+        resource.mode === "inference" &&
+        updateData.subdomain &&
+        updateData.subdomain.includes("*")
+    ) {
+        return next(
+            createHttpError(
+                HttpCode.BAD_REQUEST,
+                "Wildcard subdomains are not supported for inference-mode resources."
+            )
+        );
     }
 
     // Wildcard subdomains are a paid feature
@@ -594,10 +620,23 @@ async function updateHttpResource(
         logger.debug(`Full domain: ${fullDomain}`);
 
         if (fullDomain) {
+            // Inference resources route through the central AI gateway
+            // rather than normal target-based proxying, so they're allowed
+            // to share a full-domain with a non-inference resource (and
+            // vice versa) - only conflicts within the same routing category
+            // are rejected. mode isn't updatable here, so `resource.mode`
+            // reflects the resource's actual (unchanging) routing category.
             const [existingDomain] = await db
                 .select()
                 .from(resources)
-                .where(eq(resources.fullDomain, fullDomain));
+                .where(
+                    and(
+                        eq(resources.fullDomain, fullDomain),
+                        resource.mode === "inference"
+                            ? ne(resources.mode, "inference")
+                            : eq(resources.mode, "inference")
+                    )
+                );
 
             if (
                 existingDomain &&
@@ -663,17 +702,34 @@ async function updateHttpResource(
         // Update the subdomain in the update data
         updateData.subdomain = finalSubdomain;
 
-        if (build != "oss") {
-            await createCertificate(domainId, fullDomain, db);
-        }
+        await createCertificate(domainId, fullDomain, db);
     }
 
-    let headers = undefined;
-    if (updateData.headers) {
-        headers = JSON.stringify(updateData.headers);
-    } else if (updateData.headers === null) {
-        headers = null;
+    let requestHeaders = undefined;
+    const mergedRequestHeaders = [
+        ...(updateData.headers ?? []),
+        ...(updateData.requestHeaders ?? [])
+    ];
+    if (
+        updateData.headers !== undefined ||
+        updateData.requestHeaders !== undefined
+    ) {
+        requestHeaders =
+            mergedRequestHeaders.length > 0
+                ? JSON.stringify(mergedRequestHeaders)
+                : null;
     }
+
+    let responseHeaders = undefined;
+    if (updateData.responseHeaders) {
+        responseHeaders = JSON.stringify(updateData.responseHeaders);
+    } else if (updateData.responseHeaders === null) {
+        responseHeaders = null;
+    }
+
+    updateData.headers = undefined;
+    updateData.requestHeaders = undefined;
+    updateData.responseHeaders = undefined;
 
     if (!isLicensed) {
         updateData.maintenanceModeEnabled = undefined;
@@ -727,7 +783,7 @@ async function updateHttpResource(
 
         const updatedResource = await db
             .update(resources)
-            .set({ ...resourceOnlyData, headers })
+            .set({ ...resourceOnlyData, requestHeaders, responseHeaders })
             .where(eq(resources.resourceId, resource.resourceId))
             .returning();
 
@@ -751,7 +807,7 @@ async function updateHttpResource(
 
     const updatedResource = await db
         .update(resources)
-        .set({ ...updateData, headers })
+        .set({ ...updateData, requestHeaders, responseHeaders })
         .where(eq(resources.resourceId, resource.resourceId))
         .returning();
 

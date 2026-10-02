@@ -25,7 +25,7 @@ import { tierMatrix } from "@server/lib/billing/tierMatrix";
 import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 import type { Control, UseFormSetValue, UseFormWatch } from "react-hook-form";
-import type { Selectedsite } from "@app/components/site-selector";
+import type { SelectedSite } from "@app/components/site-selector";
 
 type PrivateResourceSshFieldsProps = {
     control: Control<any>;
@@ -33,12 +33,11 @@ type PrivateResourceSshFieldsProps = {
     watch: UseFormWatch<any>;
     orgId?: string;
     disabled?: boolean;
-    selectedSites: Selectedsite[];
-    onSelectedSitesChange: (sites: Selectedsite[]) => void;
+    selectedSites: SelectedSite[];
+    onSelectedSitesChange: (sites: SelectedSite[]) => void;
     labelPrefix?: "create" | "edit";
     showSshSettings?: boolean;
     layout?: "default" | "wizard";
-    showPaidFeaturesAlert?: boolean;
     hideAlias?: boolean;
     embedInParentGrid?: boolean;
     isNativeSsh?: boolean;
@@ -55,7 +54,6 @@ export function PrivateResourceSshFields({
     labelPrefix = "edit",
     showSshSettings = true,
     layout = "default",
-    showPaidFeaturesAlert = true,
     hideAlias = false,
     embedInParentGrid = false,
     isNativeSsh: isNativeSshProp
@@ -103,7 +101,7 @@ export function PrivateResourceSshFields({
         onSelectedSitesChange(first);
         setValue(
             "siteIds",
-            first.map((s: Selectedsite) => s.siteId),
+            first.map((s: SelectedSite) => s.siteId),
             { shouldValidate: true }
         );
     }
@@ -313,13 +311,6 @@ export function PrivateResourceSshFields({
 
     const content: ReactNode = (
         <>
-            {showPaidFeaturesAlert && layout === "default" && (
-                <SettingsFormCell span="full">
-                    <PaidFeaturesAlert
-                        tiers={tierMatrix.advancedPrivateResources}
-                    />
-                </SettingsFormCell>
-            )}
             {sshSettingsFields}
             {destinationSection}
         </>

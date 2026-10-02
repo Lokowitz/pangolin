@@ -17,16 +17,24 @@ import {
     sites,
     Transaction,
     userOrgRoles,
-    userSiteResources
+    userSiteResources,
+    orgs
 } from "@server/db";
-import { and, count, eq, inArray, ne } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, ne } from "drizzle-orm";
 
 import { deletePeersBatch as newtDeletePeersBatch } from "@server/routers/newt/peers";
+import {
+    sendGatewayDisable,
+    sendGatewaySitesUpdate
+} from "@server/routers/olm/gateway";
 import {
     initPeerAddHandshakeBatch,
     deletePeersBatch as olmDeletePeersBatch
 } from "@server/routers/olm/peers";
 import { sendToExitNode } from "#dynamic/lib/exitNodes";
+import { sendToClientsBatch } from "#dynamic/routers/ws";
+import { canCompress } from "@server/lib/clientVersionChecks";
+import config from "@server/lib/config";
 import logger from "@server/logger";
 import {
     generateAliasConfig,
@@ -187,7 +195,12 @@ export async function getClientSiteResourceAccess(
         `rebuildClientAssociations: [getClientSiteResourceAccess] siteResourceId=${siteResource.siteResourceId} networkId=${siteResource.networkId} siteCount=${sitesList.length} siteIds=[${sitesList.map((s) => s.siteId).join(", ")}]`
     );
 
-    if (sitesList.length === 0) {
+    if (sitesList.length === 0 && siteResource.networkId !== null) {
+        // A site resource with a networkId is expected to have at least one
+        // site attached via siteNetworks. Resources with no networkId (e.g.
+        // inference-mode resources, which connect clients directly to the
+        // exit node instead of any site) are expected to have no sites, so
+        // don't warn for those.
         logger.warn(
             `No sites found for siteResource ${siteResource.siteResourceId} with networkId ${siteResource.networkId}`
         );
@@ -226,7 +239,8 @@ export async function getClientSiteResourceAccess(
         .select({
             clientId: clients.clientId,
             pubKey: clients.pubKey,
-            subnet: clients.subnet
+            subnet: clients.subnet,
+            orgId: clients.orgId
         })
         .from(clients)
         .where(
@@ -252,7 +266,8 @@ export async function getClientSiteResourceAccess(
                   .select({
                       clientId: clients.clientId,
                       pubKey: clients.pubKey,
-                      subnet: clients.subnet
+                      subnet: clients.subnet,
+                      orgId: clients.orgId
                   })
                   .from(clients)
                   .where(
@@ -455,7 +470,8 @@ async function rebuildClientAssociationsFromSiteResourceImpl(
                   .select({
                       clientId: clients.clientId,
                       pubKey: clients.pubKey,
-                      subnet: clients.subnet
+                      subnet: clients.subnet,
+                      orgId: clients.orgId
                   })
                   .from(clients)
                   .where(
@@ -524,6 +540,19 @@ async function rebuildClientAssociationsFromSiteResourceImpl(
             );
     }
 
+    // A client that loses access to a gateway resource (it was deleted, or the
+    // client's roles/users/machines no longer include it) can't keep using it
+    // as its gateway. The olm ignores this unless it selected this resource.
+    if (
+        siteResource.mode === "gateway" &&
+        clientSiteResourcesToRemove.length > 0
+    ) {
+        await sendGatewayDisable(
+            clientSiteResourcesToRemove,
+            siteResource.siteResourceId
+        );
+    }
+
     /////////// process the client-site associations ///////////
 
     logger.debug(
@@ -560,7 +589,8 @@ async function rebuildClientAssociationsFromSiteResourceImpl(
                           .select({
                               clientId: clients.clientId,
                               pubKey: clients.pubKey,
-                              subnet: clients.subnet
+                              subnet: clients.subnet,
+                              orgId: clients.orgId
                           })
                           .from(clients)
                           .where(
@@ -687,6 +717,22 @@ async function rebuildClientAssociationsFromSiteResourceImpl(
         clientSiteResourcesToRemove,
         trx
     );
+
+    // If this resource requires clients to be connected to the exit node
+    // (e.g. an inference resource), re-sync the connect/disconnect state for
+    // every client whose access to it may have changed - both those who
+    // currently have access and those who just lost it.
+    if (siteResource.requiresExitNodeConnection) {
+        await syncClientExitNodeConnections(
+            Array.from(
+                new Set([
+                    ...mergedAllClientIds,
+                    ...existingClientSiteResourceIds
+                ])
+            ),
+            trx
+        );
+    }
 }
 
 async function handleMessagesForSiteClients(
@@ -696,11 +742,13 @@ async function handleMessagesForSiteClients(
         clientId: number;
         pubKey: string | null;
         subnet: string | null;
+        orgId: string;
     }[],
     existingClients: {
         clientId: number;
         pubKey: string | null;
         subnet: string | null;
+        orgId: string;
     }[],
     clientSitesToAdd: number[],
     clientSitesToRemove: number[],
@@ -781,6 +829,7 @@ async function handleMessagesForSiteClients(
             clientId: number;
             pubKey: string | null;
             subnet: string | null;
+            orgId: string;
         }
     >();
 
@@ -836,6 +885,22 @@ async function handleMessagesForSiteClients(
             .map((r) => [r.clientId as number, r.olmId])
     );
 
+    // Batch-fetch the orgs for all clients we need to process so we don't
+    // issue a redundant query per client in the loop below
+    const orgIdsToProcess = Array.from(
+        new Set(
+            Array.from(clientsToProcess.values()).map((client) => client.orgId)
+        )
+    );
+    const orgRows =
+        orgIdsToProcess.length > 0
+            ? await trx
+                  .select()
+                  .from(orgs)
+                  .where(inArray(orgs.orgId, orgIdsToProcess))
+            : [];
+    const orgByOrgId = new Map(orgRows.map((org) => [org.orgId, org]));
+
     for (const client of clientsToProcess.values()) {
         // UPDATE THE NEWT
         if (!client.subnet || !client.pubKey) {
@@ -875,7 +940,14 @@ async function handleMessagesForSiteClients(
         }
 
         if (isAdd) {
-            if (clientSiteCounts[client.clientId] > 250) {
+            const org = orgByOrgId.get(client.orgId);
+
+            if (!org) {
+                logger.warn(`Client ${client.clientId} org not found`);
+                continue;
+            }
+
+            if (clientSiteCounts[client.clientId] > org.settingsJitModeLimit) {
                 // skip adding the peer if we have more than 250 sites because we are in jit mode anyway
                 logger.info(
                     `rebuildClientAssociations: Client ${client.clientId} has ${clientSiteCounts[client.clientId]} sites so skipping adding peer to newt and olm because it is likely in jit mode`
@@ -966,7 +1038,7 @@ export async function updateClientSiteDestinations(
         .where(eq(clientSitesAssociationsCache.clientId, client.clientId));
 
     for (const site of sitesData) {
-        if (!site.sites.subnet) {
+        if (!site.sites.exitNodeSubnet) {
             logger.debug(`Site ${site.sites.siteId} has no subnet, skipping`);
             continue;
         }
@@ -1002,7 +1074,7 @@ export async function updateClientSiteDestinations(
                 sourcePort: parsedEndpoint.port,
                 destinations: [
                     {
-                        destinationIP: site.sites.subnet.split("/")[0],
+                        destinationIP: site.sites.exitNodeSubnet.split("/")[0],
                         destinationPort: site.sites.listenPort || 1 // this satisfies gerbil for now but should be reevaluated
                     }
                 ]
@@ -1010,7 +1082,7 @@ export async function updateClientSiteDestinations(
         } else {
             // add to the existing destinations
             destinations.destinations.push({
-                destinationIP: site.sites.subnet.split("/")[0],
+                destinationIP: site.sites.exitNodeSubnet.split("/")[0],
                 destinationPort: site.sites.listenPort || 1 // this satisfies gerbil for now but should be reevaluated
             });
         }
@@ -1048,6 +1120,265 @@ export async function updateClientSiteDestinations(
             localPath: "/update-destinations",
             method: "POST",
             data: payload
+        });
+    }
+}
+
+// Determines, for each of the given clients, whether they currently have
+// access to any enabled site resource with requiresExitNodeConnection set
+// (e.g. an inference-mode resource) and tells the client's olm to connect to
+// or disconnect from its assigned exit node accordingly. Site resources with
+// requiresExitNodeConnection don't belong to any site/network, so this can't
+// be derived from the per-site peer logic above - it has to be recomputed
+// from the client's full current resource access every time that access
+// changes.
+async function syncClientExitNodeConnections(
+    clientIds: number[],
+    trx: Transaction | typeof db = db
+): Promise<void> {
+    const uniqueClientIds = Array.from(new Set(clientIds));
+    if (uniqueClientIds.length === 0) {
+        return;
+    }
+
+    // Only clients with an exit node assigned can be told to connect/disconnect.
+    const clientsData = await trx
+        .select({
+            clientId: clients.clientId,
+            exitNodeId: clients.exitNodeId,
+            exitNodeSubnet: clients.exitNodeSubnet
+        })
+        .from(clients)
+        .where(
+            and(
+                inArray(clients.clientId, uniqueClientIds),
+                isNotNull(clients.exitNodeId)
+            )
+        );
+
+    if (clientsData.length === 0) {
+        return;
+    }
+
+    const clientIdsWithExitNode = clientsData.map((c) => c.clientId);
+
+    const requiresExitNodeRows = await trx
+        .select({
+            clientId: clientSiteResourcesAssociationsCache.clientId,
+            alias: siteResources.alias,
+            fullDomain: siteResources.fullDomain
+        })
+        .from(clientSiteResourcesAssociationsCache)
+        .innerJoin(
+            siteResources,
+            eq(
+                clientSiteResourcesAssociationsCache.siteResourceId,
+                siteResources.siteResourceId
+            )
+        )
+        .where(
+            and(
+                inArray(
+                    clientSiteResourcesAssociationsCache.clientId,
+                    clientIdsWithExitNode
+                ),
+                eq(siteResources.enabled, true),
+                eq(siteResources.requiresExitNodeConnection, true)
+            )
+        );
+
+    const needsConnectSet = new Set(
+        requiresExitNodeRows.map((r) => r.clientId)
+    );
+
+    // Aliases for every exit-node-backed resource this client can reach, so
+    // the live connect push carries the same alias list the register/reconnect
+    // path (buildSiteConfigurationForOlmClient) would compute.
+    const exitNodeAliasesByClientId = new Map<number, (string | null)[]>();
+    for (const row of requiresExitNodeRows) {
+        if (row.alias == null && row.fullDomain == null) continue;
+        const existing = exitNodeAliasesByClientId.get(row.clientId);
+        if (existing) {
+            existing.push(row.fullDomain || row.alias); // accept both for now in case we have other resource types that dont use the full domain
+        } else {
+            exitNodeAliasesByClientId.set(row.clientId, [
+                row.fullDomain || row.alias
+            ]);
+        }
+    }
+
+    const exitNodeIds = Array.from(
+        new Set(
+            clientsData
+                .map((c) => c.exitNodeId)
+                .filter((id): id is number => id !== null)
+        )
+    );
+
+    const exitNodeRows =
+        exitNodeIds.length > 0
+            ? await trx
+                  .select()
+                  .from(exitNodes)
+                  .where(inArray(exitNodes.exitNodeId, exitNodeIds))
+            : [];
+    const exitNodeById = new Map(exitNodeRows.map((n) => [n.exitNodeId, n]));
+
+    const olmRows = await trx
+        .select({
+            clientId: olms.clientId,
+            olmId: olms.olmId,
+            version: olms.version
+        })
+        .from(olms)
+        .where(inArray(olms.clientId, clientIdsWithExitNode));
+    const olmByClientId = new Map(
+        olmRows
+            .filter((r) => r.clientId !== null)
+            .map((r) => [r.clientId as number, r])
+    );
+
+    const relayPort = config.getRawConfig().gerbil.clients_start_port;
+
+    const connectPayloads: {
+        clientId: string;
+        message: { type: string; data: any };
+        options: { compress: boolean; incrementConfigVersion: boolean };
+    }[] = [];
+    const disconnectPayloads: {
+        clientId: string;
+        message: { type: string; data: any };
+        options: { compress: boolean; incrementConfigVersion: boolean };
+    }[] = [];
+
+    for (const client of clientsData) {
+        const olm = olmByClientId.get(client.clientId);
+        if (!olm) {
+            // No olm registered for this client yet/anymore, nothing to send.
+            continue;
+        }
+
+        const needsConnect = needsConnectSet.has(client.clientId);
+
+        if (needsConnect) {
+            const exitNode = client.exitNodeId
+                ? exitNodeById.get(client.exitNodeId)
+                : undefined;
+            if (!exitNode || !client.exitNodeSubnet) {
+                logger.warn(
+                    `rebuildClientAssociations: [syncClientExitNodeConnections] client ${client.clientId} needs an exit node connection but has no exit node or subnet assigned`
+                );
+                continue;
+            }
+
+            connectPayloads.push({
+                clientId: olm.olmId,
+                message: {
+                    type: "olm/wg/exitnode/connect",
+                    data: {
+                        connect: true,
+                        endpoint: `${exitNode.endpoint}:${exitNode.listenPort}`,
+                        relayPort,
+                        publicKey: exitNode.publicKey,
+                        serverIP: exitNode.address.split("/")[0],
+                        tunnelIP: client.exitNodeSubnet.split("/")[0],
+                        aliases:
+                            exitNodeAliasesByClientId.get(client.clientId) ?? []
+                    }
+                },
+                options: {
+                    compress: canCompress(olm.version, "olm"),
+                    incrementConfigVersion: true
+                }
+            });
+        } else {
+            disconnectPayloads.push({
+                clientId: olm.olmId,
+                message: {
+                    type: "olm/wg/exitnode/disconnect",
+                    data: {}
+                },
+                options: {
+                    compress: canCompress(olm.version, "olm"),
+                    incrementConfigVersion: true
+                }
+            });
+        }
+    }
+
+    if (connectPayloads.length > 0) {
+        await sendToClientsBatch(connectPayloads).catch((error) => {
+            logger.error(
+                `rebuildClientAssociations: Error sending exit node connect messages:`,
+                error
+            );
+        });
+    }
+
+    if (disconnectPayloads.length > 0) {
+        await sendToClientsBatch(disconnectPayloads).catch((error) => {
+            logger.error(
+                `rebuildClientAssociations: Error sending exit node disconnect messages:`,
+                error
+            );
+        });
+    }
+}
+
+// Notifies the olms of every given client that the alias of the site resource
+// they're using an exit node connection for has changed, via the dedicated
+// exit node data-update message. Unlike syncClientExitNodeConnections, this
+// doesn't touch connect/disconnect state - it's purely a rename for clients
+// that are (and remain) connected to the exit node for this resource.
+async function syncClientExitNodeAliasUpdate(
+    clientIds: number[],
+    oldAlias: string | null,
+    newAlias: string | null,
+    trx: Transaction | typeof db = db
+): Promise<void> {
+    const uniqueClientIds = Array.from(new Set(clientIds));
+    if (uniqueClientIds.length === 0) {
+        return;
+    }
+
+    const oldAliases = oldAlias ? [oldAlias] : [];
+    const newAliases = newAlias ? [newAlias] : [];
+    if (oldAliases.length === 0 && newAliases.length === 0) {
+        return;
+    }
+
+    const olmRows = await trx
+        .select({
+            clientId: olms.clientId,
+            olmId: olms.olmId,
+            version: olms.version
+        })
+        .from(olms)
+        .where(inArray(olms.clientId, uniqueClientIds));
+
+    const updatePayloads = olmRows
+        .filter((r) => r.clientId !== null)
+        .map((olm) => ({
+            clientId: olm.olmId,
+            message: {
+                type: "olm/wg/exitnode/data/update",
+                data: {
+                    oldAliases,
+                    newAliases
+                }
+            },
+            options: {
+                compress: canCompress(olm.version, "olm"),
+                incrementConfigVersion: true // this is important information we would need to sync
+            }
+        }));
+
+    if (updatePayloads.length > 0) {
+        await sendToClientsBatch(updatePayloads).catch((error) => {
+            logger.error(
+                `rebuildClientAssociations: Error sending exit node alias update messages:`,
+                error
+            );
         });
     }
 }
@@ -1282,12 +1613,13 @@ export async function handleMessagingForUpdatedSiteResource(
         `handleMessagingForUpdatedSiteResource: fetched newts for ${newtsForSites.length}/${allSiteIds.length} site(s)`
     );
 
-    // WARNING: THIS RELIES ON THE CACHE TABLES BEING UP TO DATE, SO CALL THIS AFTER THE ASSOCIATION CACHE IS UPDATED
+    // !!!!!!!!!!!!!!!!!! WARNING: THIS RELIES ON THE CACHE TABLES BEING UP TO DATE, SO CALL THIS AFTER THE ASSOCIATION CACHE IS UPDATED !!!!!!!!!!!!!!!!!!
     const mergedAllClients = await trx
         .select({
             clientId: clientSiteResourcesAssociationsCache.clientId,
             pubKey: clients.pubKey,
-            subnet: clients.subnet
+            subnet: clients.subnet,
+            orgId: clients.orgId
         })
         .from(clientSiteResourcesAssociationsCache)
         .innerJoin(
@@ -1709,6 +2041,61 @@ export async function handleMessagingForUpdatedSiteResource(
         );
     }
 
+    // For a resource that stays on an exit node connection across the update,
+    // the alias is the only field that affects already-connected clients (the
+    // exit node itself, its endpoint, etc. are not per-resource). Tell those
+    // clients' olms about the rename directly via the exit node data-update
+    // message rather than a full connect/disconnect cycle.
+    if (
+        existingSiteResource?.requiresExitNodeConnection &&
+        updatedSiteResource.requiresExitNodeConnection &&
+        aliasChanged
+    ) {
+        await syncClientExitNodeAliasUpdate(
+            mergedAllClients.map((c) => c.clientId),
+            existingSiteResource.alias,
+            updatedSiteResource.alias,
+            trx
+        );
+    }
+
+    // If this resource requires (or required) clients to be connected to the
+    // exit node (e.g. an inference resource), re-sync connect/disconnect
+    // state for every client currently associated with it - covers toggling
+    // requiresExitNodeConnection on update as well as enabling/disabling it.
+    if (
+        updatedSiteResource.requiresExitNodeConnection ||
+        existingSiteResource?.requiresExitNodeConnection
+    ) {
+        await syncClientExitNodeConnections(
+            mergedAllClients.map((c) => c.clientId),
+            trx
+        );
+    }
+
+    // The olm only knows which gateway resource it selected and the sites it
+    // is currently using for it, so tell the clients that have access to this
+    // one what changed. Clients that lost access are handled by the rebuild.
+    if (existingSiteResource?.mode === "gateway") {
+        const clientIds = mergedAllClients.map((c) => c.clientId);
+        if (
+            updatedSiteResource.mode !== "gateway" ||
+            !updatedSiteResource.enabled
+        ) {
+            await sendGatewayDisable(
+                clientIds,
+                updatedSiteResource.siteResourceId
+            );
+        } else {
+            await sendGatewaySitesUpdate(
+                clientIds,
+                updatedSiteResource.siteResourceId,
+                addedSiteIds,
+                removedSiteIds
+            );
+        }
+    }
+
     logger.debug(
         `handleMessagingForUpdatedSiteResource: DONE siteResourceId=${updatedSiteResource.siteResourceId}`
     );
@@ -1990,6 +2377,10 @@ async function rebuildClientAssociationsFromClientImpl(
         resourcesToRemove,
         trx
     );
+
+    // Re-sync exit node connect/disconnect state based on this client's
+    // current full set of resource access (e.g. inference resources).
+    await syncClientExitNodeConnections([client.clientId], trx);
 }
 
 async function handleMessagesForClientSites(
@@ -2072,6 +2463,19 @@ async function handleMessagesForClientSites(
         .where(eq(clientSitesAssociationsCache.clientId, client.clientId))
         .then((rows) => Number(rows[0].count));
 
+    // client.orgId is constant for this call, so fetch the org once
+    // instead of re-querying it for every site in the loop below
+    const [org] = await trx
+        .select()
+        .from(orgs)
+        .where(eq(orgs.orgId, client.orgId))
+        .limit(1);
+
+    if (!org) {
+        logger.warn(`Client ${client.clientId} org not found`);
+        return;
+    }
+
     for (const siteData of sitesData) {
         const site = siteData.sites;
         const exitNode = siteData.exitNodes;
@@ -2132,7 +2536,7 @@ async function handleMessagesForClientSites(
                 continue;
             }
 
-            if (totalSitesOnClient > 250) {
+            if (totalSitesOnClient > org.settingsJitModeLimit) {
                 // skip adding the site if we have more than 250 because we are in jit mode anyway
                 logger.info(
                     `rebuildClientAssociations: Client ${client.clientId} has ${totalSitesOnClient} sites so skipping adding peer to newt and olm because it is likely in jit mode`
@@ -2742,7 +3146,8 @@ export async function cleanupSiteAssociations(
                   .select({
                       clientId: clients.clientId,
                       pubKey: clients.pubKey,
-                      subnet: clients.subnet
+                      subnet: clients.subnet,
+                      orgId: clients.orgId
                   })
                   .from(clients)
                   .where(inArray(clients.clientId, cachedClientIds))

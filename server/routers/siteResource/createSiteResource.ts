@@ -10,8 +10,7 @@ import {
     SiteResource,
     siteResources,
     sites,
-    userSiteResources,
-    primaryDb
+    userSiteResources
 } from "@server/db";
 import { getUniqueSiteResourceName } from "@server/db/names";
 import {
@@ -19,8 +18,6 @@ import {
     isIpInCidr,
     portRangeStringSchema
 } from "@server/lib/ip";
-import { isLicensedOrSubscribed } from "#dynamic/lib/isLicencedOrSubscribed";
-import { TierFeature, tierMatrix } from "@server/lib/billing/tierMatrix";
 import {
     rebuildClientAssociationsFromSiteResource,
     isOrgRebuildRateLimited
@@ -29,16 +26,23 @@ import response from "@server/lib/response";
 import logger from "@server/logger";
 import { OpenAPITags, registry } from "@server/openApi";
 import HttpCode from "@server/types/HttpCode";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { NextFunction, Request, Response } from "express";
 import createHttpError from "http-errors";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import { validateAndConstructDomain } from "@server/lib/domainUtils";
-import { createCertificate } from "#dynamic/routers/certificates/createCertificate";
+import { createCertificate } from "@server/routers/certificates/createCertificate";
 import { build } from "@server/build";
 import { usageService } from "@server/lib/billing/usageService";
 import { LimitId } from "@server/lib/billing";
+import {
+    isInferenceFieldsError,
+    resolveProviderAttachments,
+    resourceAiProviderAttachmentSchema,
+    setSiteResourceAiProviders,
+    type ResourceAiProviderAttachment
+} from "@server/lib/aiInferenceResource";
 
 const createSiteResourceParamsSchema = z.strictObject({
     orgId: z.string()
@@ -49,7 +53,7 @@ const createSiteResourceSchema = z
         name: z.string().min(1).max(255),
         niceId: z.string().optional(),
         // protocol: z.enum(["tcp", "udp"]).optional(),
-        mode: z.enum(["host", "cidr", "http", "ssh"]),
+        mode: z.enum(["host", "cidr", "http", "ssh", "inference", "gateway"]),
         ssl: z.boolean().optional(), // only used for http mode
         scheme: z.enum(["http", "https"]).optional(),
         siteIds: z.array(z.int()).optional(),
@@ -78,7 +82,13 @@ const createSiteResourceSchema = z
         authDaemonMode: z.enum(["site", "remote", "native"]).optional(),
         pamMode: z.enum(["passthrough", "push"]).optional(),
         domainId: z.string().optional(), // only used for http mode, we need this to verify the alias is unique within the org
-        subdomain: z.string().optional() // only used for http mode, we need this to verify the alias is unique within the org
+        subdomain: z.string().optional(), // only used for http mode, we need this to verify the alias is unique within the org
+        aiProviders: z
+            .array(resourceAiProviderAttachmentSchema)
+            .optional()
+            .describe(
+                "For inference-mode site resources: AI providers to attach. Providers are attached in inherit mode, using each provider's own allow/block lists. Effective allow model keys must be unique across attached providers."
+            )
     })
     .strict()
     .refine(
@@ -155,8 +165,12 @@ const createSiteResourceSchema = z
     )
     .refine(
         (data) => {
-            // destination is only optional for ssh mode with native authDaemonMode
-            if (data.mode === "ssh" && data.authDaemonMode === "native") {
+            // destination is only optional for ssh mode with native authDaemonMode, inference, or gateway
+            if (
+                (data.mode === "ssh" && data.authDaemonMode === "native") ||
+                data.mode == "inference" ||
+                data.mode == "gateway"
+            ) {
                 return true;
             }
             return (
@@ -166,11 +180,14 @@ const createSiteResourceSchema = z
         },
         {
             message:
-                "Destination is required unless mode is ssh with authDaemonMode native"
+                "Destination is required unless mode is ssh with authDaemonMode native, inference, or gateway"
         }
     )
     .refine(
         (data) => {
+            if (data.mode == "inference") {
+                return true;
+            }
             return (
                 (data.siteIds !== undefined && data.siteIds.length > 0) ||
                 data.siteId !== undefined
@@ -319,13 +336,42 @@ export async function createSiteResource(
             authDaemonMode,
             pamMode,
             domainId,
-            subdomain
+            subdomain,
+            aiProviders: aiProviderInputs
         } = parsedBody.data;
 
         // Backward compatibility: merge deprecated siteId into siteIds array
         const siteIds = [...siteIdsInput];
         if (siteId !== undefined && !siteIds.includes(siteId)) {
             siteIds.push(siteId);
+        }
+
+        let providerAttachments: ResourceAiProviderAttachment[] = [];
+        if (mode === "inference") {
+            // A new site resource has no model selections yet, so providers
+            // always start in inherit mode; select can be enabled afterwards.
+            const resolved = await resolveProviderAttachments({
+                orgId,
+                attachments: (aiProviderInputs ?? []).map((p) => ({
+                    providerId: p.providerId,
+                    accessMode: "inherit" as const,
+                    enabled: true as const
+                })),
+                requireAtLeastOne: false
+            });
+            if (isInferenceFieldsError(resolved)) {
+                return next(
+                    createHttpError(HttpCode.BAD_REQUEST, resolved.error)
+                );
+            }
+            providerAttachments = resolved;
+        } else if (aiProviderInputs && aiProviderInputs.length > 0) {
+            return next(
+                createHttpError(
+                    HttpCode.BAD_REQUEST,
+                    "AI providers can only be attached to inference-mode resources"
+                )
+            );
         }
 
         if (build == "saas") {
@@ -355,21 +401,6 @@ export async function createSiteResource(
                     createHttpError(
                         HttpCode.FORBIDDEN,
                         "Private resource limit exceeded. Please upgrade your plan."
-                    )
-                );
-            }
-        }
-
-        if (mode == "http") {
-            const hasHttpFeature = await isLicensedOrSubscribed(
-                orgId,
-                tierMatrix[TierFeature.AdvancedPrivateResources]
-            );
-            if (!hasHttpFeature) {
-                return next(
-                    createHttpError(
-                        HttpCode.FORBIDDEN,
-                        "HTTP private resources are not included in your current plan. Please upgrade."
                     )
                 );
             }
@@ -417,14 +448,18 @@ export async function createSiteResource(
             );
         }
 
+        // gateway resources always route the whole subnet with everything open
+        const effectiveDestination =
+            mode === "gateway" ? "0.0.0.0/0" : destination;
+
         // Only check if destination is an IP address
         const isIp = z
             .union([z.ipv4(), z.ipv6()])
-            .safeParse(destination).success;
+            .safeParse(effectiveDestination).success;
         if (
             isIp &&
-            (isIpInCidr(destination!, org.subnet) ||
-                isIpInCidr(destination!, org.utilitySubnet))
+            (isIpInCidr(effectiveDestination!, org.subnet) ||
+                isIpInCidr(effectiveDestination!, org.utilitySubnet))
         ) {
             return next(
                 createHttpError(
@@ -467,7 +502,14 @@ export async function createSiteResource(
             const existingResource = await db
                 .select()
                 .from(siteResources)
-                .where(eq(siteResources.fullDomain, fullDomain));
+                .where(
+                    and(
+                        eq(siteResources.fullDomain, fullDomain),
+                        mode == "inference"
+                            ? ne(siteResources.mode, "inference")
+                            : eq(siteResources.mode, "inference")
+                    )
+                ); // exclude looking at the ones on exit nodes if this is an inference resource
 
             if (existingResource.length > 0) {
                 return next(
@@ -502,20 +544,6 @@ export async function createSiteResource(
             }
         }
 
-        const isLicensedSshPam = await isLicensedOrSubscribed(
-            orgId,
-            tierMatrix.advancedPrivateResources
-        );
-
-        if (mode == "ssh" && !isLicensedSshPam) {
-            return next(
-                createHttpError(
-                    HttpCode.FORBIDDEN,
-                    "SSH private resources are not included in your current plan. Please upgrade."
-                )
-            );
-        }
-
         let updatedNiceId = niceId;
         if (!niceId) {
             updatedNiceId = await getUniqueSiteResourceName(orgId);
@@ -524,6 +552,7 @@ export async function createSiteResource(
         let aliasAddress: string | null = null;
         let releaseAliasLock: (() => Promise<void>) | null = null;
         if (mode === "host" || mode === "http" || mode === "ssh") {
+            // no alias address but we do have an alias for inference
             const { value, release } =
                 await getNextAvailableAliasAddress(orgId);
             aliasAddress = value;
@@ -533,30 +562,59 @@ export async function createSiteResource(
         let newSiteResource: SiteResource | undefined;
         try {
             await db.transaction(async (trx) => {
-                const [network] = await trx
-                    .insert(networks)
-                    .values({
-                        scope: "resource",
-                        orgId: orgId
-                    })
-                    .returning();
+                let network: typeof networks.$inferSelect | undefined;
+                if (mode !== "inference") {
+                    [network] = await trx
+                        .insert(networks)
+                        .values({
+                            scope: "resource",
+                            orgId: orgId
+                        })
+                        .returning();
 
-                if (!network) {
-                    return next(
-                        createHttpError(
-                            HttpCode.INTERNAL_SERVER_ERROR,
-                            `Failed to create network`
-                        )
-                    );
+                    if (!network) {
+                        return next(
+                            createHttpError(
+                                HttpCode.INTERNAL_SERVER_ERROR,
+                                `Failed to create network`
+                            )
+                        );
+                    }
                 }
 
                 let tcpPortRangeStringAdjusted = tcpPortRangeString;
-                if (mode === "http") {
+                if (mode === "http" || mode === "inference") {
                     tcpPortRangeStringAdjusted = "443,80";
                 } else if (mode === "ssh") {
                     tcpPortRangeStringAdjusted = destinationPort
                         ? destinationPort.toString()
                         : "22";
+                } else if (mode === "gateway") {
+                    tcpPortRangeStringAdjusted = "*";
+                }
+
+                let udpPortRangeStringAdjusted = udpPortRangeString;
+                if (mode === "gateway") {
+                    udpPortRangeStringAdjusted = "*";
+                } else if (
+                    mode === "http" ||
+                    mode === "ssh" ||
+                    mode === "inference"
+                ) {
+                    udpPortRangeStringAdjusted = "";
+                }
+
+                // default to true for http/ssh/inference, false otherwise;
+                // gateway always allows icmp
+                let disableIcmpAdjusted = disableIcmp ?? false;
+                if (mode === "gateway") {
+                    disableIcmpAdjusted = false;
+                } else if (
+                    mode === "http" ||
+                    mode === "ssh" ||
+                    mode === "inference"
+                ) {
+                    disableIcmpAdjusted = true;
                 }
 
                 // Create the site resource
@@ -566,31 +624,27 @@ export async function createSiteResource(
                     name,
                     mode,
                     ssl,
-                    networkId: network.networkId,
-                    destination: destination, // the ssh can be null
+                    networkId: network ? network.networkId : null,
+                    destination: effectiveDestination, // the ssh can be null
                     scheme,
                     destinationPort,
                     alias: alias ? alias.trim() : null,
                     aliasAddress,
                     tcpPortRangeString: tcpPortRangeStringAdjusted,
-                    udpPortRangeString:
-                        mode == "http" || mode == "ssh"
-                            ? ""
-                            : udpPortRangeString,
-                    disableIcmp:
-                        disableIcmp ||
-                        (mode == "http" || mode == "ssh" ? true : false), // default to true for http resources, otherwise false
+                    udpPortRangeString: udpPortRangeStringAdjusted,
+                    disableIcmp: disableIcmpAdjusted,
                     domainId,
                     subdomain: finalSubdomain,
-                    fullDomain
+                    fullDomain,
+                    requiresExitNodeConnection: mode === "inference" // in the future we might want to have different modes that do this
                 };
-                if (isLicensedSshPam) {
-                    if (authDaemonPort !== undefined)
-                        insertValues.authDaemonPort = authDaemonPort;
-                    if (authDaemonMode !== undefined)
-                        insertValues.authDaemonMode = authDaemonMode;
-                    if (pamMode !== undefined) insertValues.pamMode = pamMode;
-                }
+
+                if (authDaemonPort !== undefined)
+                    insertValues.authDaemonPort = authDaemonPort;
+                if (authDaemonMode !== undefined)
+                    insertValues.authDaemonMode = authDaemonMode;
+                if (pamMode !== undefined) insertValues.pamMode = pamMode;
+
                 [newSiteResource] = await trx
                     .insert(siteResources)
                     .values(insertValues)
@@ -598,13 +652,23 @@ export async function createSiteResource(
 
                 const siteResourceId = newSiteResource.siteResourceId;
 
+                if (providerAttachments.length > 0) {
+                    await setSiteResourceAiProviders(
+                        siteResourceId,
+                        providerAttachments,
+                        trx
+                    );
+                }
+
                 //////////////////// update the associations ////////////////////
 
-                for (const siteId of siteIds) {
-                    await trx.insert(siteNetworks).values({
-                        siteId: siteId,
-                        networkId: network.networkId
-                    });
+                if (network) {
+                    for (const siteId of siteIds) {
+                        await trx.insert(siteNetworks).values({
+                            siteId: siteId,
+                            networkId: network.networkId
+                        });
+                    }
                 }
 
                 const [adminRole] = await trx
@@ -697,10 +761,9 @@ export async function createSiteResource(
 
         if (
             ssl &&
-            mode === "http" &&
+            (mode === "http" || mode == "inference") &&
             domainId &&
-            fullDomain &&
-            build != "oss"
+            fullDomain
         ) {
             await createCertificate(domainId, fullDomain, db);
         }

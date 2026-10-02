@@ -1,5 +1,5 @@
 import { isLicensedOrSubscribed } from "#dynamic/lib/isLicencedOrSubscribed";
-import { createCertificate } from "#dynamic/routers/certificates/createCertificate";
+import { createCertificate } from "@server/routers/certificates/createCertificate";
 import { hashPassword } from "@server/auth/password";
 import { generateId } from "@server/auth/sessions/app";
 import { build } from "@server/build";
@@ -46,15 +46,22 @@ import { encrypt } from "@server/lib/crypto";
 import logger from "@server/logger";
 import { defaultRoleAllowedActions } from "@server/routers/role/createRole";
 import { pickPort } from "@server/routers/target/helpers";
-import { and, asc, eq, isNotNull, ne, or } from "drizzle-orm";
+import { and, asc, eq, isNotNull, ne } from "drizzle-orm";
 import { tierMatrix } from "../billing/tierMatrix";
-import { isValidCIDR, isValidIP, isValidUrlGlobPattern } from "../validators";
+import {
+    isValidCIDR,
+    isValidHttpMethodList,
+    isValidIP,
+    isValidUrlGlobPattern,
+    parseHttpMethodList
+} from "../validators";
 import { Config, isTargetsOnlyResource, TargetData } from "./types";
-import HttpCode from "@server/types/HttpCode";
-import createHttpError from "http-errors";
-import next from "next";
+import { getOrCreateLabelIds, syncResourceLabels } from "./labels";
+import { findOrgUsersByIdentifier } from "./findOrgUser";
 import { LimitId } from "../billing";
 import { usageService } from "../billing/usageService";
+import { syncInferenceAiConfig } from "./aiProviders";
+import { syncAiBudgets } from "./aiBudgets";
 
 export type PublicResourcesResults = {
     proxyResource: Resource;
@@ -254,22 +261,18 @@ export async function updatePublicResources(
             resourceData.ssl == undefined || resourceData.ssl == null
                 ? true
                 : resourceData.ssl;
-        let headers = "";
-        if (resourceData.headers) {
-            headers = JSON.stringify(resourceData.headers);
-        }
-
-        if (["ssh", "rdp", "vnc"].includes(resourceData.mode || "")) {
-            const isLicensed = await isLicensedOrSubscribed(
-                orgId,
-                tierMatrix.advancedPublicResources
-            );
-            if (!isLicensed) {
-                throw new Error(
-                    "Your current subscription does not support browser gateway resources. Please upgrade to access this feature."
-                );
-            }
-        }
+        // `headers` is a deprecated alias for `requestHeaders`
+        const mergedRequestHeaders = [
+            ...(resourceData.headers ?? []),
+            ...(resourceData.requestHeaders ?? [])
+        ];
+        const requestHeaders =
+            mergedRequestHeaders.length > 0
+                ? JSON.stringify(mergedRequestHeaders)
+                : null;
+        const responseHeaders = resourceData.responseHeaders?.length
+            ? JSON.stringify(resourceData.responseHeaders)
+            : null;
 
         if (resourceData.policy) {
             const isLicensed = await isLicensedOrSubscribed(
@@ -286,7 +289,9 @@ export async function updatePublicResources(
         if (existingResource) {
             let domain;
             if (
-                ["http", "ssh", "rdp", "vnc"].includes(resourceData.mode || "")
+                ["http", "ssh", "rdp", "vnc", "inference"].includes(
+                    resourceData.mode || ""
+                )
             ) {
                 if (resourceData["full-domain"]?.startsWith("*.")) {
                     const isLicensed = await isLicensedOrSubscribed(
@@ -304,6 +309,7 @@ export async function updatePublicResources(
                     existingResource.resourceId,
                     resourceData["full-domain"]!,
                     orgId,
+                    resourceData.mode === "inference",
                     trx
                 );
 
@@ -325,7 +331,7 @@ export async function updatePublicResources(
 
                 const isLicensed = await isLicensedOrSubscribed(
                     orgId,
-                    tierMatrix.maintencePage
+                    tierMatrix.maintenancePage
                 );
                 if (!isLicensed) {
                     resourceData.maintenance = undefined;
@@ -370,14 +376,22 @@ export async function updatePublicResources(
                             name: resourceData.name || "Unnamed Resource",
 
                             mode: resourceData.mode,
-                            proxyPort: ["http", "ssh", "rdp", "vnc"].includes(
-                                resourceData.mode || ""
-                            )
+                            proxyPort: [
+                                "http",
+                                "ssh",
+                                "rdp",
+                                "vnc",
+                                "inference"
+                            ].includes(resourceData.mode || "")
                                 ? null
                                 : resourceData["proxy-port"],
-                            fullDomain: ["http", "ssh", "rdp", "vnc"].includes(
-                                resourceData.mode || ""
-                            )
+                            fullDomain: [
+                                "http",
+                                "ssh",
+                                "rdp",
+                                "vnc",
+                                "inference"
+                            ].includes(resourceData.mode || "")
                                 ? resourceData["full-domain"]
                                 : null,
                             subdomain: domain ? domain.subdomain : null,
@@ -397,7 +411,8 @@ export async function updatePublicResources(
                                 ? resourceData.auth["whitelist-users"].length >
                                   0
                                 : false,
-                            headers: headers || null,
+                            requestHeaders,
+                            responseHeaders,
                             applyRules:
                                 resourceData.rules &&
                                 resourceData.rules.length > 0,
@@ -566,14 +581,23 @@ export async function updatePublicResources(
                         .update(resources)
                         .set({
                             name: resourceData.name || "Unnamed Resource",
-                            proxyPort: ["http", "ssh", "rdp", "vnc"].includes(
-                                resourceData.mode || ""
-                            )
+                            mode: resourceData.mode,
+                            proxyPort: [
+                                "http",
+                                "ssh",
+                                "rdp",
+                                "vnc",
+                                "inference"
+                            ].includes(resourceData.mode || "")
                                 ? null
                                 : resourceData["proxy-port"],
-                            fullDomain: ["http", "ssh", "rdp", "vnc"].includes(
-                                resourceData.mode || ""
-                            )
+                            fullDomain: [
+                                "http",
+                                "ssh",
+                                "rdp",
+                                "vnc",
+                                "inference"
+                            ].includes(resourceData.mode || "")
                                 ? resourceData["full-domain"]
                                 : null,
                             subdomain: domain ? domain.subdomain : null,
@@ -584,7 +608,8 @@ export async function updatePublicResources(
                             setHostHeader: resourceData["host-header"] || null,
                             tlsServerName:
                                 resourceData["tls-server-name"] || null,
-                            headers: headers || null,
+                            requestHeaders,
+                            responseHeaders,
                             maintenanceModeEnabled:
                                 resourceData.maintenance?.enabled,
                             maintenanceModeType: resourceData.maintenance?.type,
@@ -673,6 +698,30 @@ export async function updatePublicResources(
                         trx
                     );
                 }
+
+                await syncInferenceAiConfig({
+                    orgId,
+                    trx,
+                    mode: resourceData.mode || "",
+                    scope: "public",
+                    resourceId: existingResource.resourceId,
+                    providers: (resourceData["ai-providers"] || []).map(
+                        (p) => ({
+                            provider: p.provider,
+                            accessMode: p["access-mode"],
+                            enabled: p.enabled,
+                            models: p.models
+                        })
+                    )
+                });
+
+                await syncAiBudgets({
+                    orgId,
+                    trx,
+                    scope: "public",
+                    resourceId: existingResource.resourceId,
+                    budgets: resourceData["ai-budget"] || []
+                });
             }
 
             const existingResourceTargets = await trx
@@ -753,7 +802,7 @@ export async function updatePublicResources(
                                     : undefined),
                             rewritePathType: targetData["rewrite-match"],
                             priority: targetData.priority,
-                            mode: resourceData.mode
+                            mode: resourceData.mode as Target["mode"]
                         })
                         .where(eq(targets.targetId, existingTarget.targetId))
                         .returning();
@@ -1058,7 +1107,9 @@ export async function updatePublicResources(
 
             let domain;
             if (
-                ["http", "ssh", "rdp", "vnc"].includes(resourceData.mode || "")
+                ["http", "ssh", "rdp", "vnc", "inference"].includes(
+                    resourceData.mode || ""
+                )
             ) {
                 if (resourceData["full-domain"]?.startsWith("*.")) {
                     const isLicensed = await isLicensedOrSubscribed(
@@ -1076,6 +1127,7 @@ export async function updatePublicResources(
                     undefined,
                     resourceData["full-domain"]!,
                     orgId,
+                    resourceData.mode === "inference",
                     trx
                 );
 
@@ -1088,7 +1140,7 @@ export async function updatePublicResources(
 
             const isLicensed = await isLicensedOrSubscribed(
                 orgId,
-                tierMatrix.maintencePage
+                tierMatrix.maintenancePage
             );
             if (!isLicensed) {
                 resourceData.maintenance = undefined;
@@ -1155,14 +1207,22 @@ export async function updatePublicResources(
                     status: resourceStatusFromSite,
                     name: resourceData.name || "Unnamed Resource",
                     mode: resourceData.mode,
-                    proxyPort: ["http", "ssh", "rdp", "vnc"].includes(
-                        resourceData.mode || ""
-                    )
+                    proxyPort: [
+                        "http",
+                        "ssh",
+                        "rdp",
+                        "vnc",
+                        "inference"
+                    ].includes(resourceData.mode || "")
                         ? null
                         : resourceData["proxy-port"],
-                    fullDomain: ["http", "ssh", "rdp", "vnc"].includes(
-                        resourceData.mode || ""
-                    )
+                    fullDomain: [
+                        "http",
+                        "ssh",
+                        "rdp",
+                        "vnc",
+                        "inference"
+                    ].includes(resourceData.mode || "")
                         ? resourceData["full-domain"]
                         : null,
                     subdomain: domain ? domain.subdomain : null,
@@ -1172,7 +1232,8 @@ export async function updatePublicResources(
                     setHostHeader: resourceData["host-header"] || null,
                     tlsServerName: resourceData["tls-server-name"] || null,
                     ssl: resourceSsl,
-                    headers: headers || null,
+                    requestHeaders,
+                    responseHeaders,
                     applyRules:
                         resourceData.rules && resourceData.rules.length > 0,
                     pamMode: resourceData["auth-daemon"]?.pam || "passthrough",
@@ -1216,6 +1277,28 @@ export async function updatePublicResources(
                 .returning();
 
             resource = newResource;
+
+            await syncInferenceAiConfig({
+                orgId,
+                trx,
+                mode: resourceData.mode || "",
+                scope: "public",
+                resourceId: newResource.resourceId,
+                providers: (resourceData["ai-providers"] || []).map((p) => ({
+                    provider: p.provider,
+                    accessMode: p["access-mode"],
+                    enabled: p.enabled,
+                    models: p.models
+                }))
+            });
+
+            await syncAiBudgets({
+                orgId,
+                trx,
+                scope: "public",
+                resourceId: newResource.resourceId,
+                budgets: resourceData["ai-budget"] || []
+            });
 
             await trx.insert(roleResources).values({
                 roleId: adminRole.roleId,
@@ -1351,6 +1434,15 @@ export async function updatePublicResources(
             logger.debug(`Created resource ${newResource.resourceId}`);
         }
 
+        if (!isTargetsOnlyResource(resourceData)) {
+            const labelIds = await getOrCreateLabelIds(
+                orgId,
+                resourceData.labels || [],
+                trx
+            );
+            await syncResourceLabels(resource.resourceId, labelIds, trx);
+        }
+
         results.push({
             proxyResource: resource,
             targetsToUpdate,
@@ -1378,6 +1470,10 @@ function getRuleValue(match: string, value: string) {
     if (match === "COUNTRY" || match === "COUNTRY_IS_NOT") {
         return value.toUpperCase();
     }
+    // normalize the method list so it is stored as "POST,PUT"
+    if (match === "METHOD") {
+        return parseHttpMethodList(value).join(",");
+    }
     return value;
 }
 
@@ -1397,6 +1493,10 @@ function validateRule(rule: any) {
     } else if (rule.match === "region") {
         if (!isValidRegionId(rule.value)) {
             throw new Error(`Invalid region ID provided: ${rule.value}`);
+        }
+    } else if (rule.match === "method") {
+        if (!isValidHttpMethodList(rule.value)) {
+            throw new Error(`Invalid HTTP method provided: ${rule.value}`);
         }
     }
 }
@@ -1489,31 +1589,27 @@ async function syncUserResources(
         .where(eq(userResources.resourceId, resourceId));
 
     for (const username of ssoUsers) {
-        const [user] = await trx
-            .select()
-            .from(users)
-            .innerJoin(userOrgs, eq(users.userId, userOrgs.userId))
-            .where(
-                and(
-                    or(eq(users.username, username), eq(users.email, username)),
-                    eq(userOrgs.orgId, orgId)
-                )
-            )
-            .limit(1);
+        const matchedUsers = await findOrgUsersByIdentifier(
+            trx,
+            orgId,
+            username
+        );
 
-        if (!user) {
+        if (matchedUsers.length === 0) {
             throw new Error(`User not found: ${username} in org ${orgId}`);
         }
 
-        const existingUserResource = existingUserResources.find(
-            (rr) => rr.userId === user.user.userId
-        );
+        for (const user of matchedUsers) {
+            const existingUserResource = existingUserResources.find(
+                (rr) => rr.userId === user.userId
+            );
 
-        if (!existingUserResource) {
-            await trx.insert(userResources).values({
-                userId: user.user.userId,
-                resourceId: resourceId
-            });
+            if (!existingUserResource) {
+                await trx.insert(userResources).values({
+                    userId: user.userId,
+                    resourceId: resourceId
+                });
+            }
         }
     }
 
@@ -1881,31 +1977,27 @@ async function syncUserPolicies(
         .where(eq(userPolicies.resourcePolicyId, policyId));
 
     for (const username of ssoUsers) {
-        const [user] = await trx
-            .select()
-            .from(users)
-            .innerJoin(userOrgs, eq(users.userId, userOrgs.userId))
-            .where(
-                and(
-                    or(eq(users.username, username), eq(users.email, username)),
-                    eq(userOrgs.orgId, orgId)
-                )
-            )
-            .limit(1);
+        const matchedUsers = await findOrgUsersByIdentifier(
+            trx,
+            orgId,
+            username
+        );
 
-        if (!user) {
+        if (matchedUsers.length === 0) {
             throw new Error(`User not found: ${username} in org ${orgId}`);
         }
 
-        const existingUserPolicy = existingUserPoliciesList.find(
-            (up) => up.userId === user.user.userId
-        );
+        for (const user of matchedUsers) {
+            const existingUserPolicy = existingUserPoliciesList.find(
+                (up) => up.userId === user.userId
+            );
 
-        if (!existingUserPolicy) {
-            await trx.insert(userPolicies).values({
-                userId: user.user.userId,
-                resourcePolicyId: policyId
-            });
+            if (!existingUserPolicy) {
+                await trx.insert(userPolicies).values({
+                    userId: user.userId,
+                    resourcePolicyId: policyId
+                });
+            }
         }
     }
 
@@ -2065,6 +2157,7 @@ export async function getDomain(
     resourceId: number | undefined,
     fullDomain: string,
     orgId: string,
+    isInference: boolean,
     trx: Transaction
 ) {
     const [fullDomainExists] = await trx
@@ -2074,6 +2167,14 @@ export async function getDomain(
             and(
                 eq(resources.fullDomain, fullDomain),
                 eq(resources.orgId, orgId),
+                // Inference resources route through the central AI gateway
+                // rather than normal target-based proxying, so they're
+                // allowed to share a full-domain with a non-inference
+                // resource (and vice versa) - only conflicts within the
+                // same routing category are rejected.
+                isInference
+                    ? ne(resources.mode, "inference")
+                    : eq(resources.mode, "inference"),
                 resourceId
                     ? ne(resources.resourceId, resourceId)
                     : isNotNull(resources.resourceId)

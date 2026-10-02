@@ -37,7 +37,7 @@ export type LauncherAccessFields = {
 export function formatPublicResourceAccess(
     resource: PublicResourceAccessInput
 ): LauncherAccessFields {
-    const browserModes = ["http", "ssh", "rdp", "vnc"];
+    const browserModes = ["http", "ssh", "rdp", "vnc", "inference"];
     if (!browserModes.includes(resource.mode)) {
         const port = resource.proxyPort?.toString() ?? "";
         return {
@@ -66,20 +66,33 @@ export function formatPublicResourceAccess(
 export function formatSiteResourceAccess(
     resource: SiteResourceAccessInput
 ): LauncherAccessFields {
-    if (resource.alias) {
+    // Exit node (gateway) destinations are always 0.0.0.0/0 — not useful to
+    // show or copy. Callers should render a localized capability label.
+    if (resource.mode === "gateway") {
         return {
-            accessDisplay: resource.alias,
-            accessCopyValue: resource.alias,
+            accessDisplay: "",
+            accessCopyValue: "",
             accessUrl: null
         };
     }
 
-    if (resource.mode === "http" && resource.fullDomain) {
+    if (
+        (resource.mode === "http" || resource.mode === "inference") &&
+        resource.fullDomain
+    ) {
         const url = `${resource.ssl ? "https" : "http"}://${resource.fullDomain}`;
         return {
             accessDisplay: url,
             accessCopyValue: url,
             accessUrl: url
+        };
+    }
+
+    if (resource.alias) {
+        return {
+            accessDisplay: resource.alias,
+            accessCopyValue: resource.alias,
+            accessUrl: null
         };
     }
 

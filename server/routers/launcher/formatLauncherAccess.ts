@@ -1,7 +1,8 @@
+import { SiteResource } from "@server/db";
 import { formatEndpoint, parseEndpoint } from "@server/lib/ip";
 
 export type SiteResourceDestinationInput = {
-    mode: "host" | "cidr" | "http" | "ssh";
+    mode: SiteResource["mode"];
     destination: string | null;
     destinationPort: number | null;
     scheme: "http" | "https" | null;
@@ -97,7 +98,7 @@ function formatTcpUdpResourceAccess(
 export function formatPublicResourceAccess(
     resource: PublicResourceAccessInput
 ): LauncherAccessFields {
-    const browserModes = ["http", "ssh", "rdp", "vnc"];
+    const browserModes = ["http", "ssh", "rdp", "vnc", "inference"];
     if (!browserModes.includes(resource.mode)) {
         return formatTcpUdpResourceAccess(
             resource.exitNodeEndpoint,
@@ -124,20 +125,33 @@ export function formatPublicResourceAccess(
 export function formatSiteResourceAccess(
     resource: SiteResourceAccessInput
 ): LauncherAccessFields {
-    if (resource.alias) {
+    // Exit node (gateway) destinations are always 0.0.0.0/0 — not useful to
+    // show or copy. The launcher UI renders a localized capability label.
+    if (resource.mode === "gateway") {
         return {
-            accessDisplay: resource.alias,
-            accessCopyValue: resource.alias,
+            accessDisplay: "",
+            accessCopyValue: "",
             accessUrl: null
         };
     }
 
-    if (resource.mode === "http" && resource.fullDomain) {
+    if (
+        (resource.mode === "http" || resource.mode === "inference") &&
+        resource.fullDomain
+    ) {
         const url = `${resource.ssl ? "https" : "http"}://${resource.fullDomain}`;
         return {
             accessDisplay: url,
             accessCopyValue: url,
             accessUrl: url
+        };
+    }
+
+    if (resource.alias) {
+        return {
+            accessDisplay: resource.alias,
+            accessCopyValue: resource.alias,
+            accessUrl: null
         };
     }
 
